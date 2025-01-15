@@ -391,6 +391,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ("Min balance", fmt_coin(strat_results["csum_min"], strat_results["stake_currency"])),
             ("Max balance", fmt_coin(strat_results["csum_max"], strat_results["stake_currency"])),
             *drawdown_metrics,
+            ("Max Drawdown Net(Abs.)", strat_results.get('max_drawdown_net', 'N/A')),  # 最大净值回撤
             ("Market change", f"{strat_results['market_change']:.2%}"),
         ]
         print_rich_table(metrics, ["Metric", "Value"], summary="SUMMARY METRICS", justify="left")

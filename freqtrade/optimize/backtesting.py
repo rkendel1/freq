@@ -1541,6 +1541,8 @@ class Backtesting:
             "canceled_entry_orders": self.canceled_entry_orders,
             "replaced_entry_orders": self.replaced_entry_orders,
             "final_balance": self.wallets.get_total(self.strategy.config["stake_currency"]),
+            # 增加净值回撤
+            "max_drawdown_net": self.strategy.my_utils.max_drawdown_net if hasattr(self.strategy, 'my_utils') else None,
         }
 
     def backtest_one_strategy(

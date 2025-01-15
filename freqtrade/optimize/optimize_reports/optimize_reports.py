@@ -553,6 +553,9 @@ def generate_strategy_stats(
                 "csum_max": 0,
             }
         )
+    # 增加净值回撤
+    if content.get('max_drawdown_net'):
+        strat_stats["max_drawdown_net"] = content['max_drawdown_net']
 
     return strat_stats
 
@@ -589,7 +592,7 @@ def generate_backtest_stats(
             "timeframe": content["config"]["timeframe"],
             "timeframe_detail": content["config"].get("timeframe_detail", None),
             "backtest_start_ts": int(min_date.timestamp()),
-            "backtest_end_ts": int(max_date.timestamp()),
+            "backtest_end_ts": int(max_date.timestamp())
         }
         result["strategy"][strategy] = strat_stats
 

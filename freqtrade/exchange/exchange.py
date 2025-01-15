@@ -2431,6 +2431,7 @@ class Exchange:
             idx = -2 if drop_incomplete and len(ticks) > 1 else -1
             self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[idx][0] // 1000
         # keeping parsed dataframe in cache
+        logger.debug("debug-c_type:", c_type)
         ohlcv_df = ohlcv_to_dataframe(
             ticks, timeframe, pair=pair, fill_missing=True, drop_incomplete=drop_incomplete
         )
@@ -2635,8 +2636,8 @@ class Exchange:
         """
         # Funding rate
         data = await self._api_async.fetch_funding_rate_history(pair, since=since_ms, limit=limit)
-        # Convert funding rate to candle pattern
-        data = [[x["timestamp"], x["fundingRate"], 0, 0, 0, 0] for x in data]
+        # Convert funding rate to candle pattern, 增加了buy_volume和buy_amount的位置
+        data = [[x["timestamp"], x["fundingRate"], 0, 0, 0, 0, 0, 0] for x in data]
         return data
 
     # fetch Trade data stuff

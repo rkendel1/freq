@@ -50,6 +50,8 @@ def ohlcv_to_dataframe(
             "low": "float",
             "close": "float",
             "volume": "float",
+            "buy_volume": "float",
+            "buy_amount": "float"
         }
     )
     return clean_ohlcv_dataframe(
@@ -81,6 +83,8 @@ def clean_ohlcv_dataframe(
             "low": "min",
             "close": "last",
             "volume": "max",
+            "buy_volume": "max",
+            "buy_amount": "max"
         }
     )
     # eliminate partial candle
@@ -102,7 +106,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     """
     from freqtrade.exchange import timeframe_to_resample_freq
 
-    ohlcv_dict = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+    ohlcv_dict = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum", "buy_volume": "sum", "buy_amount": "sum"}
     resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
     df = dataframe.resample(resample_interval, on="date").agg(ohlcv_dict)
@@ -152,7 +156,10 @@ def trim_dataframe(
         if timerange.starttype == "date":
             df = df.loc[df[df_date_col] >= timerange.startdt, :]
     if timerange.stoptype == "date":
-        df = df.loc[df[df_date_col] <= timerange.stopdt, :]
+        try:
+            df = df.loc[df[df_date_col] <= timerange.stopdt, :]
+        except Exception as e:
+            print(e)
     return df
 
 
@@ -288,7 +295,7 @@ def reduce_dataframe_footprint(df: DataFrame) -> DataFrame:
 
     df_dtypes = df.dtypes
     for column, dtype in df_dtypes.items():
-        if column in ["open", "high", "low", "close", "volume"]:
+        if column in ["open", "high", "low", "close", "volume", "buy_volume", "buy_amount"]:
             continue
         if dtype == np.float64:
             df_dtypes[column] = np.float32

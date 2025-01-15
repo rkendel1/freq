@@ -68,6 +68,8 @@ class FeatherDataHandler(IDataHandler):
                     "low": "float",
                     "close": "float",
                     "volume": "float",
+                    "buy_volume": "float",
+                    "buy_amount": "float"
                 }
             )
             pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True)

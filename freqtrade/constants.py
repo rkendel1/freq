@@ -65,7 +65,7 @@ BACKTEST_CACHE_DEFAULT = "day"
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = "%Y-%m-%d %H:%M:%S"
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
-DEFAULT_DATAFRAME_COLUMNS = ["date", "open", "high", "low", "close", "volume"]
+DEFAULT_DATAFRAME_COLUMNS = ["date", "open", "high", "low", "close", "volume", "buy_volume", "buy_amount"]
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ["timestamp", "id", "type", "side", "price", "amount", "cost"]
