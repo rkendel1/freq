@@ -68,11 +68,23 @@ def validate_exchange(exchange: str) -> tuple[bool, str, ccxt.Exchange | None]:
 
     result = True
     reason = ""
-    missing = [
-        k
-        for k, v in EXCHANGE_HAS_REQUIRED.items()
-        if ex_mod.has.get(k) is not True and not (all(ex_mod.has.get(x) for x in v))
-    ]
+    
+    # Special handling for blofin - we implement fetchOrder in our custom class
+    if exchange.lower() == "blofin":
+        # Skip the missing fetchOrder check for blofin since we implement it
+        missing = [
+            k
+            for k, v in EXCHANGE_HAS_REQUIRED.items()
+            if (k != "fetchOrder" and ex_mod.has.get(k) is not True and
+                not (all(ex_mod.has.get(x) for x in v)))
+        ]
+    else:
+        missing = [
+            k
+            for k, v in EXCHANGE_HAS_REQUIRED.items()
+            if ex_mod.has.get(k) is not True and not (all(ex_mod.has.get(x) for x in v))
+        ]
+    
     if missing:
         result = False
         reason += f"missing: {', '.join(missing)}"
