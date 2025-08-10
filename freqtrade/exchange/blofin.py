@@ -1,4 +1,6 @@
 import logging
+import time
+from datetime import datetime
 from typing import Any
 
 import ccxt
@@ -23,41 +25,29 @@ class Blofin(Exchange):
     _ft_has: dict = {
         "stoploss_on_exchange": False,  # Blofin may not support stop-loss orders on exchange
         "ohlcv_candle_limit": 5000,
-        "needs_trading_fees": False,
-        "order_time_in_force": ["GTC", "IOC", "FOK"],
-        "floor_leverage": True,  # Blofin requires integer leverage values
-        "exchange_has_overrides": {
-            "fetchOrder": True,  # We implement this method in our custom class
-        },
+        "trades_pagination": "id",
+        "trades_pagination_arg": "fromId",
+        "l2_limit_range": [1, 200],
+        "l2_limit_range_required": False,
     }
 
-    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
-        (TradingMode.SPOT, MarginMode.NONE),
+    _supported_trading_mode_margin_pairs = [
         (TradingMode.FUTURES, MarginMode.CROSS),
-        # Note: Blofin does not support isolated futures trading
     ]
 
-    def __init__(
-        self,
-        config: Config,
-        *,
-        exchange_config: ExchangeConfig | None = None,
-        validate: bool = True,
-        load_leverage_tiers: bool = False,
-    ) -> None:
-        super().__init__(
-            config,
-            exchange_config=exchange_config,
-            validate=validate,
-            load_leverage_tiers=load_leverage_tiers
-        )
+    def __init__(self, config: Config, *, exchange_config: ExchangeConfig | None = None, **kwargs):
+        """
+        Initialize the Blofin exchange.
+        """
+        logger.info("Initializing Blofin exchange")
+        super().__init__(config, exchange_config=exchange_config, **kwargs)
 
     @retrier
     def fetch_order(self, order_id: str, pair: str, params: dict | None = None) -> CcxtOrder:
         """
-        Fetch a specific order by ID.
-        Since blofin doesn't support fetchOrder directly, we emulate it using
-        fetchOpenOrders and fetchClosedOrders.
+        Fetch order from exchange.
+        Blofin doesn't have a direct fetchOrder method, so we emulate it
+        using fetchOpenOrders and fetchClosedOrders.
         """
         if params is None:
             params = {}
@@ -66,38 +56,21 @@ class Blofin(Exchange):
             # First try to find in open orders
             open_orders = self._api.fetch_open_orders(pair, params=params)
             for order in open_orders:
-                if str(order['id']) == str(order_id):
-                    self._log_exchange_response("fetch_order", order)
-                    return self._order_contracts_to_amount(order)
+                if order['id'] == order_id:
+                    return order
 
             # If not found in open orders, try closed orders
             closed_orders = self._api.fetch_closed_orders(pair, params=params)
             for order in closed_orders:
-                if str(order['id']) == str(order_id):
-                    self._log_exchange_response("fetch_order", order)
-                    return self._order_contracts_to_amount(order)
+                if order['id'] == order_id:
+                    return order
 
-            # If order not found in either list, raise OrderNotFound
-            raise ccxt.OrderNotFound(f"Order {order_id} not found")
+            # If still not found, raise an error
+            raise ccxt.OrderNotFound(f"Order {order_id} not found for {pair}")
 
-        except ccxt.OrderNotFound as e:
-            from freqtrade.exceptions import RetryableOrderError
-            raise RetryableOrderError(
-                f"Order not found (pair: {pair} id: {order_id}). Message: {e}"
-            ) from e
-        except ccxt.InvalidOrder as e:
-            from freqtrade.exceptions import InvalidOrderException
-            raise InvalidOrderException(
-                f"Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}"
-            ) from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f"Could not get order due to {e.__class__.__name__}. Message: {e}"
-            ) from e
         except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+            logger.error(f"Error fetching order {order_id} for {pair}: {e}")
+            raise
 
     def _set_leverage(
         self,
@@ -107,55 +80,126 @@ class Blofin(Exchange):
     ):
         """
         Set leverage for blofin exchange.
-        Blofin might have specific leverage requirements.
+        Blofin requires integer leverage values.
         """
+        logger.info(f"🔧 _set_leverage called with leverage={leverage} (type: {type(leverage)}) for pair={pair}")
+        
         if self._config["dry_run"] or not self.exchange_has("setLeverage"):
+            logger.info(f"🔧 Skipping leverage setting: dry_run={self._config['dry_run']}, "
+                       f"has_setLeverage={self.exchange_has('setLeverage')}")
             return
-            
+
         try:
-            # Ensure leverage is an integer for blofin
-            leverage_int = int(leverage)
+            # Ensure leverage is an integer for blofin (this is the key fix)
+            leverage_int = int(round(leverage))
+            logger.info(f"🔧 Converting leverage {leverage} -> {leverage_int} (integer)")
+            
             # Blofin might have leverage limits, so clamp to reasonable range
             leverage_int = max(1, min(leverage_int, 100))  # Assuming max 100x leverage
-            
+            logger.info(f"🔧 Final leverage value after clamping: {leverage_int}")
+
+            logger.info(f"� Setting leverage for {pair} to {leverage_int}x (from {leverage})")
             res = self._api.set_leverage(symbol=pair, leverage=leverage_int)
             self._log_exchange_response("set_leverage", res)
+            logger.info(f"🔧 Successfully set leverage for {pair} to {leverage_int}x")
         except ccxt.DDoSProtection as e:
+            logger.warning(f"🔧 Rate limit exceeded when setting leverage for {pair}")
             raise DDosProtection(e) from e
         except (ccxt.BadRequest, ccxt.OperationRejected, ccxt.InsufficientFunds) as e:
+            logger.error(f"🔧 Failed to set leverage for {pair}: {e}")
             if not accept_fail:
                 raise TemporaryError(
                     f"Could not set leverage due to {e.__class__.__name__}. Message: {e}"
                 ) from e
         except ccxt.BaseError as e:
+            logger.error(f"🔧 Unexpected error setting leverage for {pair}: {e}")
             if not accept_fail:
                 raise OperationalException(e) from e
 
-    def _lev_prep(self, pair: str, leverage: float, side: str, accept_fail: bool = False):
+    def _lev_prep(self, pair: str, leverage: float, side: str):
         """
-        Prepare leverage settings for blofin.
+        Leverage preparation for blofin.
+        Ensures leverage is set before trades.
         """
-        if self.trading_mode != TradingMode.SPOT:
-            # Set margin mode first, then leverage
-            try:
-                self.set_margin_mode(pair, self.margin_mode, accept_fail=True)
-                # Add a small delay to avoid rate limiting
-                import time
-                time.sleep(0.1)
-                self._set_leverage(leverage, pair, accept_fail=True)
-            except Exception as e:
-                if not accept_fail:
-                    logger.warning(f"Failed to set leverage for {pair}: {e}")
+        if self._config["dry_run"]:
+            return
 
-    def _get_funding_fees_from_exchange(
-        self, pair: str, since: int | None
-    ) -> list[dict[str, Any]]:
+        logger.info(f"Preparing leverage for {pair}: {leverage}x, side: {side}")
+
+        # Add delay to avoid rate limits
+        time.sleep(0.5)
+
+        try:
+            # Ensure leverage is properly set for this pair
+            self._set_leverage(leverage=leverage, pair=pair, accept_fail=False)
+
+            # Add another small delay to ensure the leverage setting is processed
+            time.sleep(0.2)
+
+        except Exception as e:
+            logger.error(f"Failed to prepare leverage for {pair}: {e}")
+            # Don't fail the trade, but log the issue
+            pass
+
+    def create_order(
+        self,
+        *,
+        pair: str,
+        ordertype: str,
+        side: str,
+        amount: float,
+        rate: float,
+        leverage: float,
+        reduceOnly: bool = False,
+        time_in_force: str = "GTC",
+    ) -> CcxtOrder:
         """
-        Fetch funding fees from exchange.
+        Override create_order to ensure leverage is set before creating the order.
         """
-        # Blofin might not support funding fee history
-        # Return empty list for now, can be implemented later if needed
-        return []
+        logger.info(
+            f"🛒 create_order called: pair={pair}, side={side}, "
+            f"amount={amount}, rate={rate}, leverage={leverage} (type: {type(leverage)})"
+        )
+        
+        # Ensure leverage is set before creating order
+        if leverage and leverage > 1:
+            logger.info(f"� Setting leverage {leverage}x for {pair} before creating order")
+            self._set_leverage(leverage=leverage, pair=pair, accept_fail=True)
+        else:
+            logger.info(f"🛒 No leverage setting needed (leverage={leverage})")
+
+        # Call parent create_order method with exact signature
+        result = super().create_order(
+            pair=pair,
+            ordertype=ordertype,
+            side=side,
+            amount=amount,
+            rate=rate,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        
+        logger.info(f"🛒 Order created successfully: {result.get('id', 'unknown_id')}")
+        return result
+
+    def get_max_leverage(self, pair: str, stake_amount: float | None) -> float:
+        """
+        Override get_max_leverage to return reasonable blofin limits.
+        Blofin typically supports up to 100x leverage for most pairs.
+        """
+        logger.info(f"🔧 get_max_leverage called for pair={pair}, stake_amount={stake_amount}")
+        
+        if self.trading_mode != TradingMode.FUTURES:
+            logger.info(f"🔧 Not futures mode, returning 1.0")
+            return 1.0
+        
+        # For blofin, return a reasonable max leverage
+        # Most exchanges support different max leverage per pair, but for simplicity
+        # we'll return a conservative 50x max leverage for all pairs
+        max_leverage = 50.0
+        logger.info(f"🔧 Returning max_leverage={max_leverage} for {pair}")
+        return max_leverage
 
     def dry_run_liquidation_price(
         self,
@@ -169,21 +213,31 @@ class Blofin(Exchange):
         open_trades: list,
     ) -> float | None:
         """
-        Calculate liquidation price for dry run mode.
-        TODO: Implement proper liquidation price calculation for blofin.
-        For now, return None to suppress warnings.
+        Important: Must be implemented to prevent errors in the margin mode
+
+        Calculate the liquidation price for dry-run mode.
+        In dry-run, we can return a reasonable estimate or None.
         """
-        # Return None for now - this will use the default calculation
-        # or suppress liquidation price warnings
         return None
 
-    @retrier
-    def additional_exchange_init(self) -> None:
+    def _get_funding_fees_from_exchange(
+        self, pair: str, since: int | None
+    ) -> list[dict[str, Any]]:
         """
-        Additional exchange initialization logic.
+        Fetch funding fees from exchange.
+        Blofin might not support funding fee history - return empty list for now.
         """
-        try:
-            # Add any blofin-specific initialization here
-            pass
-        except ccxt.BaseError as e:
-            logger.warning(f"Unable to initialize exchange. Reason: {e}")
+        # Return empty list - freqtrade will handle this gracefully
+        # This prevents the TypeError when trying to add int + list
+        return []
+
+    def get_funding_fees(
+        self, pair: str, amount: float, is_short: bool, open_date: datetime
+    ) -> float:
+        """
+        Calculate funding fees for a position.
+        Override this to provide proper funding fee calculation or return 0.0 if not supported.
+        """
+        # For now, return 0.0 to avoid funding fee calculation errors
+        # This can be implemented later with proper blofin funding fee logic
+        return 0.0
