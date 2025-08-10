@@ -68,10 +68,10 @@ def validate_exchange(exchange: str) -> tuple[bool, str, ccxt.Exchange | None]:
 
     result = True
     reason = ""
-    
-    # Special handling for blofin - we implement fetchOrder in our custom class
+
+    # Special handling for BloFin - we implement fetchOrder in our custom class
     if exchange.lower() == "blofin":
-        # Skip the missing fetchOrder check for blofin since we implement it
+        # Skip the missing fetchOrder check for BloFin since we implement it
         missing = [
             k
             for k, v in EXCHANGE_HAS_REQUIRED.items()
