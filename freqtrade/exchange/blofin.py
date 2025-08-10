@@ -42,6 +42,15 @@ class Blofin(Exchange):
         """
         logger.info("Initializing BloFin exchange")
         super().__init__(config, exchange_config=exchange_config, **kwargs)
+        
+        # Override ccxt's fetchFundingHistory with our custom implementation
+        self._api.fetchFundingHistory = self._ccxt_fetch_funding_history
+
+    def _ccxt_fetch_funding_history(self, symbol=None, since=None, limit=None, params={}):
+        """
+        Wrapper method to make our custom fetchFundingHistory compatible with ccxt calls.
+        """
+        return self.fetchFundingHistory(symbol, since, limit, params)
 
     def get_tickers(self, symbols=None, *, cached=False, market_type=None):
         """
@@ -512,22 +521,174 @@ class Blofin(Exchange):
             logger.error("🔧 Unexpected error fetching funding rates: %s", e)
             raise OperationalException(e) from e
 
+    def fetchFundingHistory(self, symbol=None, since=None, limit=None, params={}):
+        """
+        Custom implementation of fetchFundingHistory for BloFin.
+        
+        BloFin's ccxt implementation reports fetchFundingHistory as supported but throws
+        NotSupported error. This custom implementation uses the asset/bills endpoint
+        to retrieve actual funding payments.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., 'BTC/USDT:USDT')
+            since: Timestamp in milliseconds to start from
+            limit: Maximum number of entries to return
+            params: Additional parameters
+            
+        Returns:
+            List of funding history entries with standardized format:
+            [
+                {
+                    'info': {...},           # Raw API response
+                    'symbol': 'BTC/USDT:USDT',
+                    'code': 'USDT',
+                    'timestamp': 1234567890000,
+                    'datetime': '2023-01-01T00:00:00.000Z',
+                    'id': 'bill_id',
+                    'amount': -0.001,        # Funding fee amount (negative = paid)
+                    'type': 'funding'
+                }
+            ]
+        """
+        logger.info("🔧 fetchFundingHistory called for %s, since: %s, limit: %s", symbol, since, limit)
+        
+        try:
+            # BloFin uses asset/bills to get funding payments
+            # We need to filter for funding-related bill types
+            request_params = {}
+            if since is not None:
+                request_params['after'] = str(since)
+            if limit is not None:
+                request_params['limit'] = str(limit)
+            else:
+                request_params['limit'] = '100'  # Default limit
+                
+            # Get bills from BloFin
+            response = self._api.private_get_asset_bills(request_params)
+            bills = response.get('data', [])
+            
+            logger.info("🔧 Retrieved %s bills from BloFin", len(bills))
+            
+            # Log first few bills to understand structure
+            if bills:
+                logger.info("🔧 Sample bill structure: %s", bills[0])
+                
+                # Log bill types for debugging
+                bill_types = set()
+                account_transfers = 0
+                instrument_bills = 0
+                
+                for bill in bills[:10]:  # Check first 10 bills
+                    if 'type' in bill:
+                        bill_types.add(bill['type'])
+                    if 'fromAccount' in bill or 'toAccount' in bill:
+                        account_transfers += 1
+                    if 'instId' in bill and bill['instId']:
+                        instrument_bills += 1
+                
+                logger.info("🔧 Bill analysis - Types found: %s, Account transfers: %d, Instrument bills: %d", 
+                           list(bill_types), account_transfers, instrument_bills)
+            
+            # Filter for funding-related bills and parse them
+            funding_history = []
+            for bill in bills:
+                # BloFin bills might not have a 'type' field, so check for funding indicators
+                # Look for bills that are funding-related based on available fields
+                is_funding_related = False
+                
+                # Check various possible indicators of funding payments
+                if 'type' in bill:
+                    bill_type = bill.get('type', '').lower()
+                    is_funding_related = any(keyword in bill_type for keyword in ['funding', 'fund'])
+                else:
+                    # If no type field, look for other indicators
+                    # Funding payments usually have instId (instrument) and specific patterns
+                    has_instrument = bool(bill.get('instId'))
+                    has_transfer_accounts = 'fromAccount' in bill or 'toAccount' in bill
+                    
+                    # Skip account transfers (funding <-> trading)
+                    if has_transfer_accounts:
+                        from_account = bill.get('fromAccount', '')
+                        to_account = bill.get('toAccount', '')
+                        if from_account in ['funding', 'trading'] or to_account in ['funding', 'trading']:
+                            continue  # Skip account transfers
+                    
+                    # Look for funding-specific patterns
+                    if has_instrument and not has_transfer_accounts:
+                        # This might be a position-related bill (could include funding)
+                        is_funding_related = True
+                
+                if is_funding_related:
+                    inst_id = bill.get('instId', '')
+                    if symbol is None or self.safe_symbol(inst_id) == symbol:
+                        parsed_entry = self._parse_funding_history_entry(bill)
+                        if parsed_entry:
+                            funding_history.append(parsed_entry)
+            
+            logger.info("🔧 Found %s funding history entries after filtering", len(funding_history))
+            return funding_history
+            
+        except Exception as e:
+            logger.error("🔧 Error in custom fetchFundingHistory: %s", e)
+            # Return empty list instead of raising exception to allow fallback
+            return []
+
+    def _parse_funding_history_entry(self, bill):
+        """Parse a bill entry into funding history format."""
+        try:
+            timestamp = self.safe_integer(bill, 'ts')
+            
+            # BloFin bills may use different fields for amount based on structure
+            amount = (self.safe_float(bill, 'amount') or 
+                     self.safe_float(bill, 'bal') or 
+                     self.safe_float(bill, 'balChg') or 
+                     self.safe_float(bill, 'size'))
+            
+            inst_id = bill.get('instId', '')
+            symbol = self.safe_symbol(inst_id) if inst_id else None
+            
+            # Get currency from various possible fields
+            currency = (bill.get('currency') or 
+                       bill.get('ccy') or 
+                       bill.get('settleCcy'))
+            
+            return {
+                'info': bill,
+                'symbol': symbol,
+                'code': currency,
+                'timestamp': timestamp,
+                'datetime': self.iso8601(timestamp) if timestamp else None,
+                'id': bill.get('transferId') or bill.get('billId') or bill.get('id'),
+                'amount': amount,
+                'type': bill.get('type', 'funding'),
+            }
+        except Exception as e:
+            logger.warning("🔧 Error parsing funding history entry: %s", e)
+            return None
+
     def _get_funding_fees_from_exchange(
         self, pair: str, since: int | None
     ) -> list[dict[str, Any]]:
         """
-        Fetch funding fees from exchange using fetchFundingHistory.
-        BloFin supports fetchFundingHistory so we can use it directly.
+        Fetch funding fees from exchange using custom fetchFundingHistory.
         """
         logger.info("🔧 _get_funding_fees_from_exchange called for %s, since: %s", pair, since)
         
         try:
-            if not self.exchange_has("fetchFundingHistory"):
-                logger.warning("🔧 Exchange doesn't support fetchFundingHistory")
-                return []
+            # Use our custom fetchFundingHistory method directly
+            funding_history = self.fetchFundingHistory(symbol=pair, since=since)
             
-            # Use CCXT's fetchFundingHistory method
-            funding_history = self._api.fetch_funding_history(symbol=pair, since=since)
+            if funding_history:
+                logger.info("🔧 Found %s funding history entries for %s", len(funding_history), pair)
+                return funding_history
+            else:
+                logger.info("🔧 No funding history found for %s", pair)
+                return []
+                
+        except Exception as e:
+            logger.warning("🔧 Error fetching funding history for %s: %s", pair, e)
+            # Return empty list to fallback to calculation method
+            return []
             
             if funding_history:
                 logger.info("🔧 Found %s funding history entries for %s", len(funding_history), pair)
