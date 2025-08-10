@@ -46,6 +46,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
 - [X] [OKX](https://okx.com/)
 - [X] [Bybit](https://bybit.com/)
+- [X] [BloFin](https://blofin.com/register?referral_code=HYXOVL)
 
 Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 
