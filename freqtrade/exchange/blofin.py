@@ -43,6 +43,31 @@ class Blofin(Exchange):
         logger.info("Initializing BloFin exchange")
         super().__init__(config, exchange_config=exchange_config, **kwargs)
 
+    def get_tickers(self, symbols=None, *, cached=False, market_type=None):
+        """
+        Override get_tickers for BloFin exchange.
+        Fix quoteVolume by mapping from BloFin's volCurrency24h.
+        """
+        tickers = super().get_tickers(symbols, cached=cached, market_type=market_type)
+        
+        # Fix quoteVolume for BloFin tickers
+        fixed_count = 0
+        for symbol, ticker in tickers.items():
+            if ticker.get('quoteVolume') is None and ticker.get('info'):
+                # BloFin provides volume in volCurrency24h
+                vol_currency = ticker['info'].get('volCurrency24h')
+                if vol_currency is not None:
+                    try:
+                        ticker['quoteVolume'] = float(vol_currency)
+                        fixed_count += 1
+                    except (ValueError, TypeError):
+                        # Fallback to baseVolume if conversion fails
+                        ticker['quoteVolume'] = ticker.get('baseVolume', 0)
+                        
+        if fixed_count > 0:
+            logger.debug("🔧 BloFin: Fixed quoteVolume for %d tickers", fixed_count)
+        return tickers
+
     @retrier
     def fetch_order(self, order_id: str, pair: str, params: dict | None = None) -> CcxtOrder:
         """
