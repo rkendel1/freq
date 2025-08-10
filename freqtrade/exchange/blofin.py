@@ -74,7 +74,7 @@ class Blofin(Exchange):
         # Add margin mode if trading futures
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params.update({
-                "tdMode": "isolated" if self.margin_mode == MarginMode.ISOLATED else "cross"
+                "marginMode": "isolated" if self.margin_mode == MarginMode.ISOLATED else "cross"
             })
         
         return params
@@ -130,9 +130,9 @@ class Blofin(Exchange):
             if self.trading_mode == TradingMode.FUTURES:
                 params["reduceOnly"] = True
                 
-            # Add margin mode for BloFin
+            # Add margin mode for BloFin - TP/SL orders use 'marginMode' parameter
             if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
-                params["tdMode"] = "isolated" if self.margin_mode == MarginMode.ISOLATED else "cross"
+                params["marginMode"] = "isolated" if self.margin_mode == MarginMode.ISOLATED else "cross"
                 
             # Add price type if specified
             if "stoploss_price_type" in order_types and "stop_price_type_field" in self._ft_has:
@@ -149,7 +149,7 @@ class Blofin(Exchange):
             # Use BloFin's createStopLossOrder method directly
             logger.info(f"🔧 Creating BloFin stoploss order: {pair}, {ordertype}, {side}, amount={amount_precise}, stopPrice={stop_price_norm}, params={params}")
             
-            # Try the direct method call first
+            # Try BloFin's createStopLossOrder first
             try:
                 order = self._api.createStopLossOrder(
                     symbol=pair,
@@ -164,31 +164,37 @@ class Blofin(Exchange):
                 # Debug: Log the raw order response
                 logger.info(f"🔧 BloFin raw stoploss order response: {order}")
                 
-                # If response is empty/None, try alternative approach
-                if not order.get('id') and not order.get('info'):
-                    logger.warning(f"🔧 createStopLossOrder returned empty response, trying alternative method...")
-                    
-                    # Try using the conditional order approach
-                    alt_params = params.copy()
-                    alt_params.update({
-                        'stopPrice': stop_price_norm,
-                        'orderType': 'conditional',
-                        'triggerPrice': stop_price_norm
-                    })
-                    
-                    order = self._api.createOrder(
-                        symbol=pair,
-                        type='market',  # BloFin conditional orders are usually market
-                        side=side,
-                        amount=amount_precise,
-                        price=None,
-                        params=alt_params,
-                    )
-                    logger.info(f"🔧 Alternative stoploss order response: {order}")
+                # Check if the order creation was successful
+                if order and (order.get('id') or order.get('info')):
+                    logger.info(f"🔧 createStopLossOrder succeeded")
+                else:
+                    logger.warning(f"🔧 createStopLossOrder returned empty/invalid response, trying alternative method...")
+                    raise Exception("createStopLossOrder returned invalid response")
                     
             except Exception as e:
-                logger.error(f"🔧 Error creating stoploss order: {e}")
-                raise
+                logger.warning(f"🔧 createStopLossOrder failed: {e}, trying conditional order approach...")
+                
+                # Alternative: Use createOrder with conditional parameters
+                conditional_params = params.copy()
+                conditional_params.update({
+                    'stopPrice': stop_price_norm,
+                    'orderType': 'conditional',
+                    'triggerPrice': stop_price_norm,
+                    'side': side  # Ensure side is explicitly set
+                })
+                
+                logger.info(f"🔧 Creating conditional stoploss order with params: {conditional_params}")
+                
+                order = self._api.createOrder(
+                    symbol=pair,
+                    type='market',  # Conditional orders are usually market type
+                    side=side,
+                    amount=amount_precise,
+                    price=None,  # No limit price for market conditional orders
+                    params=conditional_params,
+                )
+                
+                logger.info(f"🔧 Conditional stoploss order response: {order}")
             
             self._log_exchange_response("create_stoploss_order", order)
             order = self._order_contracts_to_amount(order)
@@ -198,14 +204,20 @@ class Blofin(Exchange):
             
             # BloFin TP/SL orders might return tpslId instead of id
             if order_id is None:
-                tpsl_id = order.get('tpslId') or order.get('info', {}).get('tpslId')
+                tpsl_id = order.get('tpslId')
+                if not tpsl_id and order.get('info') is not None:
+                    tpsl_id = order.get('info', {}).get('tpslId')
+                
                 if tpsl_id:
                     order['id'] = tpsl_id  # Fix the order ID
                     order_id = tpsl_id
                     logger.info(f"🔧 Fixed BloFin stoploss order ID: using tpslId {tpsl_id}")
                 else:
                     # Fallback: check for algoId (compatibility)
-                    algo_id = order.get('algoId') or order.get('info', {}).get('algoId')
+                    algo_id = order.get('algoId')
+                    if not algo_id and order.get('info') is not None:
+                        algo_id = order.get('info', {}).get('algoId')
+                    
                     if algo_id:
                         order['id'] = algo_id  # Fix the order ID
                         order_id = algo_id
@@ -216,13 +228,22 @@ class Blofin(Exchange):
             if order_id is None:
                 logger.error(f"🔧 BloFin stoploss order creation returned None ID: {order}")
                 # Try to extract from info field - prioritize tpslId for TP/SL orders
-                info = order.get('info', {})
-                for id_field in ['tpslId', 'algoId', 'ordId', 'id']:
-                    if info.get(id_field):
-                        order['id'] = info[id_field]
-                        order_id = info[id_field]
-                        logger.info(f"🔧 Recovered order ID from info.{id_field}: {order_id}")
-                        break
+                info = order.get('info')
+                if info is not None:
+                    for id_field in ['tpslId', 'algoId', 'ordId', 'id']:
+                        if info.get(id_field):
+                            order['id'] = info[id_field]
+                            order_id = info[id_field]
+                            logger.info(f"🔧 Recovered order ID from info.{id_field}: {order_id}")
+                            break
+                
+                # If still no order ID found, this is a failed order creation
+                if order_id is None:
+                    logger.error(f"🔧 BloFin stoploss order creation completely failed - no valid order ID found")
+                    raise InvalidOrderException(
+                        f"BloFin stoploss order creation failed for {pair}. "
+                        f"Exchange returned invalid response with no order ID. Response: {order}"
+                    )
             
             logger.info(
                 f"🔧 BloFin stoploss {user_order_type} order created: ID={order_id} for {pair}. "
@@ -271,58 +292,40 @@ class Blofin(Exchange):
         logger.debug(f"🔧 Fetching BloFin stoploss order {order_id} for {pair}")
         
         try:
-            # First try regular fetch_order (might work for some order types)
+            # Convert freqtrade symbol to BloFin market ID
+            market = self.markets[pair]
+            market_id = market['id']
+            
+            # Check pending TP/SL orders first
             try:
-                order = self.fetch_order(order_id, pair, params)
-                logger.debug(f"🔧 Found stoploss order {order_id} in regular orders")
-                return order
-            except ccxt.OrderNotFound:
-                logger.debug(f"🔧 Stoploss order {order_id} not found in regular orders, checking TP/SL orders...")
-            except Exception as e:
-                logger.debug(f"🔧 Error fetching from regular orders: {e}, checking TP/SL orders...")
+                # Check pending TP/SL orders
+                tpsl_pending_params = {'instId': market_id}
+                tpsl_pending = self._api.private_get_trade_orders_tpsl_pending(tpsl_pending_params)
                 
-            # If not found in regular orders, check TP/SL orders
-            try:
-                # Convert freqtrade symbol to BloFin market ID
-                market = self.markets[pair]
-                market_id = market['id']
+                for tpsl_order in tpsl_pending.get('data', []):
+                    tpsl_id = tpsl_order.get('tpslId')
+                    if tpsl_id == order_id:
+                        # Convert TP/SL order to standard order format
+                        converted_order = self._convert_tpsl_order_to_standard(tpsl_order)
+                        # Cache the result
+                        self._stoploss_cache[cache_key] = (converted_order, current_time)
+                        logger.debug(f"🔧 Found stoploss order {order_id} in pending TP/SL orders")
+                        return converted_order
                 
-                # First try TP/SL orders since the create response had 'tpslId'
-                try:
-                    market = self.markets[pair]
-                    market_id = market['id']
-                    
-                    # Check pending TP/SL orders
-                    tpsl_pending_params = {'instId': market_id}
-                    tpsl_pending = self._api.private_get_trade_orders_tpsl_pending(tpsl_pending_params)
-                    
-                    for tpsl_order in tpsl_pending.get('data', []):
-                        tpsl_id = tpsl_order.get('tpslId')
-                        if tpsl_id == order_id:
-                            # Convert TP/SL order to standard order format
-                            converted_order = self._convert_tpsl_order_to_standard(tpsl_order)
-                            # Cache the result
-                            self._stoploss_cache[cache_key] = (converted_order, current_time)
-                            logger.debug(f"🔧 Found stoploss order {order_id} in pending TP/SL orders")
-                            return converted_order
-                    
-                    # Check TP/SL history if not found in pending
-                    tpsl_history_params = {'instId': market_id}
-                    tpsl_history = self._api.private_get_trade_orders_tpsl_history(tpsl_history_params)
-                    
-                    for tpsl_order in tpsl_history.get('data', []):
-                        tpsl_id = tpsl_order.get('tpslId')
-                        if tpsl_id == order_id:
-                            # Convert TP/SL order to standard order format
-                            converted_order = self._convert_tpsl_order_to_standard(tpsl_order)
-                            # Cache the result
-                            self._stoploss_cache[cache_key] = (converted_order, current_time)
-                            logger.debug(f"🔧 Found stoploss order {order_id} in TP/SL order history")
-                            return converted_order
-                            
-                except Exception as e:
-                    logger.warning(f"🔧 Error fetching TP/SL orders: {e}")
-                    
+                # Check TP/SL history if not found in pending
+                tpsl_history_params = {'instId': market_id}
+                tpsl_history = self._api.private_get_trade_orders_tpsl_history(tpsl_history_params)
+                
+                for tpsl_order in tpsl_history.get('data', []):
+                    tpsl_id = tpsl_order.get('tpslId')
+                    if tpsl_id == order_id:
+                        # Convert TP/SL order to standard order format
+                        converted_order = self._convert_tpsl_order_to_standard(tpsl_order)
+                        # Cache the result
+                        self._stoploss_cache[cache_key] = (converted_order, current_time)
+                        logger.debug(f"🔧 Found stoploss order {order_id} in TP/SL order history")
+                        return converted_order
+                        
             except Exception as e:
                 logger.warning(f"🔧 Error fetching TP/SL orders: {e}")
                 
@@ -331,13 +334,17 @@ class Blofin(Exchange):
                 positions = self.fetch_positions([pair])
                 position = next((p for p in positions if p['symbol'] == pair), None)
                 
-                if position and position.get('contracts', 0) == 0:
-                    # No position exists, the stoploss might have been triggered
-                    logger.info(f"🔧 No position found for {pair}, stoploss may have been executed")
+                # Check if position is closed or very small
+                position_size = 0
+                if position:
+                    position_size = abs(float(position.get('contracts', 0))) if position.get('contracts') else 0
+                
+                if position_size <= 0.001:  # Position is effectively closed
+                    logger.info(f"🔧 Position for {pair} is closed (size: {position_size}), stoploss likely executed")
                     # Create a mock 'closed' order to indicate the stoploss was triggered
                     return {
                         'id': order_id,
-                        'info': {'mock': True, 'reason': 'position_closed'},
+                        'info': {'mock': True, 'reason': 'position_closed', 'position_size': position_size},
                         'timestamp': None,
                         'datetime': None,
                         'symbol': pair,
@@ -352,19 +359,51 @@ class Blofin(Exchange):
                         'cost': None,
                         'trades': None,
                     }
+                else:
+                    logger.info(f"🔧 Position for {pair} still exists (size: {position_size}), but stoploss order {order_id} not found")
             except Exception as e:
                 logger.debug(f"🔧 Error checking position: {e}")
             
-            # If still not found, raise OrderNotFound
-            logger.info(f"🔧 Stoploss order {order_id} not found on exchange for {pair} - may have been executed or canceled")
-            raise ccxt.OrderNotFound(f"Stoploss order {order_id} not found for {pair}")
+            # If still not found, return a mock 'canceled' order instead of crashing
+            logger.info(f"🔧 Stoploss order {order_id} not found on exchange for {pair} - returning mock canceled order")
+            return {
+                'id': order_id,
+                'info': {'mock': True, 'reason': 'not_found'},
+                'timestamp': None,
+                'datetime': None,
+                'symbol': pair,
+                'type': 'market',
+                'side': 'sell',
+                'amount': None,
+                'price': None,
+                'filled': None,
+                'remaining': 0,
+                'status': 'canceled',  # Mark as canceled instead of raising exception
+                'fee': None,
+                'cost': None,
+                'trades': None,
+            }
             
-        except ccxt.OrderNotFound:
-            # Re-raise OrderNotFound without additional logging to avoid confusion
-            raise
         except Exception as e:
             logger.error(f"🔧 Unexpected error fetching stoploss order {order_id}: {e}")
-            raise
+            # Return a mock 'error' order instead of crashing
+            return {
+                'id': order_id,
+                'info': {'mock': True, 'reason': 'fetch_error', 'error': str(e)},
+                'timestamp': None,
+                'datetime': None,
+                'symbol': pair,
+                'type': 'market',
+                'side': 'sell',
+                'amount': None,
+                'price': None,
+                'filled': None,
+                'remaining': 0,
+                'status': 'canceled',
+                'fee': None,
+                'cost': None,
+                'trades': None,
+            }
             
     def _convert_tpsl_order_to_standard(self, tpsl_order: dict) -> CcxtOrder:
         """
