@@ -96,14 +96,19 @@ class Blofin(Exchange):
             leverage_int = int(round(leverage))
             logger.info("🔧 Converting leverage %s -> %s (integer)", leverage, leverage_int)
             
-            # BloFin might have leverage limits, so clamp to reasonable range
-            leverage_int = max(1, min(leverage_int, 100))  # Assuming max 100x leverage
-            logger.info("🔧 Final leverage value after clamping: %s", leverage_int)
+            # Get margin mode for BloFin API (required parameter)
+            configured_margin_mode = self._config.get("margin_mode", "cross")
+            if configured_margin_mode == "isolated":
+                blofin_margin_mode = "isolated"
+            else:
+                blofin_margin_mode = "cross"
 
-            logger.info("⚖️ Setting leverage for %s to %sx (from %s)", pair, leverage_int, leverage)
-            res = self._api.set_leverage(symbol=pair, leverage=leverage_int)
+            logger.info("⚖️ Setting leverage for %s to %sx with marginMode=%s", pair, leverage_int, blofin_margin_mode)
+            # BloFin API requires marginMode to be passed in params
+            params = {'marginMode': blofin_margin_mode}
+            res = self._api.set_leverage(symbol=pair, leverage=leverage_int, params=params)
             self._log_exchange_response("set_leverage", res)
-            logger.info("🔧 Successfully set leverage for %s to %sx", pair, leverage_int)
+            logger.info("🔧 Successfully set leverage for %s to %sx with marginMode=%s", pair, leverage_int, blofin_margin_mode)
         except ccxt.DDoSProtection as e:
             logger.warning("🔧 Rate limit exceeded when setting leverage for %s", pair)
             raise DDosProtection(e) from e
@@ -118,7 +123,7 @@ class Blofin(Exchange):
             if not accept_fail:
                 raise OperationalException(e) from e
 
-    def _lev_prep(self, pair: str, leverage: float, side: str):
+    def _lev_prep(self, pair: str, leverage: float, side: str, accept_fail: bool = False):
         """
         Leverage preparation for BloFin.
         Ensures leverage is set before trades.
@@ -126,22 +131,15 @@ class Blofin(Exchange):
         if self._config["dry_run"]:
             return
 
-        logger.info("Preparing leverage for %s: %sx, side: %s", pair, leverage, side)
-
-        # Add delay to avoid rate limits
-        time.sleep(0.5)
+        logger.info("🔧 Preparing leverage for %s: %sx, side: %s", pair, leverage, side)
 
         try:
             # Ensure leverage is properly set for this pair
-            self._set_leverage(leverage=leverage, pair=pair, accept_fail=False)
-
-            # Add another small delay to ensure the leverage setting is processed
-            time.sleep(0.2)
-
+            self._set_leverage(leverage=leverage, pair=pair, accept_fail=accept_fail)
         except Exception as e:
-            logger.error("Failed to prepare leverage for %s: %s", pair, e)
-            # Don't fail the trade, but log the issue
-            pass
+            logger.error("🔧 Failed to prepare leverage for %s: %s", pair, e)
+            if not accept_fail:
+                raise
 
     def set_margin_mode(self, pair: str, margin_mode: MarginMode, accept_fail: bool = False):
         """
@@ -173,7 +171,7 @@ class Blofin(Exchange):
             res = self._api.set_margin_mode(symbol=pair, marginMode=blofin_margin_mode)
             self._log_exchange_response("set_margin_mode", res)
             logger.info("🔧 Successfully set margin mode for %s to %s", pair, blofin_margin_mode)
-            
+                        
         except ccxt.DDoSProtection as e:
             logger.warning("🔧 Rate limit exceeded when setting margin mode for %s", pair)
             raise DDosProtection(e) from e
@@ -225,6 +223,42 @@ class Blofin(Exchange):
             logger.warning("🔧 Error fetching margin mode for %s: %s, defaulting to cross", pair, e)
             return MarginMode.CROSS
 
+    def _get_params(
+        self,
+        side: str,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = "GTC",
+    ) -> dict:
+        """
+        Override _get_params to include BloFin-specific parameters like margin mode and leverage.
+        """
+        # Get base parameters from parent
+        params = super()._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
+        
+        # Add BloFin-specific parameters for futures trading
+        if self.trading_mode == TradingMode.FUTURES:
+            # Add margin mode parameter
+            configured_margin_mode = self._config.get("margin_mode", "cross")
+            if configured_margin_mode == "isolated":
+                blofin_margin_mode = "isolated"
+            else:
+                blofin_margin_mode = "cross"
+            
+            params['marginMode'] = blofin_margin_mode
+            logger.info("🛒 Adding marginMode=%s to order parameters", blofin_margin_mode)
+            
+            # # Add leverage parameter if leverage > 1
+            # if leverage and leverage > 1:
+            #     # Ensure leverage is an integer for BloFin
+            #     leverage_int = int(round(leverage))
+            #     leverage_int = max(1, min(leverage_int, 100))  # Clamp to reasonable range
+            #     params['leverage'] = leverage_int
+            #     logger.info("🛒 Adding leverage=%s to order parameters", leverage_int)
+        
+        return params
+
     def create_order(
         self,
         *,
@@ -238,23 +272,13 @@ class Blofin(Exchange):
         time_in_force: str = "GTC",
     ) -> CcxtOrder:
         """
-        Override create_order to ensure leverage and margin mode are set before creating the order.
+        Override create_order to ensure leverage is set before creating the order.
+        Margin mode is automatically included via _get_params() method.
         """
         logger.info(
             f"🛒 create_order called: pair={pair}, side={side}, "
             f"amount={amount}, rate={rate}, leverage={leverage} (type: {type(leverage)})"
         )
-        
-        # Set margin mode if configured
-        if self.trading_mode == TradingMode.FUTURES:
-            configured_margin_mode = self._config.get("margin_mode", "cross")
-            if configured_margin_mode == "isolated":
-                margin_mode = MarginMode.ISOLATED
-            else:
-                margin_mode = MarginMode.CROSS
-            
-            logger.info("🔧 Setting margin mode to %s for %s", margin_mode, pair)
-            self.set_margin_mode(pair=pair, margin_mode=margin_mode, accept_fail=True)
         
         # Ensure leverage is set before creating order
         if leverage and leverage > 1:
@@ -263,7 +287,7 @@ class Blofin(Exchange):
         else:
             logger.info("🛒 No leverage setting needed (leverage=%s)", leverage)
 
-        # Call parent create_order method with exact signature
+        # Call parent create_order method - margin mode will be added via _get_params()
         result = super().create_order(
             pair=pair,
             ordertype=ordertype,
@@ -280,8 +304,8 @@ class Blofin(Exchange):
 
     def get_max_leverage(self, pair: str, stake_amount: float | None) -> float:
         """
-        Override get_max_leverage to return reasonable BloFin limits.
-        BloFin typically supports up to 100x leverage for most pairs.
+        Get maximum leverage for a trading pair from BloFin.
+        Tries to fetch real leverage limits, falls back to conservative defaults.
         """
         logger.info("🔧 get_max_leverage called for pair=%s, stake_amount=%s", pair, stake_amount)
         
@@ -289,12 +313,103 @@ class Blofin(Exchange):
             logger.info("🔧 Not futures mode, returning 1.0")
             return 1.0
         
-        # For BloFin, return a reasonable max leverage
-        # Most exchanges support different max leverage per pair, but for simplicity
-        # we'll return a conservative 50x max leverage for all pairs
-        max_leverage = 50.0
-        logger.info("🔧 Returning max_leverage=%s for %s", max_leverage, pair)
+        # First check if we have leverage tiers loaded
+        if hasattr(self, '_leverage_tiers') and pair in self._leverage_tiers:
+            logger.info("🔧 Using cached leverage tiers for %s", pair)
+            return super().get_max_leverage(pair, stake_amount)
+        
+        # Try to fetch leverage information directly from BloFin
+        try:
+            logger.info("🔧 Attempting to fetch leverage info for %s from BloFin", pair)
+            
+            # Method 1: Try fetchMarketLeverageTiers if supported
+            if self.exchange_has("fetchMarketLeverageTiers"):
+                logger.info("🔧 Fetching market leverage tiers for %s", pair)
+                tiers = self._api.fetch_market_leverage_tiers(pair)
+                if tiers:
+                    # Extract max leverage from tiers
+                    max_leverage = max(tier.get('maxLeverage', 1.0) for tier in tiers)
+                    logger.info("🔧 Found max leverage %s for %s from market tiers", max_leverage, pair)
+                    return float(max_leverage)
+            
+            # Method 2: Try fetchLeverageTiers if supported
+            if self.exchange_has("fetchLeverageTiers"):
+                logger.info("🔧 Fetching all leverage tiers from BloFin")
+                all_tiers = self._api.fetch_leverage_tiers()
+                if pair in all_tiers:
+                    pair_tiers = all_tiers[pair]
+                    max_leverage = max(tier.get('maxLeverage', 1.0) for tier in pair_tiers)
+                    logger.info("🔧 Found max leverage %s for %s from leverage tiers", max_leverage, pair)
+                    return float(max_leverage)
+            
+            # Method 3: Check market limits
+            if pair in self.markets:
+                market = self.markets[pair]
+                if 'limits' in market and 'leverage' in market['limits']:
+                    leverage_limit = market['limits']['leverage']
+                    if leverage_limit and 'max' in leverage_limit and leverage_limit['max']:
+                        max_leverage = float(leverage_limit['max'])
+                        logger.info("🔧 Found max leverage %s for %s from market limits", max_leverage, pair)
+                        return max_leverage
+            
+            # Method 4: Try to get from market info
+            if pair in self.markets:
+                market = self.markets[pair]
+                if 'info' in market and market['info']:
+                    market_info = market['info']
+                    # Look for common leverage fields in market info
+                    for field in ['maxLeverage', 'max_leverage', 'leverageMax', 'leverage_max']:
+                        if field in market_info and market_info[field]:
+                            max_leverage = float(market_info[field])
+                            logger.info("🔧 Found max leverage %s for %s from market info field %s", 
+                                       max_leverage, pair, field)
+                            return max_leverage
+                            
+        except Exception as e:
+            logger.warning("🔧 Failed to fetch leverage info for %s: %s", pair, e)
+        
+        # Fallback: Return reasonable defaults based on pair type
+        if pair in self.markets:
+            market = self.markets[pair]
+            base_currency = market.get('base', '').upper()
+            
+            # Higher leverage for major pairs, lower for altcoins
+            if base_currency in ['BTC', 'ETH', 'BNB']:
+                max_leverage = 100.0
+                logger.info("🔧 Using major pair default leverage %s for %s", max_leverage, pair)
+            elif base_currency in ['ADA', 'SOL', 'AVAX', 'MATIC', 'DOT', 'LINK']:
+                max_leverage = 75.0
+                logger.info("🔧 Using popular altcoin default leverage %s for %s", max_leverage, pair)
+            else:
+                max_leverage = 50.0
+                logger.info("🔧 Using conservative default leverage %s for %s", max_leverage, pair)
+        else:
+            max_leverage = 20.0
+            logger.info("🔧 Using ultra-conservative default leverage %s for unknown pair %s", max_leverage, pair)
+        
         return max_leverage
+
+    def load_leverage_tiers(self) -> dict[str, list[dict]]:
+        """
+        Load leverage tiers from BloFin if supported.
+        """
+        if self.trading_mode != TradingMode.FUTURES:
+            return {}
+            
+        logger.info("🔧 Loading leverage tiers from BloFin")
+        
+        try:
+            # Try to use parent implementation first
+            if self.exchange_has("fetchLeverageTiers") or self.exchange_has("fetchMarketLeverageTiers"):
+                logger.info("🔧 BloFin supports leverage tiers, using parent implementation")
+                return super().load_leverage_tiers()
+            else:
+                logger.info("🔧 BloFin doesn't support leverage tiers API, returning empty dict")
+                return {}
+                
+        except Exception as e:
+            logger.warning("🔧 Failed to load leverage tiers from BloFin: %s", e)
+            return {}
 
     def dry_run_liquidation_price(
         self,
