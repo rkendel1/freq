@@ -220,24 +220,152 @@ class Blofin(Exchange):
         """
         return None
 
+    def fetch_funding_rates(self, symbols: list[str] | None = None) -> dict[str, dict[str, float]]:
+        """
+        Fetch funding rates for the given symbols.
+        :param symbols: List of symbols to fetch funding rates for
+        :return: Dict of funding rates for the given symbols
+        """
+        logger.info(f"🔧 fetch_funding_rates called for symbols: {symbols}")
+        
+        try:
+            if self.trading_mode != TradingMode.FUTURES:
+                logger.info("🔧 Not futures mode, returning empty funding rates")
+                return {}
+            
+            if symbols is None:
+                # If no symbols specified, use all available pairs
+                symbols = list(self.markets.keys())
+                logger.info(f"🔧 Using all available symbols: {len(symbols)} pairs")
+            
+            # Blofin supports fetchFundingRate but not fetchFundingRates (plural)
+            # So we need to fetch each symbol individually
+            funding_rates = {}
+            
+            for symbol in symbols:
+                try:
+                    logger.info(f"🔧 Fetching funding rate for {symbol}")
+                    rate_data = self._api.fetch_funding_rate(symbol)
+                    
+                    if rate_data:
+                        funding_rates[symbol] = {
+                            'fundingRate': rate_data.get('fundingRate', 0.0),
+                            'fundingTimestamp': rate_data.get('fundingTimestamp'),
+                            'nextFundingTime': rate_data.get('nextFundingTime'),
+                            'info': rate_data.get('info', {})
+                        }
+                        logger.info(f"🔧 Got funding rate for {symbol}: {rate_data.get('fundingRate', 0.0)}")
+                    else:
+                        logger.warning(f"🔧 No funding rate data for {symbol}")
+                        
+                except ccxt.BaseError as e:
+                    logger.warning(f"🔧 Failed to fetch funding rate for {symbol}: {e}")
+                    continue
+            
+            logger.info(f"🔧 Successfully fetched funding rates for {len(funding_rates)} symbols")
+            return funding_rates
+            
+        except ccxt.DDoSProtection as e:
+            logger.warning("🔧 Rate limit exceeded when fetching funding rates")
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            logger.error(f"🔧 Exchange error fetching funding rates: {e}")
+            raise TemporaryError(
+                f"Error fetching funding rates due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            logger.error(f"🔧 Unexpected error fetching funding rates: {e}")
+            raise OperationalException(e) from e
+
     def _get_funding_fees_from_exchange(
         self, pair: str, since: int | None
     ) -> list[dict[str, Any]]:
         """
-        Fetch funding fees from exchange.
-        Blofin might not support funding fee history - return empty list for now.
+        Fetch funding fees from exchange using fetchFundingHistory.
+        Blofin supports fetchFundingHistory so we can use it directly.
         """
-        # Return empty list - freqtrade will handle this gracefully
-        # This prevents the TypeError when trying to add int + list
-        return []
+        logger.info(f"🔧 _get_funding_fees_from_exchange called for {pair}, since: {since}")
+        
+        try:
+            if not self.exchange_has("fetchFundingHistory"):
+                logger.warning("🔧 Exchange doesn't support fetchFundingHistory")
+                return []
+            
+            # Use CCXT's fetchFundingHistory method
+            funding_history = self._api.fetch_funding_history(symbol=pair, since=since)
+            
+            if funding_history:
+                logger.info(f"🔧 Found {len(funding_history)} funding history entries for {pair}")
+                return funding_history
+            else:
+                logger.info(f"🔧 No funding history found for {pair}")
+                return []
+                
+        except ccxt.BaseError as e:
+            logger.warning(f"🔧 Error fetching funding history for {pair}: {e}")
+            # Return empty list to fallback to calculation method
+            return []
 
     def get_funding_fees(
         self, pair: str, amount: float, is_short: bool, open_date: datetime
     ) -> float:
         """
         Calculate funding fees for a position.
-        Override this to provide proper funding fee calculation or return 0.0 if not supported.
+        Enhanced to use funding rate history when funding history is not available.
         """
-        # For now, return 0.0 to avoid funding fee calculation errors
-        # This can be implemented later with proper blofin funding fee logic
-        return 0.0
+        logger.info(f"🔧 get_funding_fees called for {pair}, amount: {amount}, is_short: {is_short}")
+        
+        try:
+            # Try to get funding fees from exchange first
+            since_timestamp = int(open_date.timestamp() * 1000)  # Convert to milliseconds
+            funding_history = self._get_funding_fees_from_exchange(pair, since_timestamp)
+            
+            if funding_history:
+                # Calculate actual funding fees from exchange data
+                total_funding = 0.0
+                for entry in funding_history:
+                    funding_amount = entry.get('amount', 0.0)
+                    if funding_amount:
+                        total_funding += funding_amount
+                
+                logger.info(f"🔧 Calculated funding fees from exchange: {total_funding}")
+                return total_funding
+            else:
+                # Fallback to calculation using funding rate history
+                logger.info(f"🔧 Funding history not available, trying funding rate history...")
+                try:
+                    # Use fetchFundingRateHistory which blofin supports
+                    rate_history = self._api.fetch_funding_rate_history(pair, since=since_timestamp, limit=100)
+                    
+                    if rate_history:
+                        logger.info(f"🔧 Found {len(rate_history)} funding rate entries for calculation")
+                        
+                        # Calculate funding fees from rate history
+                        total_funding = 0.0
+                        position_notional = amount  # Assuming amount is in quote currency (USDT)
+                        
+                        for rate_entry in rate_history:
+                            funding_rate = rate_entry.get('fundingRate', 0.0)
+                            if funding_rate:
+                                # Funding fee = position_notional * funding_rate
+                                # Long positions pay when funding rate is positive
+                                # Short positions receive when funding rate is positive
+                                fee = position_notional * funding_rate
+                                if is_short:
+                                    fee = -fee  # Short positions have opposite fee direction
+                                total_funding += fee
+                                
+                        logger.info(f"🔧 Calculated funding fees from rate history: {total_funding}")
+                        return total_funding
+                    else:
+                        logger.info(f"🔧 No funding rate history available either")
+                        return 0.0
+                        
+                except ccxt.BaseError as e:
+                    logger.warning(f"🔧 Error fetching funding rate history: {e}")
+                    return 0.0
+                
+        except Exception as e:
+            logger.warning(f"🔧 Error calculating funding fees for {pair}: {e}")
+            # Fallback to 0.0 to avoid breaking trades
+            return 0.0
