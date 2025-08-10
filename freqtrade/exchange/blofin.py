@@ -404,6 +404,31 @@ class Blofin(Exchange):
                 'cost': None,
                 'trades': None,
             }
+
+    def sync_trade_amount_from_position(self, pair: str) -> float | None:
+        """
+        Sync trade amount from actual exchange position.
+        This is useful when freqtrade's trade amount gets out of sync with the actual position.
+        """
+        try:
+            positions = self.fetch_positions([pair])
+            position = next((p for p in positions if p['symbol'] == pair), None)
+            
+            if position:
+                position_size = abs(float(position.get('contracts', 0))) if position.get('contracts') else 0
+                if position_size > 0:
+                    logger.info(f"🔧 Found position for {pair}: {position_size} contracts at entry {position.get('entryPrice')}")
+                    return position_size
+                else:
+                    logger.info(f"🔧 No open position found for {pair}")
+                    return 0.0
+            else:
+                logger.info(f"🔧 No position data found for {pair}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"🔧 Error syncing trade amount from position for {pair}: {e}")
+            return None
             
     def _convert_tpsl_order_to_standard(self, tpsl_order: dict) -> CcxtOrder:
         """
