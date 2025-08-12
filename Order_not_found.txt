@@ -1,0 +1,121 @@
+-08-12 22:18:24,160 - freqtrade.strategy.hyper - INFO - Strategy Parameter(default): mml_const2 = 0.99875
+2025-08-12 22:18:24,161 - freqtrade.strategy.hyper - INFO - No params for sell found, using default values.
+2025-08-12 22:18:24,161 - freqtrade.strategy.hyper - INFO - Strategy Parameter(default): sell_umacd_max = 0.011
+2025-08-12 22:18:24,162 - freqtrade.strategy.hyper - INFO - Strategy Parameter(default): sell_umacd_min = 0.0011
+2025-08-12 22:18:24,162 - freqtrade.strategy.hyper - INFO - No params for protection found, using default values.
+2025-08-12 22:18:24,163 - freqtrade.plugins.protectionmanager - INFO - No protection Handlers defined.
+2025-08-12 22:18:24,164 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': status, 'status': 'running'}
+2025-08-12 22:18:24,164 - freqtrade.worker - INFO - Changing state to: RUNNING
+2025-08-12 22:18:24,178 - freqtrade.rpc.telegram - INFO - rpc.telegram is listening for following commands: [['status'], ['profit'], ['balance'], ['start'], ['stop'], ['forceexit', 'forcesell', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], ['reload_trade'], ['trades'], ['delete'], ['cancel_open_order', 'coo'], ['performance'], ['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], ['stats'], ['daily'], ['weekly'], ['monthly'], ['count'], ['locks'], ['delete_locks', 'unlock'], ['reload_conf', 'reload_config'], ['show_conf', 'show_config'], ['pause', 'stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], ['bl_delete', 'blacklist_delete'], ['logs'], ['health'], ['help'], ['version'], ['marketdir'], ['order'], ['list_custom_data'], ['tg_info'], ['profit_long'], ['profit_short']]
+2025-08-12 22:18:24,185 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': startup, 'status': "*Exchange:* `blofin`\n*Stake per trade:* `70 USDT`\n*Minimum ROI:* `{'0': 0.5, '60': 0.45, '120': 0.4, '240': 0.3, '360': 0.25, '720': 0.2, '1440': 0.15, '2880': 0.1, '3600': 0.05, '7200': 0.02}`\n*Stoploss:* `-1`\n*Position adjustment:* `On`\n*Timeframe:* `3m`\n*Strategy:* `Yolo_Live_NG`"}
+2025-08-12 22:18:24,186 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': startup, 'status': "Searching for USDT pairs to buy and sell based on [{'StaticPairList': 'StaticPairList'}]"}
+2025-08-12 22:18:24,202 - freqtrade.persistence.trade_model - INFO - Found open trade: Trade(id=23, pair=SUI/USDT:USDT, amount=446.00000000, is_short=False, leverage=2.0, open_rate=3.90970000, open_since=2025-08-11 04:19:04)
+2025-08-12 22:18:24,205 - freqtrade.freqtradebot - INFO - Updating 1 open orders.
+2025-08-12 22:18:24,221 - telegram.ext.Application - INFO - Application started
+2025-08-12 22:18:24,901 - freqtrade.exchange.blofin - INFO - 🔧 Order 2000030696516 found in closed orders...{'info': {'orderId': '2000030696516', 'clientOrderId': '', 'instId': 'SUI-USDT', 'marginMode': 'isolated', 'positionSide': 'net', 'side': 'sell', 'orderType': 'market', 'price': '0', 'size': '446.000000000000000000', 'reduceOnly': 'true', 'leverage': '2', 'state': 'filled', 'filledSize': '446.000000000000000000', 'pnl': '4.667', 'averagePrice': '3.9202', 'fee': '1.04904552', 'createTime': '1755029893884', 'updateTime': '1755029893930', 'orderCategory': 'normal', 'tpTriggerPrice': None, 'tpOrderPrice': None, 'slTriggerPrice': None, 'slOrderPrice': None, 'cancelSource': 'not_canceled', 'cancelSourceReason': '', 'brokerId': 'ec6dd3a7dd982d0b', 'algoClientOrderId': '', 'algoId': ''}, 'id': '2000030696516', 'clientOrderId': None, 'timestamp': 1755029893884, 'datetime': '2025-08-12T20:18:13.884Z', 'lastTradeTimestamp': None, 'lastUpdateTimestamp': 1755029893930, 'symbol': 'SUI/USDT:USDT', 'type': 'market', 'timeInForce': 'IOC', 'postOnly': None, 'side': 'sell', 'price': 3.9202, 'stopLossTriggerPrice': None, 'takeProfitTriggerPrice': None, 'stopLossPrice': None, 'takeProfitPrice': None, 'average': 3.9202, 'cost': 874.2046, 'amount': 446.0, 'filled': 446.0, 'remaining': 0.0, 'status': 'closed', 'fee': {'cost': 1.04904552, 'currency': 'USDT'}, 'trades': [], 'reduceOnly': True, 'fees': [{'cost': 1.04904552, 'currency': 'USDT'}], 'stopPrice': None, 'triggerPrice': None}
+2025-08-12 22:18:24,902 - freqtrade.exchange.blofin - INFO - 🔧 Order 2000030696516 after normalization: amount=446.0, filled=446.0, remaining=0.0
+2025-08-12 22:18:24,903 - freqtrade.exchange.blofin - INFO - 🔧 Order 2000030696516 after contracts conversion: amount=446.0, filled=446.0, remaining=0.0
+2025-08-12 22:18:24,904 - freqtrade.freqtradebot - INFO - Found open order for Trade(id=23, pair=SUI/USDT:USDT, amount=446.00000000, is_short=False, leverage=2.0, open_rate=3.90970000, open_since=2025-08-11 04:19:04)
+2025-08-12 22:18:24,920 - freqtrade.freqtradebot - INFO - Fee for Trade Trade(id=23, pair=SUI/USDT:USDT, amount=446.00000000, is_short=False, leverage=2.0, open_rate=3.90970000, open_since=2025-08-11 04:19:04) [sell]: 1.0490455 USDT - rate: 0.0012
+2025-08-12 22:18:24,921 - freqtrade.persistence.trade_model - INFO - Updating trade (id=23) ...
+2025-08-12 22:18:24,921 - freqtrade.persistence.trade_model - INFO - MARKET_SELL has been fulfilled for Trade(id=23, pair=SUI/USDT:USDT, amount=446.00000000, is_short=False, leverage=2.0, open_rate=3.90970000, open_since=2025-08-11 04:19:04).
+2025-08-12 22:18:24,923 - freqtrade.persistence.trade_model - INFO - Marking Trade(id=23, pair=SUI/USDT:USDT, amount=446.00000000, is_short=False, leverage=2.0, open_rate=3.90970000, open_since=closed) as closed as the trade is fulfilled and found no open orders for it.
+2025-08-12 22:18:26,250 - freqtrade.wallets - INFO - Wallets synced.
+2025-08-12 22:18:26,253 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': exit_fill, 'trade_id': 23, 'exchange': 'Blofin', 'pair': 'SUI/USDT:USDT', 'leverage': 2.0, 'direction': 'Long', 'gain': 'loss', 'limit': 3.9202, 'order_rate': 3.9202, 'order_type': 'market', 'amount': 446.0, 'open_rate': 3.9097, 'close_rate': 3.9202, 'current_rate': None, 'profit_amount': -0.65550154, 'profit_ratio': -0.00075139, 'buy_tag': 'long_yolo', 'enter_tag': 'long_yolo', 'exit_reason': 'MML_Resistance_Exit', 'open_date': datetime.datetime(2025, 8, 11, 4, 19, 4, 121046, tzinfo=datetime.timezone.utc), 'close_date': datetime.datetime(2025, 8, 12, 20, 18, 24, 904000, tzinfo=datetime.timezone.utc), 'stake_amount': 871.8711, 'stake_currency': 'USDT', 'base_currency': 'SUI', 'quote_currency': 'USDT', 'fiat_currency': 'EUR', 'sub_trade': False, 'cumulative_profit': -0.67151114, 'final_profit_ratio': -0.0007697335935496096, 'is_final_exit': True}
+2025-08-12 22:18:27,445 - freqtrade.freqtradebot - INFO - Pair SUI/USDT:USDT long is locked until 2025-08-12 20:21:00 due to Auto lock.
+2025-08-12 22:18:31,318 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:18:31,324 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029910348, 2025-08-12T20:18:00, 2025-08-12T20:18:30 
+2025-08-12 22:18:36,325 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029915346, 2025-08-12T20:18:00, 2025-08-12T20:18:35 
+2025-08-12 22:18:38,681 - uvicorn.error - INFO - 192.168.2.174:49436 - "WebSocket /api/v1/message/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6eyJ1Ijoicm9uIn0sImV4cCI6MTc1NTAzMDI3OCwiaWF0IjoxNzU1MDI5Mzc4LCJ0eXBlIjoiYWNjZXNzIn0.BpmQuBm8OrAdgSxZRdsvZ1TW9H5vs-kKWV1LvCeDibU" [accepted]
+2025-08-12 22:18:38,689 - freqtrade.rpc.api_server.ws.channel - INFO - Connected to channel - WebSocketChannel(31eac6ec, ('192.168.2.174', 49436))
+2025-08-12 22:18:38,691 - uvicorn.error - INFO - connection open
+2025-08-12 22:18:41,326 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029921308, 2025-08-12T20:18:00, 2025-08-12T20:18:41 
+2025-08-12 22:18:46,327 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029925337, 2025-08-12T20:18:00, 2025-08-12T20:18:45 
+2025-08-12 22:18:51,328 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029931256, 2025-08-12T20:18:00, 2025-08-12T20:18:51 
+2025-08-12 22:18:56,329 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029935387, 2025-08-12T20:18:00, 2025-08-12T20:18:55 
+2025-08-12 22:19:01,334 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029940334, 2025-08-12T20:18:00, 2025-08-12T20:19:00 
+2025-08-12 22:19:06,330 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for SUI/USDT:USDT, 3m, falling back to REST api. True, 1755029880000, 1755029946299, 2025-08-12T20:18:00, 2025-08-12T20:19:06 
+2025-08-12 22:19:31,329 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:19:41,298 - uvicorn.error - INFO - 192.168.2.139:59108 - "WebSocket /api/v1/message/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6eyJ1Ijoicm9uIn0sImV4cCI6MTc1NDk1NDc2OSwiaWF0IjoxNzU0OTUzODY5LCJ0eXBlIjoiYWNjZXNzIn0.UVNQq5CtlqaMBSUuTL5bjdqicoy_sAjSNZ1BLz2EX9A" 403
+2025-08-12 22:19:41,299 - uvicorn.error - INFO - connection rejected (403 Forbidden)
+2025-08-12 22:19:41,300 - uvicorn.error - INFO - connection closed
+2025-08-12 22:19:53,299 - uvicorn.error - INFO - 192.168.2.139:59261 - "WebSocket /api/v1/message/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6eyJ1Ijoicm9uIn0sImV4cCI6MTc1NTAzMDg2NywiaWF0IjoxNzU1MDI5OTY3LCJ0eXBlIjoiYWNjZXNzIn0.2w7HIPlUvZsnvHlerewRNMGF6E8Mxt8HK9Xa7CoHn-w" [accepted]
+2025-08-12 22:19:53,300 - freqtrade.rpc.api_server.ws.channel - INFO - Connected to channel - WebSocketChannel(025be288, ('192.168.2.139', 59261))
+2025-08-12 22:19:53,301 - uvicorn.error - INFO - connection open
+2025-08-12 22:20:31,335 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:21:36,005 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:22:36,020 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:23:36,023 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:24:41,003 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:25:41,010 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:26:41,013 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:27:46,006 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:28:46,009 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:29:46,020 - freqtrade.worker - INFO - Bot heartbeat. PID=330748, version='2025.8-dev-2fb962fc9', state='RUNNING'
+2025-08-12 22:30:02,627 - freqtrade.wallets - INFO - Wallets synced.
+2025-08-12 22:30:02,923 - freqtrade.exchange.blofin - INFO - 🔧 Found max leverage 50.0 for SUI/USDT:USDT from market tiers
+2025-08-12 22:30:02,938 - freqtrade.freqtradebot - INFO - Long signal found: about create a new trade for SUI/USDT:USDT with stake_amount: 70 and price: 3.9098 ...
+2025-08-12 22:30:02,942 - freqtrade.exchange.blofin - INFO - 🛒 create_order called: pair=SUI/USDT:USDT, side=buy, amount=89.51864545501047, rate=3.9098, leverage=5.0 (type: <class 'float'>) margin_mode=isolated
+2025-08-12 22:30:02,943 - freqtrade.exchange.blofin - INFO - 🛒 Adding marginMode=isolated to order parameters
+2025-08-12 22:30:02,944 - freqtrade.exchange.blofin - INFO - 🔧 Setting margin mode for SUI/USDT:USDT to isolated
+2025-08-12 22:30:03,276 - freqtrade.exchange.blofin - INFO - 🔧 Successfully set margin mode for SUI/USDT:USDT to isolated
+2025-08-12 22:30:03,277 - freqtrade.exchange.blofin - INFO - ⚖️ Setting leverage for SUI/USDT:USDT to 5x with marginMode=isolated
+2025-08-12 22:30:03,620 - freqtrade.exchange.blofin - INFO - 🔧 Successfully set leverage for SUI/USDT:USDT to 5x with marginMode=isolated
+2025-08-12 22:30:03,926 - freqtrade.exchange.blofin - INFO - 🛒 Order created successfully: 2000030698014
+2025-08-12 22:30:03,927 - freqtrade.freqtradebot - INFO - Order 2000030698014 was created for SUI/USDT:USDT and status is open.
+2025-08-12 22:30:03,927 - freqtrade.exchange.blofin - INFO - 🔧 get_funding_fees called for SUI/USDT:USDT, amount: 89.51864545501047, is_short: False
+2025-08-12 22:30:04,231 - freqtrade.exchange.blofin - WARNING - 🔧 No funding rate history found for SUI/USDT:USDT
+2025-08-12 22:30:04,906 - freqtrade.wallets - INFO - Wallets synced.
+2025-08-12 22:30:04,908 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'trade_id': 24, 'type': entry, 'buy_tag': 'long_yolo', 'enter_tag': 'long_yolo', 'exchange': 'Blofin', 'pair': 'SUI/USDT:USDT', 'leverage': 5.0, 'direction': 'Long', 'limit': 3.9098, 'order_rate': 3.9098, 'open_rate': 3.9098, 'order_type': 'limit', 'stake_amount': 70.0, 'stake_currency': 'USDT', 'base_currency': 'SUI', 'quote_currency': 'USDT', 'fiat_currency': 'EUR', 'amount': 89.51864545501047, 'open_date': datetime.datetime(2025, 8, 12, 20, 30, 3, 927744, tzinfo=datetime.timezone.utc), 'current_rate': 3.9098, 'sub_trade': False}
+2025-08-12 22:30:06,696 - freqtrade.exchange.blofin - ERROR - Error fetching order 2000030698014 for SUI/USDT:USDT: Order 2000030698014 not found for SUI/USDT:USDT
+2025-08-12 22:30:06,697 - freqtrade.commands.trade_commands - INFO - worker found ... calling exit
+2025-08-12 22:30:06,697 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': status, 'status': 'process died'}
+2025-08-12 22:30:06,698 - freqtrade.freqtradebot - INFO - Cleaning up modules ...
+2025-08-12 22:30:06,701 - freqtrade.rpc.rpc_manager - INFO - Sending rpc message: {'type': warning, 'status': "1 open trades active.\n\nHandle these trades manually on BloFin, or '/start' the bot again and use '/stopentry' to handle open trades gracefully. \n"}
+2025-08-12 22:30:06,702 - freqtrade.rpc.rpc_manager - INFO - Cleaning up rpc modules ...
+2025-08-12 22:30:06,704 - freqtrade.rpc.rpc_manager - INFO - Cleaning up rpc.apiserver ...
+2025-08-12 22:30:06,705 - freqtrade.rpc.api_server.webserver - INFO - Stopping API Server
+2025-08-12 22:30:06,777 - uvicorn.error - INFO - Shutting down
+2025-08-12 22:30:06,779 - uvicorn.error - INFO - connection closed
+2025-08-12 22:30:06,780 - uvicorn.error - INFO - connection closed
+2025-08-12 22:30:06,781 - freqtrade.rpc.api_server.ws.channel - INFO - Disconnected from channel - WebSocketChannel(31eac6ec, ('192.168.2.174', 49436))
+2025-08-12 22:30:06,782 - freqtrade.rpc.api_server.ws.channel - INFO - Disconnected from channel - WebSocketChannel(025be288, ('192.168.2.139', 59261))
+2025-08-12 22:30:06,879 - uvicorn.error - INFO - Waiting for application shutdown.
+2025-08-12 22:30:06,880 - uvicorn.error - INFO - Application shutdown complete.
+2025-08-12 22:30:06,880 - uvicorn.error - INFO - Finished server process [330748]
+2025-08-12 22:30:06,881 - freqtrade.rpc.rpc_manager - INFO - Cleaning up rpc.telegram ...
+2025-08-12 22:30:09,909 - telegram.ext.Application - INFO - Application is stopping. This might take a moment.
+2025-08-12 22:30:09,910 - telegram.ext.Application - INFO - Application.stop() complete
+2025-08-12 22:30:14,827 - freqtrade.exchange.exchange_ws - INFO - Resetting WS connections.
+2025-08-12 22:30:14,829 - freqtrade.exchange.exchange_ws - INFO - SUI/USDT:USDT, 3m, futures - Task finished - cancelled
+2025-08-12 22:30:15,682 - freqtrade - ERROR - Fatal exception!
+Traceback (most recent call last):
+  File "/home/ron/development/freqtrade/freqtrade/main.py", line 47, in main
+    return_code = args["func"](args)
+                  ^^^^^^^^^^^^^^^^^^
+  File "/home/ron/development/freqtrade/freqtrade/commands/trade_commands.py", line 25, in start_trading
+    worker.run()
+  File "/home/ron/development/freqtrade/freqtrade/worker.py", line 79, in run
+    state = self._worker(old_state=state)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ron/development/freqtrade/freqtrade/worker.py", line 124, in _worker
+    self._throttle(
+  File "/home/ron/development/freqtrade/freqtrade/worker.py", line 165, in _throttle
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ron/development/freqtrade/freqtrade/worker.py", line 199, in _process_running
+    self.freqtrade.process()
+  File "/home/ron/development/freqtrade/freqtrade/freqtradebot.py", line 279, in process
+    self.manage_open_orders()
+  File "/home/ron/development/freqtrade/freqtrade/freqtradebot.py", line 1576, in manage_open_orders
+    order = self.exchange.fetch_order(open_order.order_id, trade.pair)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ron/development/freqtrade/freqtrade/exchange/common.py", line 172, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ron/development/freqtrade/freqtrade/exchange/blofin.py", line 253, in fetch_order
+    raise ccxt.OrderNotFound(f"Order {order_id} not found for {pair}")
+ccxt.base.errors.OrderNotFound: Order 2000030698014 not found for SUI/USDT:USDT
+2025-08-12 22:30:18,319 - freqtrade.loggers - INFO - Enabling colorized output.
+2025-08-12 22:30:18,320 - freqtrade.loggers - INFO - Logfile configured
+2025-08-12 22:30:18,320 - freqtrade.loggers - INFO - Verbosity set to 0
