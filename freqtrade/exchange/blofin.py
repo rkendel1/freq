@@ -43,7 +43,7 @@ class Blofin(Exchange):
         "floor_leverage": True,
         # "fetch_orders_limit_minutes": 7 * 1440,  # "fetch_orders" is limited to 7 days
         # "stop_price_type_field": "workingType",
-        "order_props_in_contracts": ["amount", "cost", "filled", "remaining"],
+        "order_props_in_contracts": ["amount", "filled", "remaining"],  # Removed "cost" to fix PnL calculation
         # "stop_price_type_value_mapping": {
         #     PriceType.LAST: "CONTRACT_PRICE",
         #     PriceType.MARK: "MARK_PRICE",
