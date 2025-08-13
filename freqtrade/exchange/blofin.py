@@ -43,7 +43,7 @@ class Blofin(Exchange):
         "floor_leverage": True,
         # "fetch_orders_limit_minutes": 7 * 1440,  # "fetch_orders" is limited to 7 days
         # "stop_price_type_field": "workingType",
-        "order_props_in_contracts": ["amount", "filled", "remaining"],  # Removed "cost" to fix PnL calculation
+        # Removing order_props_in_contracts entirely to let Freqtrade handle amounts as-is
         # "stop_price_type_value_mapping": {
         #     PriceType.LAST: "CONTRACT_PRICE",
         #     PriceType.MARK: "MARK_PRICE",
@@ -243,7 +243,6 @@ class Blofin(Exchange):
                 if found_order:
                     logger.info(f"🔧 Order {order_id} found in open orders (attempt {attempt + 1})")
                     norm = _normalize_order(found_order)
-                    norm = self._order_contracts_to_amount(norm)
                     return norm
 
                 # Search in closed orders
@@ -252,7 +251,6 @@ class Blofin(Exchange):
                 if found_order:
                     logger.info(f"🔧 Order {order_id} found in closed orders (attempt {attempt + 1})")
                     norm = _normalize_order(found_order)
-                    norm = self._order_contracts_to_amount(norm)
                     return norm
 
                 # If not found and not the last attempt, wait before retrying
