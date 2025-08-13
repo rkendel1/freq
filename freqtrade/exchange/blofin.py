@@ -300,6 +300,10 @@ class Blofin(Exchange):
         Fetch funding rate history for a symbol.
         This method uses CCXT's fetchFundingRateHistory which works reliably for BloFin.
         """
+
+        #FIXME
+        self.sync_trade_amount_from_position(pair=symbol)
+
         logger.debug("🔧 fetch_funding_rate_history called for %s, since: %s, limit: %s", symbol, since, limit)
         
         try:
@@ -331,14 +335,8 @@ class Blofin(Exchange):
         # Add BloFin-specific parameters for futures trading
         if self.trading_mode == TradingMode.FUTURES:
             # Add margin mode parameter
-            configured_margin_mode = self._config.get("margin_mode", "cross")
-            if configured_margin_mode == "isolated":
-                blofin_margin_mode = "isolated"
-            else:
-                blofin_margin_mode = "cross"
-            
-            params['marginMode'] = blofin_margin_mode
-            logger.info("🛒 Adding marginMode=%s to order parameters", blofin_margin_mode)
+            params['marginMode'] = self.margin_mode
+            logger.info("🛒 Adding marginMode=%s to order parameters", self.margin_mode)
         
         return params
 
