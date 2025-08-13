@@ -196,7 +196,9 @@ class Blofin(Exchange):
             """Normalize BloFin order fields to CCXT standard format."""
             # Field mappings: BloFin -> CCXT standard
             order['amount'] = float(order.get('amount') or order.get('size') or 0)
-            order['filled'] = float(order.get('filled') or order.get('filledSize') or order.get('dealSize') or 0)
+            filled_value = (order.get('filled') or order.get('filledSize') or 
+                          order.get('dealSize') or 0)
+            order['filled'] = float(filled_value)
             
             # Calculate remaining if not provided
             if order.get('remaining') is not None:
@@ -206,8 +208,6 @@ class Blofin(Exchange):
                     order['remaining'] = 0.0
             else:
                 order['remaining'] = max(0.0, order['amount'] - order['filled'])
-
-            # order['cost'] = float(order.get('amount', 0) * order.get('averagePrice', 0))
 
             # Status normalization
             status_map = {
@@ -226,35 +226,73 @@ class Blofin(Exchange):
             order.setdefault('symbol', pair)
             return order
 
-        try:
-            # First try to find in open orders
-            open_orders = self._api.fetch_open_orders(pair, params=params)
-            for order in open_orders:
-                if order['id'] == order_id:
-                    logger.info(f"🔧 Order {order_id} found in open orders...{order}")
-                    norm = _normalize_order(order)
-                    logger.info(f"🔧 Order {order_id} after normalization: amount={norm.get('amount')}, filled={norm.get('filled')}, remaining={norm.get('remaining')}")
+        def _search_orders(order_list, search_id):
+            """Search for order in a list of orders."""
+            for order in order_list:
+                if order['id'] == search_id:
+                    return order
+            return None
+
+        # Try multiple times with delays for better reliability
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                # Search in open orders first
+                open_orders = self._api.fetch_open_orders(pair, params=params)
+                found_order = _search_orders(open_orders, order_id)
+                if found_order:
+                    logger.info(f"🔧 Order {order_id} found in open orders (attempt {attempt + 1})")
+                    norm = _normalize_order(found_order)
                     norm = self._order_contracts_to_amount(norm)
-                    logger.info(f"🔧 Order {order_id} after contracts conversion: amount={norm.get('amount')}, filled={norm.get('filled')}, remaining={norm.get('remaining')}")
                     return norm
 
-            # If not found in open orders, try closed orders
-            closed_orders = self._api.fetch_closed_orders(pair, params=params)
-            for order in closed_orders:
-                if order['id'] == order_id:
-                    logger.info(f"🔧 Order {order_id} found in closed orders...{order}")
-                    norm = _normalize_order(order)
-                    logger.info(f"🔧 Order {order_id} after normalization: amount={norm.get('amount')}, filled={norm.get('filled')}, remaining={norm.get('remaining')}")
+                # Search in closed orders
+                closed_orders = self._api.fetch_closed_orders(pair, params=params)
+                found_order = _search_orders(closed_orders, order_id)
+                if found_order:
+                    logger.info(f"🔧 Order {order_id} found in closed orders (attempt {attempt + 1})")
+                    norm = _normalize_order(found_order)
                     norm = self._order_contracts_to_amount(norm)
-                    logger.info(f"🔧 Order {order_id} after contracts conversion: amount={norm.get('amount')}, filled={norm.get('filled')}, remaining={norm.get('remaining')}")
                     return norm
 
-            # If still not found, raise an error
-            raise ccxt.OrderNotFound(f"Order {order_id} not found for {pair}")
+                # If not found and not the last attempt, wait before retrying
+                if attempt < max_attempts - 1:
+                    logger.warning(f"🔧 Order {order_id} not found, retrying in {attempt + 1}s...")
+                    import time
+                    time.sleep(attempt + 1)  # Progressive delay: 1s, 2s
+                    
+            except ccxt.BaseError as e:
+                if attempt < max_attempts - 1:
+                    logger.warning(f"🔧 Error fetching order {order_id}: {e}, retrying...")
+                    import time
+                    time.sleep(attempt + 1)
+                    continue
+                else:
+                    logger.error("Error fetching order %s for %s: %s", order_id, pair, e)
+                    raise
 
-        except ccxt.BaseError as e:
-            logger.error("Error fetching order %s for %s: %s", order_id, pair, e)
-            raise
+        # Create synthetic closed order if not found after all attempts
+        logger.warning(f"🔧 Order {order_id} not found after {max_attempts} attempts, "
+                      "returning synthetic closed order")
+        
+        return {
+            'id': order_id,
+            'symbol': pair,
+            'amount': 0.0,
+            'filled': 0.0,
+            'remaining': 0.0,
+            'status': 'closed',
+            'type': 'market',
+            'side': 'unknown',
+            'fee': {},
+            'info': {'synthetic': True, 'reason': 'order_not_found'},
+            'timestamp': None,
+            'datetime': None,
+            'lastTradeTimestamp': None,
+            'average': None,
+            'cost': None,
+            'trades': []
+        }
     
     @retrier
     def fetch_funding_rate_history(self, symbol: str, since: int | None = None, limit: int | None = None) -> list:
