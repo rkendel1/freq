@@ -31,7 +31,7 @@ class Blofin(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [1, 200],
         "l2_limit_range_required": False,
-        "ws_enabled": True,
+        # "ws_enabled": True,
     }
 
     _ft_has_futures: FtHas = {
@@ -48,7 +48,7 @@ class Blofin(Exchange):
         #     PriceType.LAST: "CONTRACT_PRICE",
         #     PriceType.MARK: "MARK_PRICE",
         # },
-        "ws_enabled": True,  # CCXT BloFin websockets ARE implemented and working
+        # "ws_enabled": True,  # CCXT BloFin websockets ARE implemented and working
         # "proxy_coin_mapping": {
         #     "BNFCR": "USDC",
         #     "BFUSD": "USDT",
