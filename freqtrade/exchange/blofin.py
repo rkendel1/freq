@@ -413,6 +413,12 @@ class Blofin(Exchange):
         logger.info("🔧 get_funding_fees called for %s, amount: %s, is_short: %s", 
                     pair, amount, is_short)
         
+        # Sync trade amount from position to fix any discrepancies
+        try:
+            self.sync_trade_amount_from_position(pair)
+        except Exception as e:
+            logger.debug(f"🔧 Error during trade amount sync in get_funding_fees: {e}")
+        
         try:
             # Convert open_date to timestamp
             open_timestamp = int(open_date.timestamp() * 1000)
@@ -845,6 +851,25 @@ class Blofin(Exchange):
                 if position_size > 0:
                     logger.info(f"🔧 Found active position for {pair}: {position_size} contracts at entry {position.get('entryPrice', 'N/A')}")
                     logger.info(f"🔧 Position PnL: {position.get('unrealizedPnl', 'N/A')} USDT ({position.get('percentage', 'N/A')}%)")
+                    
+                    # Try to sync with freqtrade trade if available
+                    try:
+                        from freqtrade.persistence import Trade
+                        open_trades = Trade.get_trades_proxy(pair=pair, is_open=True)
+                        if open_trades:
+                            trade = open_trades[0]  # Should only be one open trade per pair
+                            if trade.amount != position_size:
+                                old_amount = trade.amount
+                                trade.amount = position_size
+                                Trade.commit()
+                                logger.warning(f"🔧 TRADE AMOUNT SYNCED: {pair} updated from {old_amount} to {position_size} contracts")
+                            else:
+                                logger.debug(f"🔧 Trade amount already in sync for {pair}: {position_size}")
+                        else:
+                            logger.debug(f"🔧 No open trade found in freqtrade for {pair}")
+                    except Exception as sync_error:
+                        logger.error(f"🔧 Error syncing trade amount to freqtrade for {pair}: {sync_error}")
+                    
                     return position_size
                 else:
                     logger.info(f"🔧 Position found but size is zero for {pair} - position was closed")
