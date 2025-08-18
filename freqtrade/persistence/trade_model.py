@@ -1041,11 +1041,7 @@ class LocalTrade:
         Recalculate open_trade_value.
         Must be called whenever open_rate, fee_open is changed.
         """
-        if self.trading_mode == TradingMode.FUTURES:
-            # For futures, open_trade_value should be the actual stake amount (position size / leverage)
-            self.open_trade_value = self._calc_open_trade_value(self.amount, self.open_rate) / (self.leverage or 1.0)
-        else:
-            self.open_trade_value = self._calc_open_trade_value(self.amount, self.open_rate)
+        self.open_trade_value = self._calc_open_trade_value(self.amount, self.open_rate)
 
     def calculate_interest(self) -> FtPrecise:
         """
