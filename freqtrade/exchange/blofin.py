@@ -6,11 +6,11 @@ from typing import Any
 import ccxt
 
 from freqtrade.constants import BuySell, Config, ExchangeConfig
-from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError, ExchangeError
 from freqtrade.exchange import Exchange
-from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange_types import CcxtOrder, FtHas
+from freqtrade.exchange.common import retrier, retrier_async
+from freqtrade.exchange.exchange_types import CcxtOrder, FtHas, OHLCVResponse
 
 logger = logging.getLogger(__name__)
 
@@ -926,6 +926,35 @@ class Blofin(Exchange):
                     
         except Exception as e:
             logger.error(f"🔧 Error in position sync check: {e}")
+
+    @retrier_async
+    async def _async_get_candle_history(
+        self,
+        pair: str,
+        timeframe: str,
+        candle_type: CandleType,
+        since_ms: int | None = None,
+    ) -> OHLCVResponse:
+        """
+        Override to handle Blofin-specific 429 errors that come as ExchangeNotAvailable.
+        Blofin uses Cloudflare protection which causes CCXT to throw ExchangeNotAvailable
+        instead of DDoSProtection for 429 errors.
+        """
+        try:
+            return await super()._async_get_candle_history(pair, timeframe, candle_type, since_ms)
+        except ccxt.ExchangeNotAvailable as e:
+            error_msg = str(e)
+            # Check if this is actually a 429 error disguised as ExchangeNotAvailable
+            if "429" in error_msg or "Too Many Requests" in error_msg:
+                logger.warning(
+                    "🔧 Blofin 429 error detected as ExchangeNotAvailable, converting to DDosProtection: %s", 
+                    error_msg
+                )
+                # Convert to DDosProtection so the retry mechanism can handle it properly
+                raise DDosProtection(e) from e
+            else:
+                # If it's not a rate limit error, re-raise as is
+                raise
             
     # def _convert_tpsl_order_to_standard(self, tpsl_order: dict) -> CcxtOrder:
     #     """

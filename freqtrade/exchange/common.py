@@ -114,6 +114,7 @@ def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop("count", API_RETRY_COUNT)
         kucoin = args[0].name == "KuCoin"  # Check if the exchange is KuCoin.
+        blofin = args[0].name == "blofin"  # Check if the exchange is Blofin.
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:
@@ -131,6 +132,18 @@ def retrier_async(f):
                             f"{count} tries left before giving up",
                             logmethod=logger.warning,
                         )
+                        # Reset msg to avoid logging too many times.
+                        msg = ""
+                    elif blofin and ("429" in str(ex) or "Too Many Requests" in str(ex)):
+                        # Special handling for Blofin 429 errors with Cloudflare protection
+                        # Apply a longer backoff delay for Cloudflare-protected endpoints
+                        backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT) * 2
+                        _get_logging_mixin().log_once(
+                            f"Blofin 429 error detected (Cloudflare protection), applying extended backoff delay: {backoff_delay}s. "
+                            f"{count} tries left before giving up",
+                            logmethod=logger.warning,
+                        )
+                        await asyncio.sleep(backoff_delay)
                         # Reset msg to avoid logging too many times.
                         msg = ""
                     else:
