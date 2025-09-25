@@ -30,11 +30,11 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
 - [X] [Kraken](https://kraken.com/)
 - [X] [OKX](https://okx.com/)
-- [ ] 
+- ---------------------------------------------------------------------------------
 - [X] [TIGER](https://www.itigerup.com/)
 - [X] [IBKR](https://interractivebroker.org)
 
-- [ ] 
+- --------------------------------------------------------------------------------
 - [ ] [potentially many others](https://quant.itigerup.com/openapi/zh/python/overview/introduction.html). _(We cannot guarantee they will work)_
 
 ### Supported Futures Exchanges (experimental)
