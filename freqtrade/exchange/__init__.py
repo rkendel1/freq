@@ -11,6 +11,12 @@ from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bitvavo import Bitvavo
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.cryptocom import Cryptocom
+
+
+# 添加老虎证券导入
+from freqtrade.exchange.tiger_group import TigerGroupExchange  # 新增这一行
+
+
 from freqtrade.exchange.exchange_utils import (
     ROUND_DOWN,
     ROUND_UP,
