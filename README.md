@@ -2,7 +2,7 @@
 
 PGFreqtrade is a open source Crypto&STOCK trading bot written in Python.  be controlled via Telegram or webUI. It contains backtesting, plotting and money management tools as well as strategy optimization by machine learning.
 
-![pgfreqtrade](https://github.com/xxxxxwater/freqtrade/blob/develop/image_2024-04-19_21-43-00.png)
+![pgfreqtrade](https://github.com/xxxxxwater/freqtrade/blob/develop/flight-path-on-transparent-d.png)
 
 ## Disclaimer
 
