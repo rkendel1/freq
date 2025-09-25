@@ -51,8 +51,8 @@ Please make sure to read the [exchange specific notes](docs/exchanges.md), as we
 
 Exchanges confirmed working by the community:
 
-- [X] [Bitvavo](https://bitvavo.com/)
-- [X] [Kucoin](https://www.kucoin.com/)
+- [X] [Aster](https://www.asterdex.com/)
+- [X] [Edgex](https://www.edgex.exchange/)
 
 ## Documentation
 
