@@ -1,0 +1,27 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "USD",
+    "stake_amount": 1000,
+    "timeframe": "1d",
+    "dry_run": true,
+    "cancel_open_orders_on_exit": true,
+    "exchange": {
+        "name": "tigergroup",
+        "key": "your_tiger_api_key",
+        "secret": "your_tiger_secret_key",
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
+        "pair_whitelist": [
+            "AAPL/USD",
+            "TSLA/USD",
+            "NFLX/USD"
+        ]
+    },
+    "tiger": {
+        "api_key": "your_tiger_api_key",
+        "private_key": "/absolute/path/to/your/rsa_private_key.pem",
+        "account": "U123456789",
+        "sandbox": true
+    }
+}
