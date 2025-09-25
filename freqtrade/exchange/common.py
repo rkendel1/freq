@@ -53,6 +53,7 @@ MAP_EXCHANGE_CHILDCLASS = {
     "myokx": "okx",
     "gateio": "gate",
     "huboi": "htx",
+    'tigergroup': 'TigerGroupExchange',
 }
 
 SUPPORTED_EXCHANGES = [
