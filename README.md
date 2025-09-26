@@ -5,6 +5,16 @@
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Documentation](https://readthedocs.org/projects/freqtrade/badge/)](https://www.freqtrade.io)
 
+<!-- Keep these links. Translations will automatically update with the README. -->
+[Deutsch](https://zdoc.app/de/freqtrade/freqtrade) | 
+[Español](https://zdoc.app/es/freqtrade/freqtrade) | 
+[français](https://zdoc.app/fr/freqtrade/freqtrade) | 
+[日本語](https://zdoc.app/ja/freqtrade/freqtrade) | 
+[한국어](https://zdoc.app/ko/freqtrade/freqtrade) | 
+[Português](https://zdoc.app/pt/freqtrade/freqtrade) | 
+[Русский](https://zdoc.app/ru/freqtrade/freqtrade) | 
+[中文](https://zdoc.app/zh/freqtrade/freqtrade)
+
 Freqtrade is a free and open source crypto trading bot written in Python. It is designed to support all major exchanges and be controlled via Telegram or webUI. It contains backtesting, plotting and money management tools as well as strategy optimization by machine learning.
 
 ![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
