@@ -75,18 +75,18 @@ def init_plotscript(config, markets: list, startup_candles: int = 0):
         )
 
     no_trades = False
-    filename = config.get("exportfilename")
+    exportfile = Path(config.get("exportfilename"))
     if config.get("no_trades", False):
         no_trades = True
     elif config["trade_source"] == "file":
-        if not filename.is_dir() and not filename.is_file():
+        if not exportfile.is_dir() and not exportfile.is_file():
             logger.warning("Backtest file is missing skipping trades.")
             no_trades = True
     try:
         trades = load_trades(
             config["trade_source"],
             db_url=config.get("db_url"),
-            exportfilename=filename,
+            exportfilename=exportfile,
             no_trades=no_trades,
             strategy=config.get("strategy"),
         )
