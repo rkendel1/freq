@@ -2,9 +2,18 @@
 services:
   freqtrade:
     image: freqtradeorg/freqtrade:stable
+    # Use development image
     # image: freqtradeorg/freqtrade:develop
     # Use plotting image
     # image: freqtradeorg/freqtrade:develop_plot
+    # Use FreqAI image
+    # image: freqtradeorg/freqtrade:develop_freqai
+    # Use FreqAI with Reinforcement Learning
+    # image: freqtradeorg/freqtrade:develop_freqairl
+    # Use Hyperopt-optimized image
+    # image: freqtradeorg/freqtrade:develop_hyperopt
+    # Use FreqAI + Hyperopt combined image
+    # image: freqtradeorg/freqtrade:develop_freqai_hyperopt
     # # Enable GPU Image and GPU Resources (only relevant for freqAI)
     # # Make sure to uncomment the whole deploy section
     # deploy:
@@ -29,8 +38,4 @@ services:
       - "127.0.0.1:8080:8080"
     # Default command used when running `docker compose up`
     command: >
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
-      --config /freqtrade/user_data/config.json
-      --strategy SampleStrategy
+      trade --logfile /freqtrade/user_data/logs/freqtrade.log --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite --config /freqtrade/user_data/config.json --strategy SampleStrategy

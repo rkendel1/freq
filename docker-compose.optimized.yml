@@ -1,0 +1,83 @@
+---
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    # Für die neueste Entwicklungsversion nutzen Sie:
+    # image: freqtradeorg/freqtrade:develop
+
+    # Für optimierte Performance:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+    restart: unless-stopped
+    container_name: freqtrade
+
+    # Optimierte Volume-Konfiguration
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./logs:/freqtrade/logs"
+      # Optional: Für bessere Performance können Sie tmpfs für temporäre Dateien nutzen
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 100M
+
+    # Netzwerk-Optimierung
+    networks:
+      - freqtrade_network
+
+    # Port-Konfiguration für API
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    # Umgebungsvariablen für Optimierung
+    environment:
+      - FREQTRADE_ENVIRONMENT=production
+      - PYTHONUNBUFFERED=1
+      - PYTHONHASHSEED=random
+      # Für bessere Logging-Performance
+      - FREQTRADE_LOG_LEVEL=INFO
+
+    # Optimierter Startbefehl
+    command: >
+      trade --logfile /freqtrade/user_data/logs/freqtrade.log --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite --config /freqtrade/user_data/config.json --strategy SampleStrategy --enable-protections
+
+    # Healthcheck für bessere Überwachung
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/v1/ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Security optimizations
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    read_only: false
+
+    # Logging-Konfiguration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  freqtrade_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Optional: Zusätzliche Services für erweiterte Setups
+#
+# volumes:
+#   freqtrade_data:
+#     driver: local

@@ -1,0 +1,35 @@
+ARG sourceimage=freqtradeorg/freqtrade
+ARG sourcetag=develop_freqai
+FROM ${sourceimage}:${sourcetag}
+
+# Install hyperopt dependencies on top of FreqAI
+COPY requirements-hyperopt.txt /freqtrade/
+
+# Install hyperopt dependencies with FreqAI optimizations
+RUN pip install -r requirements-hyperopt.txt --user --no-cache-dir \
+    && pip install --user --no-cache-dir \
+    # Additional optimization libraries
+    hyperopt==0.2.7 \
+    # Enhanced parallel processing
+    ray[tune]==2.40.0 \
+    # Better memory management for ML models
+    psutil==6.1.1 \
+    # Database backends with ML support
+    SQLAlchemy==2.0.36 \
+    # Advanced optimization for ML hyperparameters
+    scikit-optimize==0.10.2 \
+    # GPU acceleration support
+    cupy-cuda12x==13.4.0; platform_machine == "x86_64"
+
+# Environment variables for optimal FreqAI + Hyperopt performance
+ENV PYTHONUNBUFFERED=1
+ENV OPTUNA_STORAGE="sqlite:///user_data/freqai_hyperopt_results.db"
+ENV OMP_NUM_THREADS=1
+ENV CUDA_VISIBLE_DEVICES=0
+ENV FREQAI_PARALLEL_TRAINING=true
+ENV HYPEROPT_PARALLEL_JOBS=4
+
+# Create directories for FreqAI and Hyperopt results
+RUN mkdir -p /freqtrade/user_data/models \
+    && mkdir -p /freqtrade/user_data/hyperopt_results \
+    && chmod -R 755 /freqtrade/user_data

@@ -1,0 +1,23 @@
+ARG sourceimage=freqtradeorg/freqtrade
+ARG sourcetag=develop
+FROM ${sourceimage}:${sourcetag}
+
+# Install hyperopt dependencies
+COPY requirements-hyperopt.txt /freqtrade/
+
+# Install hyperopt dependencies with optimizations
+RUN pip install -r requirements-hyperopt.txt --user --no-cache-dir \
+    && pip install --user --no-cache-dir \
+    # Additional optimization libraries
+    hyperopt==0.2.7 \
+    # Parallel processing for hyperopt
+    joblib==1.5.2 \
+    # Better memory management
+    psutil==6.1.1 \
+    # Database backends for hyperopt results
+    SQLAlchemy==2.0.36
+
+# Add environment variables for better performance
+ENV PYTHONUNBUFFERED=1
+ENV OPTUNA_STORAGE="sqlite:///user_data/hyperopt_results.db"
+ENV OMP_NUM_THREADS=1

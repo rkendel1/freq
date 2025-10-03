@@ -1,0 +1,149 @@
+---
+# Advanced FreqTrade Docker Compose Configuration
+# Supports FreqAI, Hyperopt, and combined FreqAI+Hyperopt setups
+
+services:
+  # Standard FreqTrade service
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "127.0.0.1:8080:8080"
+    command: >
+      trade --logfile /freqtrade/user_data/logs/freqtrade.log --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite --config /freqtrade/user_data/config.json --strategy SampleStrategy
+    environment:
+      - FREQTRADE_USER_DATA_DIR=/freqtrade/user_data
+
+  # FreqAI enabled service
+  freqtrade-freqai:
+    image: freqtradeorg/freqtrade:develop_freqai
+    restart: unless-stopped
+    container_name: freqtrade-freqai
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./models:/freqtrade/user_data/models"
+    ports:
+      - "127.0.0.1:8081:8080"
+    # Enable GPU support for FreqAI (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: >
+      trade --logfile /freqtrade/user_data/logs/freqtrade_freqai.log --db-url sqlite:////freqtrade/user_data/tradesv3_freqai.sqlite --config /freqtrade/user_data/config_freqai.json --strategy FreqAIExampleStrategy
+    environment:
+      - FREQTRADE_USER_DATA_DIR=/freqtrade/user_data
+      - CUDA_VISIBLE_DEVICES=0
+      - OMP_NUM_THREADS=4
+    profiles:
+      - freqai
+
+  # Hyperopt optimization service
+  freqtrade-hyperopt:
+    image: freqtradeorg/freqtrade:develop_hyperopt
+    restart: "no"
+    container_name: freqtrade-hyperopt
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./hyperopt_results:/freqtrade/user_data/hyperopt_results"
+    command: >
+      hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy HyperOptStrategy --epochs 300 --spaces buy sell roi stoploss --timerange 20231001-20231201 --config /freqtrade/user_data/config_hyperopt.json
+    environment:
+      - FREQTRADE_USER_DATA_DIR=/freqtrade/user_data
+      - OPTUNA_STORAGE=sqlite:///user_data/hyperopt_results.db
+      - OMP_NUM_THREADS=1
+      - HYPEROPT_PARALLEL_JOBS=4
+    profiles:
+      - hyperopt
+
+  # Combined FreqAI + Hyperopt service
+  freqtrade-freqai-hyperopt:
+    image: freqtradeorg/freqtrade:develop_freqai_hyperopt
+    restart: "no"
+    container_name: freqtrade-freqai-hyperopt
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./models:/freqtrade/user_data/models"
+      - "./hyperopt_results:/freqtrade/user_data/hyperopt_results"
+    # Enable GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: >
+      hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqAIHyperOptStrategy --epochs 100 --spaces buy sell roi --timerange 20231001-20231201 --config /freqtrade/user_data/config_freqai_hyperopt.json
+    environment:
+      - FREQTRADE_USER_DATA_DIR=/freqtrade/user_data
+      - OPTUNA_STORAGE=sqlite:///user_data/freqai_hyperopt_results.db
+      - CUDA_VISIBLE_DEVICES=0
+      - OMP_NUM_THREADS=1
+      - FREQAI_PARALLEL_TRAINING=true
+      - HYPEROPT_PARALLEL_JOBS=2
+    profiles:
+      - freqai-hyperopt
+
+  # Jupyter notebook for analysis (optional)
+  jupyter:
+    image: freqtradeorg/freqtrade:develop_plot
+    restart: unless-stopped
+    container_name: freqtrade-jupyter
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./notebooks:/freqtrade/notebooks"
+    ports:
+      - "127.0.0.1:8888:8888"
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    profiles:
+      - jupyter
+
+  # Database service for storing results
+  postgres:
+    image: postgres:13
+    restart: unless-stopped
+    container_name: freqtrade-postgres
+    environment:
+      - POSTGRES_USER=freqtrade
+      - POSTGRES_PASSWORD=freqtrade
+      - POSTGRES_DB=freqtrade
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    profiles:
+      - database
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    container_name: freqtrade-redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    profiles:
+      - cache
+
+volumes:
+  postgres_data:
+  redis_data:
+
+    # Usage examples:
+    # Standard trading: docker compose up freqtrade
+    # FreqAI trading: docker compose --profile freqai up freqtrade-freqai
+    # Hyperopt optimization: docker compose --profile hyperopt up freqtrade-hyperopt
+    # FreqAI + Hyperopt: docker compose --profile freqai-hyperopt up freqtrade-freqai-hyperopt
+    # With Jupyter: docker compose --profile freqai --profile jupyter up
+    # With database: docker compose --profile database up postgres

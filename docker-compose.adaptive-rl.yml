@@ -1,0 +1,259 @@
+---
+version: '3.8'
+
+services:
+  freqtrade-adaptive-rl:
+    # Use custom Dockerfile for adaptive RL
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-rl
+    # Alternative: Use official image
+    # image: freqtradeorg/freqtrade:stable_freqai
+
+    container_name: freqtrade_adaptive_rl_binance
+
+    # Restart policy for production use
+    restart: unless-stopped
+
+    # Environment variables for adaptive RL trading
+    environment:
+      # FreqTrade configuration
+      - FREQTRADE_CONFIG_FILE=/freqtrade/user_data/config_binance_spot_longonly_rl.json
+      - FREQTRADE_STRATEGY_PATH=/freqtrade/user_data/strategies
+      - FREQTRADE_USERDATA_DIR=/freqtrade/user_data
+
+      # Python environment for adaptive throttling
+      - PYTHONPATH=/freqtrade:/freqtrade/user_data
+      - PYTHONUNBUFFERED=1
+
+      # Logging configuration
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TZ=${TZ:-Europe/Berlin}
+
+      # FreqAI/RL specific
+      - FREQAI_MODEL_PATH=/freqtrade/user_data/models
+      - TENSORBOARD_LOG_DIR=/freqtrade/user_data/tensorboard
+      - FREQAI_CPU_COUNT=${FREQAI_CPU_COUNT:-8}
+
+      # Binance API settings (READ-ONLY for DRY RUN)
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_SECRET_KEY=${BINANCE_SECRET_KEY}
+
+      # Telegram Bot settings
+      - TELEGRAM_ENABLED=${TELEGRAM_ENABLED:-true}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+
+      # Adaptive throttling settings
+      - ADAPTIVE_THROTTLING_ENABLED=${ADAPTIVE_THROTTLING_ENABLED:-true}
+      - MIN_THROTTLE=${MIN_THROTTLE:-1.2}
+      - MAX_THROTTLE=${MAX_THROTTLE:-8.0}
+      - RL_MODEL_OVERHEAD=${RL_MODEL_OVERHEAD:-0.8}
+      - API_RATE_FACTOR=${API_RATE_FACTOR:-1.5}
+
+    # Command to start FreqTrade with adaptive throttling and Telegram
+    command: >
+      python /freqtrade/adaptive_freqtrade_enhanced.py --config /freqtrade/user_data/config_binance_spot_longonly_rl.json --strategy-path /freqtrade/user_data/strategies --verbosity ${LOG_LEVEL:-info}
+
+    # Volume mounts for persistence and configuration
+    volumes:
+      # Configuration and user data
+      - ./user_data:/freqtrade/user_data:rw
+
+      # Adaptive throttling modules (if not built into image)
+      - ./user_data/adaptive_throttling.py:/freqtrade/user_data/adaptive_throttling.py:ro
+      - ./user_data/adaptive_worker.py:/freqtrade/user_data/adaptive_worker.py:ro
+      - ./adaptive_freqtrade_enhanced.py:/freqtrade/adaptive_freqtrade_enhanced.py:ro
+      - ./test_telegram.py:/freqtrade/test_telegram.py:ro
+
+      # Additional persistence volumes (using subdirectories to avoid conflicts)
+      - freqtrade_adaptive_rl_db:/freqtrade/persistent_data:rw
+      - freqtrade_models:/freqtrade/persistent_models:rw
+      - freqtrade_tensorboard:/freqtrade/persistent_tensorboard:rw
+      - freqtrade_logs:/freqtrade/persistent_logs:rw
+
+    # Network ports for API and monitoring
+    ports:
+      - "${FREQTRADE_API_PORT:-8090}:8090" # FreqTrade API
+
+    # Resource limits for RL training
+    deploy:
+      resources:
+        limits:
+          cpus: '${DOCKER_CPU_LIMIT:-4.0}'
+          memory: ${DOCKER_MEMORY_LIMIT:-8G}
+        reservations:
+          cpus: '${DOCKER_CPU_RESERVATION:-2.0}'
+          memory: ${DOCKER_MEMORY_RESERVATION:-4G}
+
+    # Health check for monitoring
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8090/api/v1/ping || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem for security
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    #   - /var/tmp
+
+    # Dependencies and startup order
+    depends_on:
+      - freqtrade-db
+
+  # TensorBoard service for RL model monitoring
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    container_name: freqtrade_tensorboard_rl
+    restart: unless-stopped
+    command: >
+      tensorboard --logdir=/logs/tensorboard --host=0.0.0.0 --port=6006 --reload_interval=${TENSORBOARD_RELOAD_INTERVAL:-30} --samples_per_plugin=scalars=10000,images=1000
+    volumes:
+      - freqtrade_tensorboard:/logs/tensorboard:ro
+    ports:
+      - "${TENSORBOARD_PORT:-6007}:6006"
+    environment:
+      - TZ=${TZ:-Europe/Berlin}
+    profiles:
+      - monitoring
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:6006 || exit 1" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # Jupyter Notebook for analysis and model development
+  jupyter-freqai:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-rl
+    container_name: freqtrade_jupyter_analysis
+    restart: "no"
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password='' --ServerApp.allow_origin='*' --ServerApp.allow_credentials=True
+    volumes:
+      - ./user_data:/freqtrade/user_data:rw
+      - ./notebooks:/freqtrade/notebooks:rw
+      - freqtrade_models:/freqtrade/user_data/models:rw
+      - freqtrade_tensorboard:/freqtrade/user_data/tensorboard:ro
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - PYTHONPATH=/freqtrade:/freqtrade/user_data
+      - TZ=${TZ:-Europe/Berlin}
+    profiles:
+      - development
+
+  # Optional: Separate database service for better management
+  freqtrade-db:
+    image: alpine:latest
+    container_name: freqtrade_adaptive_rl_db_manager
+    restart: "no"
+    command: [ "sh", "-c", "echo 'Database volume manager' && sleep 10" ]
+    volumes:
+      - freqtrade_adaptive_rl_db:/data
+
+  # Optional: Redis cache for improved performance
+  redis-cache:
+    image: redis:7-alpine
+    container_name: freqtrade_redis_cache
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - freqtrade_redis_data:/data
+    profiles:
+      - caching
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Monitoring with Grafana and Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: freqtrade_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - freqtrade_prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: freqtrade_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - freqtrade_grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+# Named volumes for data persistence
+volumes:
+  freqtrade_adaptive_rl_db:
+    driver: local
+    name: freqtrade_adaptive_rl_database
+
+  freqtrade_models:
+    driver: local
+    name: freqtrade_rl_models
+
+  freqtrade_tensorboard:
+    driver: local
+    name: freqtrade_rl_tensorboard
+
+  freqtrade_logs:
+    driver: local
+    name: freqtrade_rl_logs
+
+  freqtrade_redis_data:
+    driver: local
+    name: freqtrade_redis_cache
+
+  freqtrade_prometheus_data:
+    driver: local
+    name: freqtrade_prometheus
+
+  freqtrade_grafana_data:
+    driver: local
+    name: freqtrade_grafana
+
+# Networks
+networks:
+  default:
+    name: freqtrade_adaptive_rl_network
+    driver: bridge
