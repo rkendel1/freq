@@ -1,0 +1,69 @@
+# Adaptive FreqTrade RL Trading Dockerfile
+# Optimized for Binance Spot Long-Only RL Strategy with intelligent throttling
+
+FROM freqtradeorg/freqtrade:stable_freqai
+
+# Metadata
+LABEL maintainer="FreqTrade Adaptive RL"
+LABEL description="FreqTrade with adaptive throttling for RL trading optimization"
+LABEL version="1.0"
+
+# Set working directory
+WORKDIR /freqtrade
+
+# Environment variables for adaptive throttling
+ENV PYTHONPATH="/freqtrade:/freqtrade/user_data"
+ENV PYTHONUNBUFFERED=1
+ENV ADAPTIVE_THROTTLING_ENABLED=true
+
+# Install additional Python packages for enhanced RL performance
+RUN pip install --no-cache-dir \
+    optuna \
+    plotly \
+    scikit-optimize \
+    hyperopt \
+    joblib \
+    cachetools
+
+# Create necessary directories
+RUN mkdir -p /freqtrade/user_data/adaptive_modules \
+    /freqtrade/user_data/models \
+    /freqtrade/user_data/tensorboard \
+    /freqtrade/user_data/logs \
+    /freqtrade/user_data/notebooks
+
+# Copy adaptive throttling modules
+COPY user_data/adaptive_throttling.py /freqtrade/user_data/
+COPY user_data/adaptive_worker.py /freqtrade/user_data/
+COPY adaptive_freqtrade_start.py /freqtrade/
+
+# Copy configuration
+COPY user_data/config_binance_spot_longonly_rl.json /freqtrade/user_data/
+
+# Make the startup script executable
+RUN chmod +x /freqtrade/adaptive_freqtrade_start.py
+
+# Create a health check script
+RUN echo '#!/bin/bash\n\
+    curl -f http://localhost:8090/api/v1/ping > /dev/null 2>&1 || exit 1\n\
+    ' > /freqtrade/healthcheck.sh && chmod +x /freqtrade/healthcheck.sh
+
+# Set proper permissions
+RUN chown -R ftuser:ftuser /freqtrade/user_data && \
+    chmod -R 755 /freqtrade/user_data
+
+# Switch to non-root user
+USER ftuser
+
+# Expose ports
+EXPOSE 8090 6006
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD /freqtrade/healthcheck.sh
+
+# Default command with adaptive throttling
+CMD ["python", "/freqtrade/adaptive_freqtrade_start.py", \
+    "--config", "/freqtrade/user_data/config_binance_spot_longonly_rl.json", \
+    "--strategy-path", "/freqtrade/user_data/strategies", \
+    "--verbosity", "info"]
