@@ -1,68 +1,68 @@
 {
   "generation": 6,
-  "best_f1_score": 0.4123722975218488,
+  "best_f1_score": 0.4616322725811637,
   "best_parameters": {
-    "proximity_threshold": 0.5837770787757603,
-    "confidence_threshold": 0.1538526986063118,
-    "lookback_period": 45,
-    "window_size": 5
+    "proximity_threshold": 0.5161859193097765,
+    "confidence_threshold": 0.35643219212046373,
+    "lookback_period": 6,
+    "window_size": 4
   },
-  "all_time_best_f1": 0.6515010060536127,
+  "all_time_best_f1": 0.6446673974758973,
   "all_time_best_parameters": {
-    "proximity_threshold": 0.09114949077536218,
-    "confidence_threshold": 0.14574084486592231,
-    "lookback_period": 36,
+    "proximity_threshold": 0.6765990378016592,
+    "confidence_threshold": 0.3151311589677633,
+    "lookback_period": 26,
     "window_size": 3
   },
   "total_backtests": 175,
-  "convergence_counter": 1,
-  "evolution_runtime_hours": 0.03885387083333333,
+  "convergence_counter": 2,
+  "evolution_runtime_hours": 0.04281452222222223,
   "trials": [
     {
       "params": {
-        "proximity_threshold": 0.7238081042514063,
-        "confidence_threshold": 0.22483880767820938,
-        "lookback_period": 50,
+        "proximity_threshold": 0.22006199769700244,
+        "confidence_threshold": 0.31865119307429846,
+        "lookback_period": 11,
+        "window_size": 10
+      },
+      "value": 0.24460466362905384
+    },
+    {
+      "params": {
+        "proximity_threshold": 0.6002563532114736,
+        "confidence_threshold": 0.42285316669630657,
+        "lookback_period": 44,
         "window_size": 15
       },
-      "value": 0.18148859543817528
+      "value": 0.21620082869575769
     },
     {
       "params": {
-        "proximity_threshold": 0.28213573988856633,
-        "confidence_threshold": 0.11143829105007248,
-        "lookback_period": 40,
-        "window_size": 8
+        "proximity_threshold": 0.7701200641666781,
+        "confidence_threshold": 0.7706061172038089,
+        "lookback_period": 47,
+        "window_size": 10
       },
-      "value": 0.30342872781296426
+      "value": 0.2607051282051282
     },
     {
       "params": {
-        "proximity_threshold": 0.8590687753797522,
-        "confidence_threshold": 0.4944314274481209,
-        "lookback_period": 14,
-        "window_size": 13
+        "proximity_threshold": 0.5161859193097765,
+        "confidence_threshold": 0.35643219212046373,
+        "lookback_period": 6,
+        "window_size": 4
       },
-      "value": 0.25406862745098036
+      "value": 0.4616322725811637
     },
     {
       "params": {
-        "proximity_threshold": 0.5837770787757603,
-        "confidence_threshold": 0.1538526986063118,
-        "lookback_period": 45,
-        "window_size": 5
+        "proximity_threshold": 0.43082890760301173,
+        "confidence_threshold": 0.5709196425892908,
+        "lookback_period": 10,
+        "window_size": 4
       },
-      "value": 0.4123722975218488
-    },
-    {
-      "params": {
-        "proximity_threshold": 0.6653094320193081,
-        "confidence_threshold": 0.8379260009409597,
-        "lookback_period": 20,
-        "window_size": 7
-      },
-      "value": 0.30363881401617254
+      "value": 0.44897657702835414
     }
   ],
-  "timestamp": "2025-10-03T18:40:41.197523"
+  "timestamp": "2025-10-03T18:51:02.853752"
 }

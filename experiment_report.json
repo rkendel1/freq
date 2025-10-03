@@ -1,0 +1,235 @@
+{
+  "experiment": {
+    "experiment_id": "495ff338b1ee",
+    "name": "RSI Optimization: RSI Period 21",
+    "description": "Parameter-Optimierung: {'rsi_period': 21, 'rsi_overbought': 70, 'rsi_oversold': 30}",
+    "experiment_type": "parameter_tuning",
+    "status": "completed",
+    "configuration": {
+      "strategy_name": "RSI_Strategy_RSI_Period_21",
+      "timeframe": "5m",
+      "pairs": [
+        "BTC/USDT",
+        "ETH/USDT",
+        "ADA/USDT"
+      ],
+      "stake_amount": 100.0,
+      "max_open_trades": 3,
+      "stoploss": -0.1,
+      "minimal_roi": {
+        "0": 0.1,
+        "40": 0.05,
+        "60": 0.0
+      },
+      "parameters": {
+        "rsi_period": 21,
+        "rsi_overbought": 70,
+        "rsi_oversold": 30
+      },
+      "exchange_config": {
+        "name": "binance"
+      },
+      "configuration_hash": "580bbd443c475dcc"
+    },
+    "metrics": {
+      "total_trades": 158,
+      "winning_trades": 98,
+      "losing_trades": 60,
+      "total_profit": 4.25178,
+      "profit_ratio": 0.02691,
+      "max_drawdown": 0.07831,
+      "sharpe_ratio": 0.1,
+      "sortino_ratio": null,
+      "calmar_ratio": null,
+      "win_rate": 0.6234999999999999,
+      "avg_profit_per_trade": 0.02691,
+      "avg_winning_trade": 0.048438,
+      "avg_losing_trade": -0.018837,
+      "max_consecutive_wins": 29,
+      "max_consecutive_losses": 15,
+      "custom_metrics": {}
+    },
+    "created_at": "2025-10-03T19:07:47.743960+00:00",
+    "started_at": "2025-10-03T19:07:47.750503+00:00",
+    "completed_at": "2025-10-03T19:07:47.799987+00:00",
+    "updated_at": "2025-10-03T19:07:47.799987+00:00",
+    "parent_experiment_id": "695384885f44",
+    "tags": [
+      "optimization",
+      "rsi",
+      "parameter_tuning"
+    ],
+    "notes": "",
+    "artifacts": {},
+    "error_message": null,
+    "version": "1.0"
+  },
+  "timeline": [
+    {
+      "timestamp": "2025-10-03T19:07:47.747038+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Experiment erstellt: RSI Optimization: RSI Period 21",
+      "metadata": {
+        "type": "parameter_tuning"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.754150+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Experiment gestartet",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.760965+00:00",
+      "type": "progress",
+      "progress_type": "metrics_update",
+      "value": 158.0,
+      "metadata": {
+        "updated_metrics": [
+          "total_trades",
+          "winning_trades",
+          "losing_trades",
+          "total_profit",
+          "profit_ratio",
+          "win_rate",
+          "max_drawdown",
+          "avg_profit_per_trade",
+          "sharpe_ratio",
+          "avg_winning_trade",
+          "avg_losing_trade",
+          "max_consecutive_wins",
+          "max_consecutive_losses"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.764496+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Entry: ETH/USDT",
+      "metadata": {
+        "pair": "ETH/USDT",
+        "side": "long",
+        "amount": 0.058,
+        "rate": 46344.94
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.767718+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Exit: ETH/USDT - Profit: -2.28%",
+      "metadata": {
+        "pair": "ETH/USDT",
+        "profit": -0.022751961692037685,
+        "exit_reason": "stoploss"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.771059+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Entry: BTC/USDT",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "side": "long",
+        "amount": 0.0935,
+        "rate": 49034.82
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.774798+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Exit: ETH/USDT - Profit: 6.04%",
+      "metadata": {
+        "pair": "ETH/USDT",
+        "profit": 0.060390458934970026,
+        "exit_reason": "roi"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.779935+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Entry: BTC/USDT",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "side": "long",
+        "amount": 0.0659,
+        "rate": 48559.26
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.783507+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Exit: BTC/USDT - Profit: 0.15%",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "profit": 0.0015187319686327666,
+        "exit_reason": "roi"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.786999+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Entry: BTC/USDT",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "side": "long",
+        "amount": 0.0526,
+        "rate": 45895.73
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.789840+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Exit: ADA/USDT - Profit: 1.36%",
+      "metadata": {
+        "pair": "ADA/USDT",
+        "profit": 0.013582732944604228,
+        "exit_reason": "roi"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.792855+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Entry: BTC/USDT",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "side": "long",
+        "amount": 0.0319,
+        "rate": 41847.95
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.796394+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Trade Exit: BTC/USDT - Profit: -4.07%",
+      "metadata": {
+        "pair": "BTC/USDT",
+        "profit": -0.04072366692540121,
+        "exit_reason": "stoploss"
+      }
+    },
+    {
+      "timestamp": "2025-10-03T19:07:47.803945+00:00",
+      "type": "event",
+      "level": "info",
+      "message": "Experiment abgeschlossen",
+      "metadata": {
+        "total_trades": 158,
+        "profit_ratio": 0.02691
+      }
+    }
+  ],
+  "generated_at": "2025-10-03T19:07:47.950968+00:00",
+  "version": "1.0"
+}
