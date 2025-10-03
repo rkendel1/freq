@@ -1,0 +1,68 @@
+{
+  "generation": 12,
+  "best_f1_score": 0.611949739757959,
+  "best_parameters": {
+    "proximity_threshold": 0.8126239613598772,
+    "confidence_threshold": 0.23501399298513317,
+    "lookback_period": 41,
+    "window_size": 3
+  },
+  "all_time_best_f1": 0.6515010060536127,
+  "all_time_best_parameters": {
+    "proximity_threshold": 0.09114949077536218,
+    "confidence_threshold": 0.14574084486592231,
+    "lookback_period": 36,
+    "window_size": 3
+  },
+  "total_backtests": 325,
+  "convergence_counter": 7,
+  "evolution_runtime_hours": 0.07212224416666667,
+  "trials": [
+    {
+      "params": {
+        "proximity_threshold": 0.4853543103280744,
+        "confidence_threshold": 0.5947655814208992,
+        "lookback_period": 44,
+        "window_size": 10
+      },
+      "value": 0.20782753130840154
+    },
+    {
+      "params": {
+        "proximity_threshold": 0.6762670457155892,
+        "confidence_threshold": 0.4655313995589841,
+        "lookback_period": 33,
+        "window_size": 4
+      },
+      "value": 0.5074986107803446
+    },
+    {
+      "params": {
+        "proximity_threshold": 0.8126239613598772,
+        "confidence_threshold": 0.23501399298513317,
+        "lookback_period": 41,
+        "window_size": 3
+      },
+      "value": 0.611949739757959
+    },
+    {
+      "params": {
+        "proximity_threshold": 0.593757860404812,
+        "confidence_threshold": 0.2991638771035221,
+        "lookback_period": 12,
+        "window_size": 7
+      },
+      "value": 0.27125867075555177
+    },
+    {
+      "params": {
+        "proximity_threshold": 0.3510566328148077,
+        "confidence_threshold": 0.531398329392433,
+        "lookback_period": 11,
+        "window_size": 15
+      },
+      "value": 0.20265233972426291
+    }
+  ],
+  "timestamp": "2025-10-03T18:42:40.963664"
+}

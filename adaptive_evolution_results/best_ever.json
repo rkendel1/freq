@@ -1,0 +1,25 @@
+{
+  "best_f1_score": 0.5375577769773398,
+  "best_parameters": {
+    "proximity_threshold": 0.9048449543513847,
+    "confidence_threshold": 0.21089266308967305,
+    "lookback_period": 39,
+    "window_size": 4
+  },
+  "improvement_history": [
+    {
+      "generation": 0,
+      "improvement": 0.5375577769773398,
+      "f1_score": 0.5375577769773398,
+      "parameters": {
+        "proximity_threshold": 0.9048449543513847,
+        "confidence_threshold": 0.21089266308967305,
+        "lookback_period": 39,
+        "window_size": 4
+      },
+      "timestamp": "2025-10-03T18:48:50.155568"
+    }
+  ],
+  "total_generations": 3,
+  "total_backtests": 100
+}

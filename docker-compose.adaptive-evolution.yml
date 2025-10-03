@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  freqtrade-adaptive-evolution:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-evolution
+    container_name: freqtrade_adaptive_evolution
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./adaptive_evolution_results:/freqtrade/adaptive_evolution_results
+      - ./logs:/freqtrade/logs
+    environment:
+      - FREQTRADE_ENV=evolution
+      - EVOLUTION_CYCLES=1000
+      - IMPROVEMENT_THRESHOLD=0.001
+      - CONVERGENCE_PATIENCE=50
+      - DATA_REFRESH_INTERVAL=10
+    networks:
+      - freqtrade_evolution
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo '🚀 STARTING ADAPTIVE EVOLUTION SYSTEM...'
+        python /freqtrade/adaptive_evolution_engine.py
+      "
+
+  freqtrade-performance-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-evolution
+    container_name: freqtrade_performance_monitor
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./adaptive_evolution_results:/freqtrade/adaptive_evolution_results
+      - ./logs:/freqtrade/logs
+    environment:
+      - MONITORING_INTERVAL=60
+    networks:
+      - freqtrade_evolution
+    restart: unless-stopped
+    command: >
+      sh -c "
+        sleep 30
+        echo '📊 STARTING PERFORMANCE MONITOR...'
+        python /freqtrade/performance_monitor.py
+      "
+
+  freqtrade-data-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-evolution
+    container_name: freqtrade_data_generator
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./adaptive_evolution_results:/freqtrade/adaptive_evolution_results
+    environment:
+      - DATA_GENERATION_INTERVAL=300
+      - MARKET_SCENARIOS=10
+    networks:
+      - freqtrade_evolution
+    restart: unless-stopped
+    command: >
+      sh -c "
+        sleep 60
+        echo '🏭 STARTING DATA GENERATOR...'
+        python /freqtrade/market_data_generator.py
+      "
+
+  freqtrade-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptive-evolution
+    container_name: freqtrade_evolution_ui
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./adaptive_evolution_results:/freqtrade/adaptive_evolution_results
+    environment:
+      - FREQTRADE_UI_PASSWORD=evolution123
+    networks:
+      - freqtrade_evolution
+    restart: unless-stopped
+    command: >
+      sh -c "
+        sleep 90
+        echo '🌐 STARTING EVOLUTION WEB UI...'
+        freqtrade webserver --config user_data/config_evolution.json
+      "
+
+networks:
+  freqtrade_evolution:
+    driver: bridge
+
+volumes:
+  evolution_data:
+  evolution_logs:

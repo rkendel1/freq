@@ -1,0 +1,42 @@
+FROM freqtradeorg/freqtrade:stable
+
+USER root
+
+# Install additional dependencies for evolution system
+RUN pip install --no-cache-dir \
+    matplotlib \
+    seaborn \
+    plotly \
+    scikit-optimize \
+    deap \
+    scipy \
+    optuna \
+    redis \
+    psutil
+
+# Create evolution directories
+RUN mkdir -p /freqtrade/adaptive_evolution_results \
+    && mkdir -p /freqtrade/logs \
+    && mkdir -p /freqtrade/evolution_configs
+
+# Copy evolution system files
+COPY adaptive_evolution_engine.py /freqtrade/
+COPY performance_monitor.py /freqtrade/
+COPY market_data_generator.py /freqtrade/
+COPY user_data/strategies/BinanceSpotLongOnlyRLStrategy_Enhanced.py /freqtrade/user_data/strategies/
+COPY mathematical_precision_proof.py /freqtrade/
+
+# Set permissions
+RUN chown -R ftuser:ftuser /freqtrade/adaptive_evolution_results \
+    && chown -R ftuser:ftuser /freqtrade/logs \
+    && chown -R ftuser:ftuser /freqtrade/evolution_configs
+
+USER ftuser
+
+WORKDIR /freqtrade
+
+# Set environment variables
+ENV PYTHONPATH=/freqtrade
+ENV FREQTRADE_USERDIR=/freqtrade/user_data
+
+EXPOSE 8080
