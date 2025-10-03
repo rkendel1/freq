@@ -1,0 +1,80 @@
+---
+services:
+  freqtrade-optimized:
+    # FreqAI RL Image für Reinforcement Learning Support
+    image: freqtradeorg/freqtrade:develop_freqairl
+
+    restart: unless-stopped
+    container_name: freqtrade-optimized-rl
+
+    # Optimierte Ressourcen für RL Training
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '2.0'
+          memory: 2G
+
+    # Volume-Mapping für unsere optimierten Dateien
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./logs:/freqtrade/logs"
+      # Temporäre Dateien für bessere Performance
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 200M
+
+    # API und Webserver Ports
+    ports:
+      - "127.0.0.1:8080:8080" # FreqTrade API
+      - "127.0.0.1:8090:8090" # Webserver (falls im Container gestartet)
+
+    # Umgebungsvariablen für optimierte Performance
+    environment:
+      - FREQTRADE_ENVIRONMENT=production
+      - PYTHONUNBUFFERED=1
+      - PYTHONHASHSEED=random
+      - FREQTRADE_LOG_LEVEL=INFO
+      # TensorFlow Optimierungen
+      - TF_CPP_MIN_LOG_LEVEL=2
+      - TF_ENABLE_ONEDNN_OPTS=1
+      # Gymnasium/RL Optimierungen
+      - GYM_DISABLE_WARNINGS=1
+
+    # Netzwerk für bessere Isolation
+    networks:
+      - freqtrade_optimized
+
+    # Optimierter Startbefehl mit unseren optimierten Komponenten
+    command: >
+      trade --logfile /freqtrade/user_data/logs/freqtrade_optimized.log --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite --config /freqtrade/user_data/config_binance_spot_longonly_rl.json --strategy BinanceSpotLongOnlyRLStrategy_Optimized --freqaimodel BinanceSpotLongOnlyRLModel_Optimized --verbosity 1
+
+  # Optional: Webserver Service (falls separater Container gewünscht)
+  webserver:
+    image: freqtradeorg/freqtrade:develop_freqairl
+    container_name: freqtrade-webserver
+
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    networks:
+      - freqtrade_optimized
+
+    # Nur Webserver starten
+    command: >
+      webserver --config /freqtrade/user_data/config_binance_spot_longonly_rl.json --logfile /freqtrade/user_data/logs/webserver.log
+
+    # Abhängigkeit: Webserver erst nach FreqTrade starten
+    depends_on:
+      - freqtrade-optimized
+
+# Netzwerk für bessere Container-Kommunikation
+networks:
+  freqtrade_optimized:
+    driver: bridge
