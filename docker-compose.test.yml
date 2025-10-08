@@ -1,0 +1,89 @@
+---
+# Docker Compose configuration for automated testing
+# Run with: docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+services:
+  # Unit and integration tests
+  freqtrade-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      pytest tests/
+      --random-order
+      --cov=freqtrade
+      --cov-config=.coveragerc
+      --cov-report=html
+      --cov-report=term
+      -v
+    volumes:
+      - ./tests:/freqtrade/tests:ro
+      - ./freqtrade:/freqtrade/freqtrade:ro
+      - ./test-results:/freqtrade/test-results
+    environment:
+      - PYTEST_OPTS=${PYTEST_OPTS}
+      - CI=true
+    networks:
+      - test-network
+    tmpfs:
+      - /tmp
+
+  # Linting and code quality
+  freqtrade-lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "
+      echo 'Running ruff linter...' &&
+      ruff check freqtrade/ &&
+      echo 'Running mypy type checker...' &&
+      mypy freqtrade/
+      "
+    volumes:
+      - ./freqtrade:/freqtrade/freqtrade:ro
+      - ./pyproject.toml:/freqtrade/pyproject.toml:ro
+    networks:
+      - test-network
+
+  # Backtesting validation
+  freqtrade-backtest:
+    image: freqtradeorg/freqtrade:develop
+    command: >
+      backtesting
+      --config /freqtrade/tests/testdata/config.tests.json
+      --datadir /freqtrade/tests/testdata
+      --strategy-path /freqtrade/tests/strategy/strats
+      --strategy StrategyTestV3
+      --timerange 20230101-20230201
+    volumes:
+      - ./tests:/freqtrade/tests:ro
+    networks:
+      - test-network
+    tmpfs:
+      - /tmp
+
+  # Configuration validation
+  freqtrade-config-check:
+    image: freqtradeorg/freqtrade:develop
+    command: >
+      show-config
+      --config /freqtrade/tests/testdata/config.tests.json
+    volumes:
+      - ./tests:/freqtrade/tests:ro
+    networks:
+      - test-network
+
+  # Exchange connectivity test (optional, requires API keys)
+  freqtrade-exchange-test:
+    image: freqtradeorg/freqtrade:develop
+    command: >
+      list-exchanges
+    networks:
+      - test-network
+    profiles:
+      - exchange-tests
+
+networks:
+  test-network:
+    driver: bridge

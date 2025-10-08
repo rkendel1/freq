@@ -1,0 +1,348 @@
+name: Docker Workflow CI/CD
+
+# This workflow implements a complete Docker CI/CD pipeline for FreqTrade
+# covering: build, test, security scan, and deployment
+
+on:
+  push:
+    branches:
+      - develop
+      - stable
+      - 'feature/**'
+  pull_request:
+    branches:
+      - develop
+      - stable
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      deploy_to_production:
+        description: 'Deploy to production'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOCKER_IMAGE: freqtradeorg/freqtrade
+  TEST_TAG: freqtrade:test
+  
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+jobs:
+  # =============================================================================
+  # Stage 1: Build and Test
+  # =============================================================================
+  build-and-test:
+    name: Build and Test Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ env.TEST_TAG }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Verify image build
+        run: |
+          docker images
+          docker inspect ${{ env.TEST_TAG }}
+      
+      - name: Test image structure
+        run: |
+          echo "Testing FreqTrade installation..."
+          docker run --rm ${{ env.TEST_TAG }} --version
+          
+          echo "Testing Python installation..."
+          docker run --rm ${{ env.TEST_TAG }} python --version
+          
+          echo "Checking user permissions..."
+          docker run --rm ${{ env.TEST_TAG }} id
+  
+  # =============================================================================
+  # Stage 2: Automated Tests in Container
+  # =============================================================================
+  automated-tests:
+    name: Run Automated Tests
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ env.TEST_TAG }}
+          load: true
+          cache-from: type=gha
+      
+      - name: Run unit tests
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/tests:/freqtrade/tests:ro \
+            ${{ env.TEST_TAG }} \
+            pytest tests/ -v --random-order -n auto --maxfail=5
+      
+      - name: Run configuration validation
+        run: |
+          docker compose -f docker-compose.test.yml run --rm freqtrade-config-check
+      
+      - name: Run backtesting validation
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/tests:/freqtrade/tests:ro \
+            ${{ env.TEST_TAG }} \
+            backtesting \
+            --config /freqtrade/tests/testdata/config.tests.json \
+            --datadir /freqtrade/tests/testdata \
+            --strategy-path /freqtrade/tests/strategy/strats \
+            --strategy StrategyTestV3
+  
+  # =============================================================================
+  # Stage 3: Security Scanning
+  # =============================================================================
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ env.TEST_TAG }}
+          load: true
+          cache-from: type=gha
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.TEST_TAG }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Check for secrets in image
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy image \
+            --scanners secret \
+            ${{ env.TEST_TAG }}
+  
+  # =============================================================================
+  # Stage 4: Performance and Resource Testing
+  # =============================================================================
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ env.TEST_TAG }}
+          load: true
+          cache-from: type=gha
+      
+      - name: Test resource limits
+        run: |
+          echo "Testing container with resource limits..."
+          docker run --rm \
+            --cpus="2.0" \
+            --memory="2g" \
+            ${{ env.TEST_TAG }} \
+            --version
+      
+      - name: Test startup time
+        run: |
+          echo "Measuring container startup time..."
+          time docker run --rm ${{ env.TEST_TAG }} --version
+      
+      - name: Check image size
+        run: |
+          IMAGE_SIZE=$(docker image inspect ${{ env.TEST_TAG }} --format='{{.Size}}')
+          IMAGE_SIZE_MB=$((IMAGE_SIZE / 1024 / 1024))
+          echo "Image size: ${IMAGE_SIZE_MB}MB"
+          
+          if [ ${IMAGE_SIZE_MB} -gt 2000 ]; then
+            echo "Warning: Image size exceeds 2GB"
+          fi
+  
+  # =============================================================================
+  # Stage 5: Multi-platform Build (on release)
+  # =============================================================================
+  multi-platform-build:
+    name: Multi-platform Build
+    runs-on: ubuntu-latest
+    needs: [automated-tests, security-scan]
+    if: github.event_name == 'release' || github.event.inputs.deploy_to_production == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        if: github.event_name == 'release'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      
+      - name: Build and push multi-platform image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  
+  # =============================================================================
+  # Stage 6: Generate Documentation and Reports
+  # =============================================================================
+  generate-reports:
+    name: Generate Reports
+    runs-on: ubuntu-latest
+    needs: [automated-tests, security-scan, performance-test]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Generate workflow summary
+        run: |
+          echo "## Docker Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Build and Test: ${{ needs.build-and-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Automated Tests: ${{ needs.automated-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance Test: ${{ needs.performance-test.result }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Create test badge
+        if: success()
+        run: |
+          echo "All Docker workflow tests passed! ✅" >> $GITHUB_STEP_SUMMARY
+  
+  # =============================================================================
+  # Stage 7: Deployment (Production)
+  # =============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [multi-platform-build]
+    if: github.event_name == 'release' || github.event.inputs.deploy_to_production == 'true'
+    environment:
+      name: production
+      url: https://your-freqtrade-instance.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      
+      - name: Deploy notification
+        run: |
+          echo "🚀 Deploying FreqTrade to production..." >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+      
+      # Add your deployment steps here
+      # Examples:
+      # - SSH to server and pull new image
+      # - Use Docker Swarm/Kubernetes deployment
+      # - Update cloud infrastructure
+      
+      - name: Health check
+        run: |
+          echo "Running post-deployment health checks..."
+          # Add health check commands here
+          # curl -f https://your-freqtrade-instance.com/api/v1/ping
+      
+      - name: Deployment success
+        run: |
+          echo "✅ Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY

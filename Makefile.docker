@@ -1,0 +1,388 @@
+# =============================================================================
+# FreqTrade Docker Workflow Makefile
+# =============================================================================
+# This Makefile provides comprehensive Docker workflow management for FreqTrade
+# covering development, testing, and production deployment scenarios.
+#
+# Usage: make -f Makefile.docker <target>
+# Or include in main Makefile: include Makefile.docker
+# =============================================================================
+
+.PHONY: help docker-help
+.DEFAULT_GOAL := docker-help
+
+# Color output
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+BLUE := \033[0;34m
+NC := \033[0m # No Color
+
+# =============================================================================
+# Configuration
+# =============================================================================
+COMPOSE_FILE ?= docker-compose.yml
+COMPOSE_TEST_FILE ?= docker-compose.test.yml
+COMPOSE_PROD_FILE ?= docker-compose.prod.yml
+DOCKER_IMAGE ?= freqtradeorg/freqtrade
+DOCKER_TAG ?= stable
+CUSTOM_IMAGE ?= freqtrade
+CUSTOM_TAG ?= local
+
+# =============================================================================
+# Help
+# =============================================================================
+docker-help:
+	@echo "$(BLUE)========================================$(NC)"
+	@echo "$(BLUE)FreqTrade Docker Workflow Management$(NC)"
+	@echo "$(BLUE)========================================$(NC)"
+	@echo ""
+	@echo "$(GREEN)Image Management:$(NC)"
+	@echo "  docker-build          Build standard Docker image"
+	@echo "  docker-build-custom   Build custom image with dependencies"
+	@echo "  docker-pull           Pull latest images from registry"
+	@echo "  docker-push           Push custom image to registry"
+	@echo ""
+	@echo "$(GREEN)Container Management:$(NC)"
+	@echo "  docker-up             Start containers in detached mode"
+	@echo "  docker-down           Stop and remove containers"
+	@echo "  docker-restart        Restart containers"
+	@echo "  docker-shell          Open shell in freqtrade container"
+	@echo "  docker-exec           Execute command in container (usage: docker-exec CMD='...')"
+	@echo ""
+	@echo "$(GREEN)Testing:$(NC)"
+	@echo "  docker-test           Run all tests in container"
+	@echo "  docker-test-unit      Run unit tests only"
+	@echo "  docker-test-integration Run integration tests"
+	@echo "  docker-lint           Run linting checks"
+	@echo "  docker-backtest       Run backtesting validation"
+	@echo ""
+	@echo "$(GREEN)Monitoring & Debugging:$(NC)"
+	@echo "  docker-logs           Show container logs"
+	@echo "  docker-logs-follow    Follow container logs"
+	@echo "  docker-ps             Show running containers"
+	@echo "  docker-stats          Show container resource usage"
+	@echo "  docker-health         Run health checks"
+	@echo ""
+	@echo "$(GREEN)Data Management:$(NC)"
+	@echo "  docker-backup         Backup volumes and data"
+	@echo "  docker-restore        Restore from backup"
+	@echo "  docker-volumes        List volumes"
+	@echo "  docker-volume-inspect Inspect specific volume"
+	@echo ""
+	@echo "$(GREEN)Production:$(NC)"
+	@echo "  docker-prod-up        Start production stack"
+	@echo "  docker-prod-down      Stop production stack"
+	@echo "  docker-prod-logs      Show production logs"
+	@echo ""
+	@echo "$(GREEN)Environment:$(NC)"
+	@echo "  docker-env            Create .env from template"
+	@echo "  docker-config         Validate docker-compose configuration"
+	@echo ""
+	@echo "$(GREEN)Cleanup:$(NC)"
+	@echo "  docker-clean          Stop containers and remove volumes"
+	@echo "  docker-clean-all      Remove all Docker resources"
+	@echo "  docker-prune          Prune unused Docker resources"
+	@echo ""
+
+# =============================================================================
+# Image Management
+# =============================================================================
+docker-build:
+	@echo "$(BLUE)Building standard Docker image...$(NC)"
+	docker build -t $(CUSTOM_IMAGE):$(CUSTOM_TAG) .
+	@echo "$(GREEN)✓ Build complete: $(CUSTOM_IMAGE):$(CUSTOM_TAG)$(NC)"
+
+docker-build-custom:
+	@echo "$(BLUE)Building custom Docker image...$(NC)"
+	docker build -f docker/Dockerfile.custom -t $(CUSTOM_IMAGE):custom .
+	@echo "$(GREEN)✓ Custom build complete: $(CUSTOM_IMAGE):custom$(NC)"
+
+docker-build-no-cache:
+	@echo "$(BLUE)Building Docker image without cache...$(NC)"
+	docker build --no-cache -t $(CUSTOM_IMAGE):$(CUSTOM_TAG) .
+	@echo "$(GREEN)✓ Build complete$(NC)"
+
+docker-pull:
+	@echo "$(BLUE)Pulling latest images...$(NC)"
+	docker compose -f $(COMPOSE_FILE) pull
+	@echo "$(GREEN)✓ Pull complete$(NC)"
+
+docker-push:
+	@echo "$(BLUE)Pushing custom image...$(NC)"
+	docker push $(CUSTOM_IMAGE):$(CUSTOM_TAG)
+	@echo "$(GREEN)✓ Push complete$(NC)"
+
+# =============================================================================
+# Container Management
+# =============================================================================
+docker-up:
+	@echo "$(BLUE)Starting containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) up -d
+	@echo "$(GREEN)✓ Containers started$(NC)"
+	@make docker-ps
+
+docker-down:
+	@echo "$(BLUE)Stopping containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) down
+	@echo "$(GREEN)✓ Containers stopped$(NC)"
+
+docker-restart:
+	@echo "$(BLUE)Restarting containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) restart
+	@echo "$(GREEN)✓ Containers restarted$(NC)"
+
+docker-shell:
+	@echo "$(BLUE)Opening shell in freqtrade container...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec freqtrade /bin/bash
+
+docker-exec:
+	@if [ -z "$(CMD)" ]; then \
+		echo "$(RED)Error: CMD variable required. Usage: make docker-exec CMD='your-command'$(NC)"; \
+		exit 1; \
+	fi
+	docker compose -f $(COMPOSE_FILE) exec freqtrade $(CMD)
+
+# =============================================================================
+# Testing
+# =============================================================================
+docker-test:
+	@echo "$(BLUE)Running all tests in container...$(NC)"
+	docker compose -f $(COMPOSE_TEST_FILE) up --abort-on-container-exit freqtrade-test
+	@echo "$(GREEN)✓ Tests complete$(NC)"
+
+docker-test-unit:
+	@echo "$(BLUE)Running unit tests...$(NC)"
+	docker compose -f $(COMPOSE_TEST_FILE) run --rm freqtrade-test \
+		pytest tests/ -v -m "not integration"
+	@echo "$(GREEN)✓ Unit tests complete$(NC)"
+
+docker-test-integration:
+	@echo "$(BLUE)Running integration tests...$(NC)"
+	docker compose -f $(COMPOSE_TEST_FILE) run --rm freqtrade-test \
+		pytest tests/ -v -m integration
+	@echo "$(GREEN)✓ Integration tests complete$(NC)"
+
+docker-lint:
+	@echo "$(BLUE)Running linting checks...$(NC)"
+	docker compose -f $(COMPOSE_TEST_FILE) up --abort-on-container-exit freqtrade-lint
+	@echo "$(GREEN)✓ Linting complete$(NC)"
+
+docker-backtest:
+	@echo "$(BLUE)Running backtesting validation...$(NC)"
+	docker compose -f $(COMPOSE_TEST_FILE) up --abort-on-container-exit freqtrade-backtest
+	@echo "$(GREEN)✓ Backtest complete$(NC)"
+
+docker-test-all: docker-lint docker-test docker-backtest
+	@echo "$(GREEN)✓ All tests passed$(NC)"
+
+# =============================================================================
+# Monitoring & Debugging
+# =============================================================================
+docker-logs:
+	docker compose -f $(COMPOSE_FILE) logs --tail=100
+
+docker-logs-follow:
+	docker compose -f $(COMPOSE_FILE) logs -f
+
+docker-ps:
+	@echo "$(BLUE)Container Status:$(NC)"
+	docker compose -f $(COMPOSE_FILE) ps
+
+docker-stats:
+	@echo "$(BLUE)Container Resource Usage:$(NC)"
+	docker stats --no-stream
+
+docker-health:
+	@echo "$(BLUE)Running health checks...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) ps | grep -q "healthy" && \
+		echo "$(GREEN)✓ Containers healthy$(NC)" || \
+		echo "$(YELLOW)⚠ Check container status$(NC)"
+	@curl -s http://localhost:8080/api/v1/ping > /dev/null 2>&1 && \
+		echo "$(GREEN)✓ API responding$(NC)" || \
+		echo "$(YELLOW)⚠ API not responding$(NC)"
+
+docker-inspect:
+	@if [ -z "$(CONTAINER)" ]; then \
+		echo "$(RED)Error: CONTAINER variable required. Usage: make docker-inspect CONTAINER=freqtrade$(NC)"; \
+		exit 1; \
+	fi
+	docker compose -f $(COMPOSE_FILE) exec $(CONTAINER) \
+		sh -c "echo '=== System Info ===' && \
+		       uname -a && \
+		       echo '=== Python Version ===' && \
+		       python --version && \
+		       echo '=== FreqTrade Version ===' && \
+		       freqtrade --version && \
+		       echo '=== Disk Usage ===' && \
+		       df -h"
+
+# =============================================================================
+# Data Management
+# =============================================================================
+docker-backup:
+	@echo "$(BLUE)Creating backup...$(NC)"
+	@mkdir -p ./backups
+	@TIMESTAMP=$$(date +%Y%m%d_%H%M%S); \
+	docker run --rm \
+		-v freqtrade_user_data:/data \
+		-v $(PWD)/backups:/backup \
+		alpine tar czf /backup/freqtrade-backup-$$TIMESTAMP.tar.gz -C /data .
+	@echo "$(GREEN)✓ Backup created in ./backups/$(NC)"
+
+docker-restore:
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "$(RED)Error: BACKUP variable required. Usage: make docker-restore BACKUP=filename.tar.gz$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)⚠ This will overwrite existing data. Continue? [y/N]$(NC)" && read ans && [ $${ans:-N} = y ]
+	@echo "$(BLUE)Restoring from backup...$(NC)"
+	docker run --rm \
+		-v freqtrade_user_data:/data \
+		-v $(PWD)/backups:/backup \
+		alpine tar xzf /backup/$(BACKUP) -C /data
+	@echo "$(GREEN)✓ Restore complete$(NC)"
+
+docker-volumes:
+	@echo "$(BLUE)Docker Volumes:$(NC)"
+	docker volume ls | grep freqtrade
+
+docker-volume-inspect:
+	@if [ -z "$(VOLUME)" ]; then \
+		echo "$(RED)Error: VOLUME variable required. Usage: make docker-volume-inspect VOLUME=volume_name$(NC)"; \
+		exit 1; \
+	fi
+	docker volume inspect $(VOLUME)
+
+docker-volume-ls:
+	@echo "$(BLUE)Volume contents:$(NC)"
+	@if [ -z "$(VOLUME)" ]; then \
+		echo "$(RED)Error: VOLUME variable required. Usage: make docker-volume-ls VOLUME=volume_name$(NC)"; \
+		exit 1; \
+	fi
+	docker run --rm -v $(VOLUME):/data alpine ls -lah /data
+
+# =============================================================================
+# Production
+# =============================================================================
+docker-prod-up:
+	@echo "$(BLUE)Starting production stack...$(NC)"
+	docker compose -f $(COMPOSE_PROD_FILE) up -d
+	@echo "$(GREEN)✓ Production stack started$(NC)"
+	@make docker-health
+
+docker-prod-down:
+	@echo "$(BLUE)Stopping production stack...$(NC)"
+	docker compose -f $(COMPOSE_PROD_FILE) down
+	@echo "$(GREEN)✓ Production stack stopped$(NC)"
+
+docker-prod-logs:
+	docker compose -f $(COMPOSE_PROD_FILE) logs -f
+
+docker-prod-restart:
+	@echo "$(BLUE)Restarting production stack...$(NC)"
+	docker compose -f $(COMPOSE_PROD_FILE) restart
+	@echo "$(GREEN)✓ Production stack restarted$(NC)"
+
+docker-prod-update:
+	@echo "$(BLUE)Updating production deployment...$(NC)"
+	docker compose -f $(COMPOSE_PROD_FILE) pull
+	docker compose -f $(COMPOSE_PROD_FILE) up -d --force-recreate
+	@echo "$(GREEN)✓ Production update complete$(NC)"
+
+# =============================================================================
+# Environment
+# =============================================================================
+docker-env:
+	@if [ -f .env ]; then \
+		echo "$(YELLOW)⚠ .env file already exists$(NC)"; \
+		echo "Backup: .env.backup"; \
+		cp .env .env.backup; \
+	fi
+	@echo "$(BLUE)Creating .env file from template...$(NC)"
+	cp .env.docker.example .env
+	@echo "$(GREEN)✓ .env file created$(NC)"
+	@echo "$(YELLOW)⚠ Please edit .env and configure your settings$(NC)"
+
+docker-config:
+	@echo "$(BLUE)Validating Docker Compose configuration...$(NC)"
+	docker compose -f $(COMPOSE_FILE) config > /dev/null
+	@echo "$(GREEN)✓ Configuration valid$(NC)"
+
+docker-config-prod:
+	@echo "$(BLUE)Validating production configuration...$(NC)"
+	docker compose -f $(COMPOSE_PROD_FILE) config > /dev/null
+	@echo "$(GREEN)✓ Production configuration valid$(NC)"
+
+# =============================================================================
+# Cleanup
+# =============================================================================
+docker-clean:
+	@echo "$(YELLOW)⚠ This will stop containers and remove volumes. Continue? [y/N]$(NC)" && read ans && [ $${ans:-N} = y ]
+	@echo "$(BLUE)Cleaning up...$(NC)"
+	docker compose -f $(COMPOSE_FILE) down -v
+	@echo "$(GREEN)✓ Cleanup complete$(NC)"
+
+docker-clean-all:
+	@echo "$(RED)⚠ This will remove ALL Docker resources. Continue? [y/N]$(NC)" && read ans && [ $${ans:-N} = y ]
+	@echo "$(BLUE)Removing all Docker resources...$(NC)"
+	docker compose -f $(COMPOSE_FILE) down -v --rmi all
+	docker compose -f $(COMPOSE_TEST_FILE) down -v --rmi all 2>/dev/null || true
+	docker compose -f $(COMPOSE_PROD_FILE) down -v --rmi all 2>/dev/null || true
+	@echo "$(GREEN)✓ All resources removed$(NC)"
+
+docker-prune:
+	@echo "$(BLUE)Pruning unused Docker resources...$(NC)"
+	docker system prune -af --volumes
+	@echo "$(GREEN)✓ Prune complete$(NC)"
+
+docker-clean-logs:
+	@echo "$(BLUE)Cleaning container logs...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) ps -q | xargs -I {} docker inspect --format='{{.LogPath}}' {} | xargs -I {} sudo truncate -s 0 {}
+	@echo "$(GREEN)✓ Logs cleaned$(NC)"
+
+# =============================================================================
+# Development Helpers
+# =============================================================================
+docker-dev-setup: docker-env docker-pull docker-build
+	@echo "$(GREEN)✓ Development environment setup complete$(NC)"
+
+docker-dev-reset: docker-clean docker-dev-setup docker-up
+	@echo "$(GREEN)✓ Development environment reset complete$(NC)"
+
+docker-quick-test: docker-test-unit docker-lint
+	@echo "$(GREEN)✓ Quick tests passed$(NC)"
+
+# =============================================================================
+# CI/CD Helpers
+# =============================================================================
+docker-ci-test: docker-lint docker-test docker-backtest
+	@echo "$(GREEN)✓ All CI tests passed$(NC)"
+
+docker-ci-build:
+	@echo "$(BLUE)Building for CI...$(NC)"
+	docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+		--cache-from $(DOCKER_IMAGE):$(DOCKER_TAG) \
+		-t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@echo "$(GREEN)✓ CI build complete$(NC)"
+
+# =============================================================================
+# Utility Functions
+# =============================================================================
+docker-version:
+	@echo "$(BLUE)Docker Version Information:$(NC)"
+	@docker --version
+	@docker compose version
+	@docker compose -f $(COMPOSE_FILE) exec freqtrade freqtrade --version 2>/dev/null || echo "Container not running"
+
+docker-network-ls:
+	@echo "$(BLUE)Docker Networks:$(NC)"
+	@docker network ls | grep freqtrade
+
+docker-image-ls:
+	@echo "$(BLUE)FreqTrade Images:$(NC)"
+	@docker images | grep -E "(REPOSITORY|freqtrade)"
+
+docker-system-df:
+	@echo "$(BLUE)Docker Disk Usage:$(NC)"
+	@docker system df
