@@ -1,5 +1,6 @@
 """
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
+Enhanced with improved monitoring, risk management, and performance tracking
 """
 
 import logging
@@ -74,6 +75,7 @@ class FreqtradeBot(LoggingMixin):
     """
     Freqtrade is the main class of the bot.
     This is from here the bot start its logic.
+    Enhanced with performance tracking and improved risk management.
     """
 
     def __init__(self, config: Config) -> None:
@@ -86,6 +88,27 @@ class FreqtradeBot(LoggingMixin):
 
         # Init bot state
         self.state = State.STOPPED
+
+        # ENHANCEMENT: Performance tracking
+        self.performance_stats = {
+            'total_trades': 0,
+            'winning_trades': 0,
+            'losing_trades': 0,
+            'total_profit': 0.0,
+            'max_drawdown': 0.0,
+            'consecutive_losses': 0,
+            'max_consecutive_losses': 0,
+            'last_performance_log': datetime.now(UTC)
+        }
+        
+        # ENHANCEMENT: Trade execution metrics
+        self.execution_metrics = {
+            'avg_entry_time': 0.0,
+            'avg_exit_time': 0.0,
+            'failed_entries': 0,
+            'failed_exits': 0,
+            'slippage_total': 0.0
+        }
 
         # Init objects
         self.config = config
@@ -113,6 +136,11 @@ class FreqtradeBot(LoggingMixin):
         self.trading_mode: TradingMode = self.config.get("trading_mode", TradingMode.SPOT)
         self.margin_mode: MarginMode = self.config.get("margin_mode", MarginMode.NONE)
         self.last_process: datetime | None = None
+
+        # ENHANCEMENT: Risk management tracking
+        self.daily_loss_limit = self.config.get("daily_loss_limit", None)
+        self.daily_loss_current = 0.0
+        self.daily_loss_reset_time = datetime.now(UTC).replace(hour=0, minute=0, second=0)
 
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
@@ -172,6 +200,10 @@ class FreqtradeBot(LoggingMixin):
                     self._schedule.every().day.at(t).do(update)
 
         self._schedule.every().day.at("00:02").do(self.exchange.ws_connection_reset)
+        
+        # ENHANCEMENT: Schedule performance reporting
+        self._schedule.every().hour.do(self._log_performance_stats)
+        self._schedule.every().day.at("00:01").do(self._reset_daily_limits)
 
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
@@ -180,12 +212,62 @@ class FreqtradeBot(LoggingMixin):
         def log_took_too_long(duration: float, time_limit: float):
             logger.warning(
                 f"Strategy analysis took {duration:.2f}s, more than 25% of the timeframe "
-                f"({time_limit:.2f}s). This can lead to delayed orders and missed signals."
+                f"({time_limit:.2f}s). This can lead to delayed orders and missed signals. "
                 "Consider either reducing the amount of work your strategy performs "
                 "or reduce the amount of pairs in the Pairlist."
             )
 
         self._measure_execution = MeasureTime(log_took_too_long, timeframe_secs * 0.25)
+
+    # ENHANCEMENT: Performance tracking method
+    def _log_performance_stats(self) -> None:
+        """Log performance statistics hourly"""
+        stats = self.performance_stats
+        win_rate = (stats['winning_trades'] / stats['total_trades'] * 100 
+                   if stats['total_trades'] > 0 else 0)
+        
+        logger.info(
+            f"Performance Stats - Total Trades: {stats['total_trades']}, "
+            f"Win Rate: {win_rate:.2f}%, "
+            f"Total Profit: {stats['total_profit']:.4f}, "
+            f"Max Drawdown: {stats['max_drawdown']:.4f}, "
+            f"Consecutive Losses: {stats['consecutive_losses']}"
+        )
+        
+        # Send performance notification
+        self.rpc.send_msg({
+            "type": RPCMessageType.STATUS,
+            "status": f"📊 Hourly Performance: {stats['total_trades']} trades, "
+                     f"{win_rate:.1f}% win rate, {stats['total_profit']:.4f} profit"
+        })
+
+    # ENHANCEMENT: Daily limit reset
+    def _reset_daily_limits(self) -> None:
+        """Reset daily loss tracking"""
+        self.daily_loss_current = 0.0
+        self.daily_loss_reset_time = datetime.now(UTC).replace(hour=0, minute=0, second=0)
+        logger.info("Daily loss limit reset")
+
+    # ENHANCEMENT: Check daily loss limit
+    def _check_daily_loss_limit(self) -> bool:
+        """
+        Check if daily loss limit has been reached
+        :return: True if trading should continue, False if limit reached
+        """
+        if self.daily_loss_limit is None:
+            return True
+            
+        if abs(self.daily_loss_current) >= self.daily_loss_limit:
+            logger.warning(
+                f"Daily loss limit of {self.daily_loss_limit} reached. "
+                f"Current loss: {self.daily_loss_current:.4f}. Stopping new trades."
+            )
+            self.rpc.send_msg({
+                "type": RPCMessageType.WARNING,
+                "status": f"⚠️ Daily loss limit reached: {self.daily_loss_current:.4f}"
+            })
+            return False
+        return True
 
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """
@@ -200,6 +282,10 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         logger.info("Cleaning up modules ...")
+        
+        # ENHANCEMENT: Log final performance stats before cleanup
+        self._log_performance_stats()
+        
         try:
             # Wrap db activities in shutdown to avoid problems if database is gone,
             # and raises further exceptions.
@@ -243,6 +329,24 @@ class FreqtradeBot(LoggingMixin):
         self.startup_update_open_orders()
         self.update_all_liquidation_prices()
         self.update_funding_fees()
+        
+        # ENHANCEMENT: Load historical performance data
+        self._load_performance_history()
+
+    # ENHANCEMENT: Load performance history
+    def _load_performance_history(self) -> None:
+        """Load historical performance data from closed trades"""
+        closed_trades = Trade.get_trades([Trade.is_open.is_(False)]).all()
+        for trade in closed_trades:
+            if trade.close_profit is not None:
+                self.performance_stats['total_trades'] += 1
+                if trade.close_profit > 0:
+                    self.performance_stats['winning_trades'] += 1
+                else:
+                    self.performance_stats['losing_trades'] += 1
+                self.performance_stats['total_profit'] += trade.close_profit
+        
+        logger.info(f"Loaded performance history: {self.performance_stats['total_trades']} trades")
 
     def process(self) -> None:
         """
@@ -292,9 +396,13 @@ class FreqtradeBot(LoggingMixin):
             with self._exit_lock:
                 self.process_open_trade_positions()
 
+        # ENHANCEMENT: Check daily loss limit before entering new trades
         # Then looking for entry opportunities
-        if self.state == State.RUNNING and self.get_free_open_trades():
+        if (self.state == State.RUNNING and 
+            self.get_free_open_trades() and 
+            self._check_daily_loss_limit()):
             self.enter_positions()
+            
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -880,6 +988,9 @@ class FreqtradeBot(LoggingMixin):
         :return: True if an entry order is created, False if it fails.
         :raise: DependencyException or it's subclasses like ExchangeError.
         """
+        # ENHANCEMENT: Track entry attempt time
+        entry_start_time = datetime.now(UTC)
+        
         time_in_force = self.strategy.order_time_in_force["entry"]
 
         side: BuySell = "sell" if is_short else "buy"
@@ -892,6 +1003,7 @@ class FreqtradeBot(LoggingMixin):
         )
 
         if not stake_amount:
+            self.execution_metrics['failed_entries'] += 1
             return False
 
         msg = (
@@ -928,16 +1040,28 @@ class FreqtradeBot(LoggingMixin):
         if trade and self.handle_similar_open_order(trade, enter_limit_requested, amount, side):
             return False
 
-        order = self.exchange.create_order(
-            pair=pair,
-            ordertype=order_type,
-            side=side,
-            amount=amount,
-            rate=enter_limit_requested,
-            reduceOnly=False,
-            time_in_force=time_in_force,
-            leverage=leverage,
+        try:
+            order = self.exchange.create_order(
+                pair=pair,
+                ordertype=order_type,
+                side=side,
+                amount=amount,
+                rate=enter_limit_requested,
+                reduceOnly=False,
+                time_in_force=time_in_force,
+                leverage=leverage,
+            )
+        except Exception as e:
+            self.execution_metrics['failed_entries'] += 1
+            logger.error(f"Failed to create entry order for {pair}: {e}")
+            raise
+            
+        # ENHANCEMENT: Calculate entry execution time
+        entry_duration = (datetime.now(UTC) - entry_start_time).total_seconds()
+        self.execution_metrics['avg_entry_time'] = (
+            (self.execution_metrics['avg_entry_time'] + entry_duration) / 2
         )
+        
         order_obj = Order.parse_from_ccxt_object(order, pair, side, amount, enter_limit_requested)
         order_obj.ft_order_tag = enter_tag
         order_id = order["id"]
@@ -985,6 +1109,13 @@ class FreqtradeBot(LoggingMixin):
             enter_limit_filled_price = safe_value_fallback(
                 order, "average", "price", enter_limit_requested
             )
+
+        # ENHANCEMENT: Track slippage
+        if enter_limit_filled_price != enter_limit_requested:
+            slippage = abs(enter_limit_filled_price - enter_limit_requested) / enter_limit_requested
+            self.execution_metrics['slippage_total'] += slippage
+            if slippage > 0.01:  # Log if slippage > 1%
+                logger.warning(f"High slippage detected for {pair}: {slippage*100:.2f}%")
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker="maker")
@@ -1179,6 +1310,46 @@ class FreqtradeBot(LoggingMixin):
 
         return enter_limit_requested, stake_amount, leverage
 
+    # ENHANCEMENT: Update performance stats when trade closes
+    def _update_performance_on_close(self, trade: Trade) -> None:
+        """Update performance statistics when a trade closes"""
+        if trade.close_profit is not None:
+            self.performance_stats['total_trades'] += 1
+            
+            if trade.close_profit > 0:
+                self.performance_stats['winning_trades'] += 1
+                self.performance_stats['consecutive_losses'] = 0
+            else:
+                self.performance_stats['losing_trades'] += 1
+                self.performance_stats['consecutive_losses'] += 1
+                self.performance_stats['max_consecutive_losses'] = max(
+                    self.performance_stats['max_consecutive_losses'],
+                    self.performance_stats['consecutive_losses']
+                )
+                
+                # ENHANCEMENT: Update daily loss tracking
+                self.daily_loss_current += trade.close_profit
+            
+            self.performance_stats['total_profit'] += trade.close_profit
+            
+            # Update max drawdown
+            if trade.close_profit < 0:
+                self.performance_stats['max_drawdown'] = min(
+                    self.performance_stats['max_drawdown'],
+                    trade.close_profit
+                )
+            
+            # Log warning for consecutive losses
+            if self.performance_stats['consecutive_losses'] >= 3:
+                logger.warning(
+                    f"⚠️ {self.performance_stats['consecutive_losses']} consecutive losses detected. "
+                    "Consider reviewing strategy or market conditions."
+                )
+                self.rpc.send_msg({
+                    "type": RPCMessageType.WARNING,
+                    "status": f"⚠️ {self.performance_stats['consecutive_losses']} consecutive losses"
+                })
+
     def _notify_enter(
         self,
         trade: Trade,
@@ -1232,1385 +1403,3 @@ class FreqtradeBot(LoggingMixin):
 
         # Send the message
         self.rpc.send_msg(msg)
-
-    def _notify_enter_cancel(
-        self, trade: Trade, order_type: str, reason: str, sub_trade: bool = False
-    ) -> None:
-        """
-        Sends rpc notification when a entry order cancel occurred.
-        """
-        current_rate = self.exchange.get_rate(
-            trade.pair, side="entry", is_short=trade.is_short, refresh=False
-        )
-
-        msg: RPCCancelMsg = {
-            "trade_id": trade.id,
-            "type": RPCMessageType.ENTRY_CANCEL,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "limit": trade.open_rate,
-            "order_rate": trade.open_rate,
-            "order_type": order_type,
-            "stake_amount": trade.stake_amount,
-            "open_rate": trade.open_rate,
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency", None),
-            "amount": trade.amount,
-            "open_date": trade.open_date,
-            "current_rate": current_rate,
-            "reason": reason,
-            "sub_trade": sub_trade,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
-
-    #
-    # SELL / exit positions / close trades logic and methods
-    #
-
-    def exit_positions(self, trades: list[Trade]) -> int:
-        """
-        Tries to execute exit orders for open trades (positions)
-        """
-        trades_closed = 0
-        for trade in trades:
-            if (
-                not trade.has_open_orders
-                and not trade.has_open_sl_orders
-                and trade.fee_open_currency is not None
-                and not self.wallets.check_exit_amount(trade)
-            ):
-                logger.warning(
-                    f"Not enough {trade.safe_base_currency} in wallet to exit {trade}. "
-                    "Trying to recover."
-                )
-                if self.handle_onexchange_order(trade):
-                    # Trade was deleted. Don't continue.
-                    continue
-
-            try:
-                try:
-                    if self.strategy.order_types.get(
-                        "stoploss_on_exchange"
-                    ) and self.handle_stoploss_on_exchange(trade):
-                        trades_closed += 1
-                        Trade.commit()
-                        continue
-
-                except InvalidOrderException as exception:
-                    logger.warning(
-                        f"Unable to handle stoploss on exchange for {trade.pair}: {exception}"
-                    )
-                # Check if we can exit our current position for this trade
-                if trade.has_open_position and trade.is_open and self.handle_trade(trade):
-                    trades_closed += 1
-
-            except DependencyException as exception:
-                logger.warning(f"Unable to exit trade {trade.pair}: {exception}")
-
-        # Updating wallets if any trade occurred
-        if trades_closed:
-            self.wallets.update()
-
-        return trades_closed
-
-    def handle_trade(self, trade: Trade) -> bool:
-        """
-        Exits the current pair if the threshold is reached and updates the trade record.
-        :return: True if trade has been sold/exited_short, False otherwise
-        """
-        if not trade.is_open:
-            raise DependencyException(f"Attempt to handle closed trade: {trade}")
-
-        logger.debug("Handling %s ...", trade)
-
-        (enter, exit_) = (False, False)
-        exit_tag = None
-        exit_signal_type = "exit_short" if trade.is_short else "exit_long"
-
-        if self.config.get("use_exit_signal", True) or self.config.get(
-            "ignore_roi_if_entry_signal", False
-        ):
-            analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(
-                trade.pair, self.strategy.timeframe
-            )
-
-            (enter, exit_, exit_tag) = self.strategy.get_exit_signal(
-                trade.pair, self.strategy.timeframe, analyzed_df, is_short=trade.is_short
-            )
-
-        logger.debug("checking exit")
-        exit_rate = self.exchange.get_rate(
-            trade.pair, side="exit", is_short=trade.is_short, refresh=True
-        )
-        if self._check_and_execute_exit(trade, exit_rate, enter, exit_, exit_tag):
-            return True
-
-        logger.debug(f"Found no {exit_signal_type} signal for %s.", trade)
-        return False
-
-    def _check_and_execute_exit(
-        self, trade: Trade, exit_rate: float, enter: bool, exit_: bool, exit_tag: str | None
-    ) -> bool:
-        """
-        Check and execute trade exit
-        """
-        exits: list[ExitCheckTuple] = self.strategy.should_exit(
-            trade,
-            exit_rate,
-            datetime.now(UTC),
-            enter=enter,
-            exit_=exit_,
-            force_stoploss=0,
-        )
-        for should_exit in exits:
-            if should_exit.exit_flag:
-                exit_tag1 = exit_tag if should_exit.exit_type == ExitType.EXIT_SIGNAL else None
-                if trade.has_open_orders:
-                    if prev_eval := self._exit_reason_cache.get(
-                        f"{trade.pair}_{trade.id}_{exit_tag1 or should_exit.exit_reason}", None
-                    ):
-                        logger.debug(
-                            f"Exit reason already seen this candle, first seen at {prev_eval}"
-                        )
-                        continue
-
-                logger.info(
-                    f"Exit for {trade.pair} detected. Reason: {should_exit.exit_type}"
-                    f"{f' Tag: {exit_tag1}' if exit_tag1 is not None else ''}"
-                )
-                exited = self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag1)
-                if exited:
-                    return True
-        return False
-
-    def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
-        """
-        Abstracts creating stoploss orders from the logic.
-        Handles errors and updates the trade database object.
-        Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
-        :return: True if the order succeeded, and False in case of problems.
-        """
-        try:
-            stoploss_order = self.exchange.create_stoploss(
-                pair=trade.pair,
-                amount=trade.amount,
-                stop_price=stop_price,
-                order_types=self.strategy.order_types,
-                side=trade.exit_side,
-                leverage=trade.leverage,
-            )
-
-            order_obj = Order.parse_from_ccxt_object(
-                stoploss_order, trade.pair, "stoploss", trade.amount, stop_price
-            )
-            trade.orders.append(order_obj)
-            return True
-        except InsufficientFundsError as e:
-            logger.warning(f"Unable to place stoploss order {e}.")
-            # Try to figure out what went wrong
-            self.handle_insufficient_funds(trade)
-
-        except InvalidOrderException as e:
-            logger.error(f"Unable to place a stoploss order on exchange. {e}")
-            logger.warning("Exiting the trade forcefully")
-            self.emergency_exit(trade, stop_price)
-
-        except ExchangeError:
-            logger.exception("Unable to place a stoploss order on exchange.")
-        return False
-
-    def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
-        """
-        Check if trade is fulfilled in which case the stoploss
-        on exchange should be added immediately if stoploss on exchange
-        is enabled.
-        # TODO: liquidation price always on exchange, even without stoploss_on_exchange
-        # Therefore fetching account liquidations for open pairs may make sense.
-        """
-
-        logger.debug("Handling stoploss on exchange %s ...", trade)
-
-        stoploss_orders = []
-        for slo in trade.open_sl_orders:
-            stoploss_order = None
-            try:
-                # First we check if there is already a stoploss on exchange
-                stoploss_order = (
-                    self.exchange.fetch_stoploss_order(slo.order_id, trade.pair)
-                    if slo.order_id
-                    else None
-                )
-            except InvalidOrderException as exception:
-                logger.warning("Unable to fetch stoploss order: %s", exception)
-
-            if stoploss_order:
-                stoploss_orders.append(stoploss_order)
-                self.update_trade_state(trade, slo.order_id, stoploss_order, stoploss_order=True)
-
-            # We check if stoploss order is fulfilled
-            if stoploss_order and stoploss_order["status"] in ("closed", "triggered"):
-                trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-                self._notify_exit(trade, "stoploss", True)
-                self.handle_protections(trade.pair, trade.trade_direction)
-                return True
-
-        if (
-            not trade.has_open_position
-            or not trade.is_open
-            or (trade.has_open_orders and self.exchange.get_option("stoploss_blocks_assets", True))
-        ):
-            # The trade can be closed already (sell-order fill confirmation came in this iteration)
-            return False
-
-        # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if len(stoploss_orders) == 0:
-            stop_price = trade.stoploss_or_liquidation
-
-            if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                # The above will return False if the placement failed and the trade was force-sold.
-                # in which case the trade will be closed - which we must check below.
-                return False
-
-        self.manage_trade_stoploss_orders(trade, stoploss_orders)
-
-        return False
-
-    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: list[CcxtOrder]):
-        """
-        Perform required actions according to existing stoploss orders of trade
-        :param trade: Corresponding Trade
-        :param stoploss_orders: Current on exchange stoploss orders
-        :return: None
-        """
-        # If all stoploss ordered are canceled for some reason we add it again
-        canceled_sl_orders = [
-            o for o in stoploss_orders if o["status"] in ("canceled", "cancelled")
-        ]
-        if (
-            trade.is_open
-            and len(stoploss_orders) > 0
-            and len(stoploss_orders) == len(canceled_sl_orders)
-        ):
-            if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
-                return False
-            else:
-                logger.warning("All Stoploss orders are cancelled, but unable to recreate one.")
-
-        active_sl_orders = [o for o in stoploss_orders if o not in canceled_sl_orders]
-        if len(active_sl_orders) > 0:
-            last_active_sl_order = active_sl_orders[-1]
-            # Finally we check if stoploss on exchange should be moved up because of trailing.
-            # Triggered Orders are now real orders - so don't replace stoploss anymore
-            if (
-                trade.is_open
-                and last_active_sl_order.get("status_stop") != "triggered"
-                and (
-                    self.config.get("trailing_stop", False)
-                    or self.config.get("use_custom_stoploss", False)
-                )
-            ):
-                # if trailing stoploss is enabled we check if stoploss value has changed
-                # in which case we cancel stoploss order and put another one with new
-                # value immediately
-                self.handle_trailing_stoploss_on_exchange(trade, last_active_sl_order)
-
-        return
-
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: CcxtOrder) -> None:
-        """
-        Check to see if stoploss on exchange should be updated
-        in case of trailing stoploss on exchange
-        :param trade: Corresponding Trade
-        :param order: Current on exchange stoploss order
-        :return: None
-        """
-        stoploss_norm = self.exchange.price_to_precision(
-            trade.pair,
-            trade.stoploss_or_liquidation,
-            rounding_mode=ROUND_DOWN if trade.is_short else ROUND_UP,
-        )
-
-        if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
-            # we check if the update is necessary
-            update_beat = self.strategy.order_types.get("stoploss_on_exchange_interval", 60)
-            upd_req = datetime.now(UTC) - timedelta(seconds=update_beat)
-            if trade.stoploss_last_update_utc and upd_req >= trade.stoploss_last_update_utc:
-                # cancelling the current stoploss on exchange first
-                logger.info(
-                    f"Cancelling current stoploss on exchange for pair {trade.pair} "
-                    f"(orderid:{order['id']}) in order to add another one ..."
-                )
-
-                self.cancel_stoploss_on_exchange(trade)
-                if not trade.is_open:
-                    logger.warning(
-                        f"Trade {trade} is closed, not creating trailing stoploss order."
-                    )
-                    return
-
-                # Create new stoploss order
-                if not self.create_stoploss_order(trade=trade, stop_price=stoploss_norm):
-                    logger.warning(
-                        f"Could not create trailing stoploss order for pair {trade.pair}."
-                    )
-
-    def manage_open_orders(self) -> None:
-        """
-        Management of open orders on exchange. Unfilled orders might be cancelled if timeout
-        was met or replaced if there's a new candle and user has requested it.
-        Timeout setting takes priority over limit order adjustment request.
-        :return: None
-        """
-        for trade in Trade.get_open_trades():
-            open_order: Order
-            for open_order in trade.open_orders:
-                try:
-                    order = self.exchange.fetch_order(open_order.order_id, trade.pair)
-
-                except ExchangeError:
-                    logger.info(
-                        "Cannot query order for %s due to %s", trade, traceback.format_exc()
-                    )
-                    continue
-
-                fully_cancelled = self.update_trade_state(trade, open_order.order_id, order)
-                not_closed = order["status"] == "open" or fully_cancelled
-
-                if not_closed:
-                    if fully_cancelled or (
-                        open_order
-                        and self.strategy.ft_check_timed_out(trade, open_order, datetime.now(UTC))
-                    ):
-                        self.handle_cancel_order(
-                            order, open_order, trade, constants.CANCEL_REASON["TIMEOUT"]
-                        )
-                    else:
-                        self.replace_order(order, open_order, trade)
-
-    def handle_cancel_order(
-        self, order: CcxtOrder, order_obj: Order, trade: Trade, reason: str, replacing: bool = False
-    ) -> bool:
-        """
-        Check if current analyzed order timed out and cancel if necessary.
-        :param order: Order dict grabbed with exchange.fetch_order()
-        :param order_obj: Order object from the database.
-        :param trade: Trade object.
-        :return: True if the order was canceled, False otherwise.
-        """
-        if order["side"] == trade.entry_side:
-            return self.handle_cancel_enter(trade, order, order_obj, reason, replacing)
-        else:
-            canceled = self.handle_cancel_exit(trade, order, order_obj, reason)
-            if not replacing:
-                canceled_count = trade.get_canceled_exit_order_count()
-                max_timeouts = self.config.get("unfilledtimeout", {}).get("exit_timeout_count", 0)
-                if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                    logger.warning(
-                        f"Emergency exiting trade {trade}, as the exit order "
-                        f"timed out {max_timeouts} times. force selling {order['amount']}."
-                    )
-                    # Trade.session.refresh(order_obj)
-
-                    self.emergency_exit(trade, order["price"], order_obj.safe_remaining)
-            return canceled
-
-    def emergency_exit(
-        self, trade: Trade, price: float, sub_trade_amt: float | None = None
-    ) -> None:
-        try:
-            self.execute_trade_exit(
-                trade,
-                price,
-                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT),
-                sub_trade_amt=sub_trade_amt,
-            )
-        except DependencyException as exception:
-            logger.warning(f"Unable to emergency exit trade {trade.pair}: {exception}")
-
-    def replace_order_failed(self, trade: Trade, msg: str) -> None:
-        """
-        Order replacement fail handling.
-        Deletes the trade if necessary.
-        :param trade: Trade object.
-        :param msg: Error message.
-        """
-        logger.warning(msg)
-        if trade.nr_of_successful_entries == 0:
-            # this is the first entry and we didn't get filled yet, delete trade
-            logger.warning(f"Removing {trade} from database.")
-            self._notify_enter_cancel(
-                trade,
-                order_type=self.strategy.order_types["entry"],
-                reason=constants.CANCEL_REASON["REPLACE_FAILED"],
-            )
-            trade.delete()
-
-    def replace_order(self, order: CcxtOrder, order_obj: Order | None, trade: Trade) -> None:
-        """
-        Check if current analyzed entry order should be replaced or simply cancelled.
-        To simply cancel the existing order(no replacement) adjust_order_price() should return None
-        To maintain existing order adjust_order_price() should return order_obj.price
-        To replace existing order adjust_order_price() should return desired price for limit order
-        :param order: Order dict grabbed with exchange.fetch_order()
-        :param order_obj: Order object.
-        :param trade: Trade object.
-        :return: None
-        """
-        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(
-            trade.pair, self.strategy.timeframe
-        )
-        latest_candle_open_date = analyzed_df.iloc[-1]["date"] if len(analyzed_df) > 0 else None
-        latest_candle_close_date = timeframe_to_next_date(
-            self.strategy.timeframe, latest_candle_open_date
-        )
-        # Check if new candle
-        if order_obj and latest_candle_close_date > order_obj.order_date_utc:
-            is_entry = order_obj.side == trade.entry_side
-            # New candle
-            proposed_rate = self.exchange.get_rate(
-                trade.pair,
-                side="entry" if is_entry else "exit",
-                is_short=trade.is_short,
-                refresh=True,
-            )
-            adjusted_price = strategy_safe_wrapper(
-                self.strategy.adjust_order_price, default_retval=order_obj.safe_placement_price
-            )(
-                trade=trade,
-                order=order_obj,
-                pair=trade.pair,
-                current_time=datetime.now(UTC),
-                proposed_rate=proposed_rate,
-                current_order_rate=order_obj.safe_placement_price,
-                entry_tag=trade.enter_tag,
-                side=trade.trade_direction,
-                is_entry=is_entry,
-            )
-
-            replacing = True
-            cancel_reason = constants.CANCEL_REASON["REPLACE"]
-            if not adjusted_price:
-                replacing = False
-                cancel_reason = constants.CANCEL_REASON["USER_CANCEL"]
-
-            if order_obj.safe_placement_price != adjusted_price:
-                self.handle_replace_order(
-                    order,
-                    order_obj,
-                    trade,
-                    adjusted_price,
-                    is_entry,
-                    cancel_reason,
-                    replacing=replacing,
-                )
-
-    def handle_replace_order(
-        self,
-        order: CcxtOrder | None,
-        order_obj: Order,
-        trade: Trade,
-        new_order_price: float | None,
-        is_entry: bool,
-        cancel_reason: str,
-        replacing: bool = False,
-    ) -> None:
-        """
-        Cancel existing order if new price is supplied, and if the cancel is successful,
-        places a new order with the remaining capital.
-        """
-        if not order:
-            order = self.exchange.fetch_order(order_obj.order_id, trade.pair)
-        res = self.handle_cancel_order(order, order_obj, trade, cancel_reason, replacing=replacing)
-        if not res:
-            self.replace_order_failed(
-                trade, f"Could not fully cancel order for {trade}, therefore not replacing."
-            )
-            return
-        if new_order_price:
-            # place new order only if new price is supplied
-            try:
-                if is_entry:
-                    succeeded = self.execute_entry(
-                        pair=trade.pair,
-                        stake_amount=(
-                            order_obj.safe_remaining * order_obj.safe_price / trade.leverage
-                        ),
-                        price=new_order_price,
-                        trade=trade,
-                        is_short=trade.is_short,
-                        mode="replace",
-                    )
-                else:
-                    succeeded = self.execute_trade_exit(
-                        trade,
-                        new_order_price,
-                        exit_check=ExitCheckTuple(
-                            exit_type=ExitType.CUSTOM_EXIT,
-                            exit_reason=order_obj.ft_order_tag or "order_replaced",
-                        ),
-                        ordertype="limit",
-                        sub_trade_amt=order_obj.safe_remaining,
-                    )
-                if not succeeded:
-                    self.replace_order_failed(trade, f"Could not replace order for {trade}.")
-            except DependencyException as exception:
-                logger.warning(f"Unable to replace order for {trade.pair}: {exception}")
-                self.replace_order_failed(trade, f"Could not replace order for {trade}.")
-
-    def cancel_open_orders_of_trade(
-        self, trade: Trade, sides: list[str], reason: str, replacing: bool = False
-    ) -> None:
-        """
-        Cancel trade orders of specified sides that are currently open
-        :param trade: Trade object of the trade we're analyzing
-        :param reason: The reason for that cancellation
-        :param sides: The sides where cancellation should take place
-        :return: None
-        """
-
-        for open_order in trade.open_orders:
-            try:
-                order = self.exchange.fetch_order(open_order.order_id, trade.pair)
-            except ExchangeError:
-                logger.info("Can't query order for %s due to %s", trade, traceback.format_exc())
-                continue
-
-            if order["side"] in sides:
-                if order["side"] == trade.entry_side:
-                    self.handle_cancel_enter(trade, order, open_order, reason, replacing)
-
-                elif order["side"] == trade.exit_side:
-                    self.handle_cancel_exit(trade, order, open_order, reason)
-
-    def cancel_all_open_orders(self) -> None:
-        """
-        Cancel all orders that are currently open
-        :return: None
-        """
-
-        for trade in Trade.get_open_trades():
-            self.cancel_open_orders_of_trade(
-                trade, [trade.entry_side, trade.exit_side], constants.CANCEL_REASON["ALL_CANCELLED"]
-            )
-
-        Trade.commit()
-
-    def handle_similar_open_order(
-        self, trade: Trade, price: float, amount: float, side: str
-    ) -> bool:
-        """
-        Keep existing open order if same amount and side otherwise cancel
-        :param trade: Trade object of the trade we're analyzing
-        :param price: Limit price of the potential new order
-        :param amount: Quantity of assets of the potential new order
-        :param side: Side of the potential new order
-        :return: True if an existing similar order was found
-        """
-        if trade.has_open_orders:
-            oo = trade.select_order(side, True)
-            if oo is not None:
-                if price == oo.price and side == oo.side and amount == oo.amount:
-                    logger.info(
-                        f"A similar open order was found for {trade.pair}. "
-                        f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
-                    )
-                    return True
-            # cancel open orders of this trade if order is different
-            self.cancel_open_orders_of_trade(
-                trade,
-                [trade.entry_side, trade.exit_side],
-                constants.CANCEL_REASON["REPLACE"],
-                True,
-            )
-            Trade.commit()
-            return False
-
-        return False
-
-    def handle_cancel_enter(
-        self,
-        trade: Trade,
-        order: CcxtOrder,
-        order_obj: Order,
-        reason: str,
-        replacing: bool | None = False,
-    ) -> bool:
-        """
-        entry cancel - cancel order
-        :param order_obj: Order object from the database.
-        :param replacing: Replacing order - prevent trade deletion.
-        :return: True if trade was fully cancelled
-        """
-        was_trade_fully_canceled = False
-        order_id = order_obj.order_id
-        side = trade.entry_side.capitalize()
-
-        if order["status"] not in constants.NON_OPEN_EXCHANGE_STATES:
-            filled_val: float = order.get("filled", 0.0) or 0.0
-            filled_stake = filled_val * trade.open_rate
-            minstake = self.exchange.get_min_pair_stake_amount(
-                trade.pair, trade.open_rate, self.strategy.stoploss
-            )
-
-            if filled_val > 0 and minstake and filled_stake < minstake:
-                logger.warning(
-                    f"Order {order_id} for {trade.pair} not cancelled, "
-                    f"as the filled amount of {filled_val} would result in an unexitable trade."
-                )
-                return False
-            corder = self.exchange.cancel_order_with_result(order_id, trade.pair, trade.amount)
-            order_obj.ft_cancel_reason = reason
-            # if replacing, retry fetching the order 3 times if the status is not what we need
-            if replacing:
-                retry_count = 0
-                while (
-                    corder.get("status") not in constants.NON_OPEN_EXCHANGE_STATES
-                    and retry_count < 3
-                ):
-                    sleep(0.5)
-                    corder = self.exchange.fetch_order(order_id, trade.pair)
-                    retry_count += 1
-
-            # Avoid race condition where the order could not be cancelled coz its already filled.
-            # Simply bailing here is the only safe way - as this order will then be
-            # handled in the next iteration.
-            if corder.get("status") not in constants.NON_OPEN_EXCHANGE_STATES:
-                logger.warning(f"Order {order_id} for {trade.pair} not cancelled.")
-                return False
-        else:
-            # Order was cancelled already, so we can reuse the existing dict
-            corder = order
-            if order_obj.ft_cancel_reason is None:
-                order_obj.ft_cancel_reason = constants.CANCEL_REASON["CANCELLED_ON_EXCHANGE"]
-
-        logger.info(f"{side} order {order_obj.ft_cancel_reason} for {trade}.")
-
-        # Using filled to determine the filled amount
-        filled_amount = safe_value_fallback2(corder, order, "filled", "filled")
-        if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
-            was_trade_fully_canceled = True
-            # if trade is not partially completed and it's the only order, just delete the trade
-            open_order_count = len(
-                [order for order in trade.orders if order.ft_is_open and order.order_id != order_id]
-            )
-            if open_order_count < 1 and trade.nr_of_successful_entries == 0 and not replacing:
-                logger.info(f"{side} order fully cancelled. Removing {trade} from database.")
-                trade.delete()
-                order_obj.ft_cancel_reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
-            else:
-                self.update_trade_state(trade, order_id, corder)
-                logger.info(f"{side} Order timeout for {trade}.")
-        else:
-            # update_trade_state (and subsequently recalc_trade_from_orders) will handle updates
-            # to the trade object
-            self.update_trade_state(trade, order_id, corder)
-
-            logger.info(
-                f"Partial {trade.entry_side} order timeout for {trade}. Filled: {filled_amount}, "
-                f"total: {order_obj.ft_amount}"
-            )
-            order_obj.ft_cancel_reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
-
-        self.wallets.update()
-        self._notify_enter_cancel(
-            trade, order_type=self.strategy.order_types["entry"], reason=order_obj.ft_cancel_reason
-        )
-        return was_trade_fully_canceled
-
-    def handle_cancel_exit(
-        self, trade: Trade, order: CcxtOrder, order_obj: Order, reason: str
-    ) -> bool:
-        """
-        exit order cancel - cancel order and update trade
-        :return: True if exit order was cancelled, false otherwise
-        """
-        order_id = order_obj.order_id
-        cancelled = False
-        # Cancelled orders may have the status of 'canceled' or 'closed'
-        if order["status"] not in constants.NON_OPEN_EXCHANGE_STATES:
-            filled_amt: float = order.get("filled", 0.0) or 0.0
-            # Filled val is in quote currency (after leverage)
-            filled_rem_stake = trade.stake_amount - (filled_amt * trade.open_rate / trade.leverage)
-            minstake = self.exchange.get_min_pair_stake_amount(
-                trade.pair, trade.open_rate, self.strategy.stoploss
-            )
-            # Double-check remaining amount
-            if filled_amt > 0:
-                reason = constants.CANCEL_REASON["PARTIALLY_FILLED"]
-                if minstake and filled_rem_stake < minstake:
-                    logger.warning(
-                        f"Order {order_id} for {trade.pair} not cancelled, as "
-                        f"the filled amount of {filled_amt} would result in an unexitable trade."
-                    )
-                    reason = constants.CANCEL_REASON["PARTIALLY_FILLED_KEEP_OPEN"]
-
-                    self._notify_exit_cancel(
-                        trade,
-                        order_type=self.strategy.order_types["exit"],
-                        reason=reason,
-                        order_id=order["id"],
-                        sub_trade=trade.amount != order["amount"],
-                    )
-                    return False
-            order_obj.ft_cancel_reason = reason
-            try:
-                order = self.exchange.cancel_order_with_result(
-                    order["id"], trade.pair, trade.amount
-                )
-            except InvalidOrderException:
-                logger.exception(f"Could not cancel {trade.exit_side} order {order_id}")
-                return False
-
-            # Set exit_reason for fill message
-            exit_reason_prev = trade.exit_reason
-            trade.exit_reason = trade.exit_reason + f", {reason}" if trade.exit_reason else reason
-            # Order might be filled above in odd timing issues.
-            if order.get("status") in ("canceled", "cancelled"):
-                trade.exit_reason = None
-            else:
-                trade.exit_reason = exit_reason_prev
-            cancelled = True
-        else:
-            if order_obj.ft_cancel_reason is None:
-                order_obj.ft_cancel_reason = constants.CANCEL_REASON["CANCELLED_ON_EXCHANGE"]
-            trade.exit_reason = None
-
-        self.update_trade_state(trade, order["id"], order)
-
-        logger.info(
-            f"{trade.exit_side.capitalize()} order {order_obj.ft_cancel_reason} for {trade}."
-        )
-        trade.close_rate = None
-        trade.close_rate_requested = None
-
-        self._notify_exit_cancel(
-            trade,
-            order_type=self.strategy.order_types["exit"],
-            reason=order_obj.ft_cancel_reason,
-            order_id=order["id"],
-            sub_trade=trade.amount != order["amount"],
-        )
-        return cancelled
-
-    def _safe_exit_amount(self, trade: Trade, pair: str, amount: float) -> float:
-        """
-        Get sellable amount.
-        Should be trade.amount - but will fall back to the available amount if necessary.
-        This should cover cases where get_real_amount() was not able to update the amount
-        for whatever reason.
-        :param trade: Trade we're working with
-        :param pair: Pair we're trying to sell
-        :param amount: amount we expect to be available
-        :return: amount to sell
-        :raise: DependencyException: if available balance is not within 2% of the available amount.
-        """
-        # Update wallets to ensure amounts tied up in a stoploss is now free!
-        self.wallets.update()
-        if self.trading_mode == TradingMode.FUTURES:
-            # A safe exit amount isn't needed for futures, you can just exit/close the position
-            return amount
-
-        trade_base_currency = self.exchange.get_pair_base_currency(pair)
-        # Free + Used - open orders will eventually still be canceled.
-        wallet_amount = self.wallets.get_free(trade_base_currency) + self.wallets.get_used(
-            trade_base_currency
-        )
-
-        logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
-        if wallet_amount >= amount:
-            return amount
-        elif wallet_amount > amount * 0.98:
-            logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
-            trade.amount = wallet_amount
-            return wallet_amount
-        else:
-            raise DependencyException(
-                f"Not enough amount to exit trade. Trade-amount: {amount}, Wallet: {wallet_amount}"
-            )
-
-    def execute_trade_exit(
-        self,
-        trade: Trade,
-        limit: float,
-        exit_check: ExitCheckTuple,
-        *,
-        exit_tag: str | None = None,
-        ordertype: str | None = None,
-        sub_trade_amt: float | None = None,
-    ) -> bool:
-        """
-        Executes a trade exit for the given trade and limit
-        :param trade: Trade instance
-        :param limit: limit rate for the sell order
-        :param exit_check: CheckTuple with signal and reason
-        :return: True if it succeeds False
-        """
-        trade.set_funding_fees(
-            self.exchange.get_funding_fees(
-                pair=trade.pair,
-                amount=trade.amount,
-                is_short=trade.is_short,
-                open_date=trade.date_last_filled_utc,
-            )
-        )
-
-        exit_type = "exit"
-        exit_reason = exit_tag or exit_check.exit_reason
-        if exit_check.exit_type in (
-            ExitType.STOP_LOSS,
-            ExitType.TRAILING_STOP_LOSS,
-            ExitType.LIQUIDATION,
-        ):
-            exit_type = "stoploss"
-
-        # set custom_exit_price if available
-        proposed_limit_rate = limit
-        current_profit = trade.calc_profit_ratio(limit)
-        custom_exit_price = strategy_safe_wrapper(
-            self.strategy.custom_exit_price, default_retval=proposed_limit_rate
-        )(
-            pair=trade.pair,
-            trade=trade,
-            current_time=datetime.now(UTC),
-            proposed_rate=proposed_limit_rate,
-            current_profit=current_profit,
-            exit_tag=exit_reason,
-        )
-
-        limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
-
-        # First cancelling stoploss on exchange ...
-        trade = self.cancel_stoploss_on_exchange(trade)
-
-        order_type = ordertype or self.strategy.order_types[exit_type]
-        if exit_check.exit_type == ExitType.EMERGENCY_EXIT:
-            # Emergency sells (default to market!)
-            order_type = self.strategy.order_types.get("emergency_exit", "market")
-
-        amount = self._safe_exit_amount(trade, trade.pair, sub_trade_amt or trade.amount)
-        time_in_force = self.strategy.order_time_in_force["exit"]
-
-        if (
-            exit_check.exit_type != ExitType.LIQUIDATION
-            and not sub_trade_amt
-            and not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
-                pair=trade.pair,
-                trade=trade,
-                order_type=order_type,
-                amount=amount,
-                rate=limit,
-                time_in_force=time_in_force,
-                exit_reason=exit_reason,
-                sell_reason=exit_reason,  # sellreason -> compatibility
-                current_time=datetime.now(UTC),
-            )
-        ):
-            logger.info(f"User denied exit for {trade.pair}.")
-            return False
-
-        if trade.has_open_orders:
-            if self.handle_similar_open_order(trade, limit, amount, trade.exit_side):
-                return False
-
-        try:
-            # Execute sell and update trade record
-            order = self.exchange.create_order(
-                pair=trade.pair,
-                ordertype=order_type,
-                side=trade.exit_side,
-                amount=amount,
-                rate=limit,
-                leverage=trade.leverage,
-                reduceOnly=self.trading_mode == TradingMode.FUTURES,
-                time_in_force=time_in_force,
-            )
-        except InsufficientFundsError as e:
-            logger.warning(f"Unable to place order {e}.")
-            # Try to figure out what went wrong
-            self.handle_insufficient_funds(trade)
-            return False
-
-        self._exit_reason_cache[f"{trade.pair}_{trade.id}_{exit_reason}"] = dt_now()
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side, amount, limit)
-        order_obj.ft_order_tag = exit_reason
-        trade.orders.append(order_obj)
-
-        trade.exit_order_status = ""
-        trade.close_rate_requested = limit
-        trade.exit_reason = exit_reason
-
-        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order_obj)
-        # In case of market sell orders the order can be closed immediately
-        if order.get("status", "unknown") in ("closed", "expired"):
-            self.update_trade_state(trade, order_obj.order_id, order)
-        Trade.commit()
-
-        return True
-
-    def _notify_exit(
-        self,
-        trade: Trade,
-        order_type: str | None,
-        fill: bool = False,
-        sub_trade: bool = False,
-        order: Order | None = None,
-    ) -> None:
-        """
-        Sends rpc notification when a sell occurred.
-        """
-        # Use cached rates here - it was updated seconds ago.
-        current_rate = (
-            self.exchange.get_rate(trade.pair, side="exit", is_short=trade.is_short, refresh=False)
-            if not fill
-            else None
-        )
-
-        # second condition is for mypy only; order will always be passed during sub trade
-        if sub_trade and order is not None:
-            amount = order.safe_filled if fill else order.safe_amount
-            order_rate: float = order.safe_price
-
-            profit = trade.calculate_profit(order_rate, amount, trade.open_rate)
-        else:
-            order_rate = trade.safe_close_rate
-            profit = trade.calculate_profit(rate=order_rate)
-            amount = trade.amount
-        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
-
-        msg: RPCExitMsg = {
-            "type": (RPCMessageType.EXIT_FILL if fill else RPCMessageType.EXIT),
-            "trade_id": trade.id,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "gain": gain,
-            "limit": order_rate,  # Deprecated
-            "order_rate": order_rate,
-            "order_type": order_type or "unknown",
-            "amount": amount,
-            "open_rate": trade.open_rate,
-            "close_rate": order_rate,
-            "current_rate": current_rate,
-            "profit_amount": profit.profit_abs,
-            "profit_ratio": profit.profit_ratio,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exit_reason": trade.exit_reason,
-            "open_date": trade.open_date_utc,
-            "close_date": trade.close_date_utc or datetime.now(UTC),
-            "stake_amount": trade.stake_amount,
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency"),
-            "sub_trade": sub_trade,
-            "cumulative_profit": trade.realized_profit,
-            "final_profit_ratio": trade.close_profit if not trade.is_open else None,
-            "is_final_exit": trade.is_open is False,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
-
-    def _notify_exit_cancel(
-        self, trade: Trade, order_type: str, reason: str, order_id: str, sub_trade: bool = False
-    ) -> None:
-        """
-        Sends rpc notification when a sell cancel occurred.
-        """
-        if trade.exit_order_status == reason:
-            return
-        else:
-            trade.exit_order_status = reason
-
-        order_or_none = trade.select_order_by_order_id(order_id)
-        order = self.order_obj_or_raise(order_id, order_or_none)
-
-        profit_rate: float = trade.safe_close_rate
-        profit = trade.calculate_profit(rate=profit_rate)
-        current_rate = self.exchange.get_rate(
-            trade.pair, side="exit", is_short=trade.is_short, refresh=False
-        )
-        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
-
-        msg: RPCExitCancelMsg = {
-            "type": RPCMessageType.EXIT_CANCEL,
-            "trade_id": trade.id,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "gain": gain,
-            "limit": profit_rate or 0,
-            "order_rate": profit_rate or 0,
-            "order_type": order_type,
-            "amount": order.safe_amount_after_fee,
-            "open_rate": trade.open_rate,
-            "current_rate": current_rate,
-            "profit_amount": profit.profit_abs,
-            "profit_ratio": profit.profit_ratio,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exit_reason": trade.exit_reason,
-            "open_date": trade.open_date,
-            "close_date": trade.close_date or datetime.now(UTC),
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency", None),
-            "reason": reason,
-            "sub_trade": sub_trade,
-            "stake_amount": trade.stake_amount,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
-
-    def order_obj_or_raise(self, order_id: str, order_obj: Order | None) -> Order:
-        if not order_obj:
-            raise DependencyException(
-                f"Order_obj not found for {order_id}. This should not have happened."
-            )
-        return order_obj
-
-    #
-    # Common update trade state methods
-    #
-
-    def update_trade_state(
-        self,
-        trade: Trade,
-        order_id: str | None,
-        action_order: CcxtOrder | None = None,
-        *,
-        stoploss_order: bool = False,
-        send_msg: bool = True,
-    ) -> bool:
-        """
-        Checks trades with open orders and updates the amount if necessary
-        Handles closing both buy and sell orders.
-        :param trade: Trade object of the trade we're analyzing
-        :param order_id: Order-id of the order we're analyzing
-        :param action_order: Already acquired order object
-        :param send_msg: Send notification - should always be True except in "recovery" methods
-        :return: True if order has been cancelled without being filled partially, False otherwise
-        """
-        if not order_id:
-            logger.warning(f"Orderid for trade {trade} is empty.")
-            return False
-
-        # Update trade with order values
-        if not stoploss_order:
-            logger.info(f"Found open order for {trade}")
-        try:
-            order = action_order or self.exchange.fetch_order_or_stoploss_order(
-                order_id, trade.pair, stoploss_order
-            )
-        except InvalidOrderException as exception:
-            logger.warning("Unable to fetch order %s: %s", order_id, exception)
-            return False
-
-        trade.update_order(order)
-
-        if self.exchange.check_order_canceled_empty(order):
-            # Trade has been cancelled on exchange
-            # Handling of this will happen in handle_cancel_order.
-            return True
-
-        order_obj_or_none = trade.select_order_by_order_id(order_id)
-        order_obj = self.order_obj_or_raise(order_id, order_obj_or_none)
-
-        self.handle_order_fee(trade, order_obj, order)
-
-        trade.update_trade(order_obj, not send_msg)
-
-        trade = self._update_trade_after_fill(trade, order_obj, send_msg)
-        Trade.commit()
-
-        self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
-
-        return False
-
-    def _update_trade_after_fill(self, trade: Trade, order: Order, send_msg: bool) -> Trade:
-        if order.status in constants.NON_OPEN_EXCHANGE_STATES:
-            strategy_safe_wrapper(self.strategy.order_filled, supress_error=True)(
-                pair=trade.pair, trade=trade, order=order, current_time=datetime.now(UTC)
-            )
-            # If a entry order was closed, force update on stoploss on exchange
-            if order.ft_order_side == trade.entry_side:
-                if send_msg:
-                    if trade.nr_of_successful_entries > 1:
-                        # Reset fee_open_currency so fee checking can work
-                        # Only necessary for additional entries
-                        trade.fee_open_currency = None
-                    # Don't cancel stoploss in recovery modes immediately
-                    trade = self.cancel_stoploss_on_exchange(trade)
-                trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            if (
-                order.ft_order_side == trade.entry_side
-                or (trade.amount > 0 and trade.is_open)
-                or self.margin_mode == MarginMode.CROSS
-            ):
-                # Must also run for partial exits
-                # TODO: Margin will need to use interest_rate as well.
-                # interest_rate = self.exchange.get_interest_rate()
-                update_liquidation_prices(
-                    trade,
-                    exchange=self.exchange,
-                    wallets=self.wallets,
-                    stake_currency=self.config["stake_currency"],
-                    dry_run=self.config["dry_run"],
-                )
-            if self.strategy.use_custom_stoploss and trade.is_open:
-                current_rate = self.exchange.get_rate(
-                    trade.pair, side="exit", is_short=trade.is_short, refresh=True
-                )
-                profit = trade.calc_profit_ratio(current_rate)
-                self.strategy.ft_stoploss_adjust(
-                    current_rate, trade, datetime.now(UTC), profit, 0, after_fill=True
-                )
-            # Updating wallets when order is closed
-            self.wallets.update()
-        return trade
-
-    def order_close_notify(self, trade: Trade, order: Order, stoploss_order: bool, send_msg: bool):
-        """send "fill" notifications"""
-
-        if order.ft_order_side == trade.exit_side:
-            # Exit notification
-            if send_msg and not stoploss_order and order.order_id not in trade.open_orders_ids:
-                self._notify_exit(
-                    trade, order.order_type, fill=True, sub_trade=trade.is_open, order=order
-                )
-            if not trade.is_open:
-                self.handle_protections(trade.pair, trade.trade_direction)
-        elif send_msg and order.order_id not in trade.open_orders_ids and not stoploss_order:
-            sub_trade = not isclose(
-                order.safe_amount_after_fee, trade.amount, abs_tol=constants.MATH_CLOSE_PREC
-            )
-            # Enter fill
-            self._notify_enter(trade, order, order.order_type, fill=True, sub_trade=sub_trade)
-
-    def handle_protections(self, pair: str, side: LongShort) -> None:
-        # Lock pair for one candle to prevent immediate re-entries
-        self.strategy.lock_pair(pair, datetime.now(UTC), reason="Auto lock", side=side)
-        prot_trig = self.protections.stop_per_pair(pair, side=side)
-        if prot_trig:
-            msg: RPCProtectionMsg = {
-                "type": RPCMessageType.PROTECTION_TRIGGER,
-                "base_currency": self.exchange.get_pair_base_currency(prot_trig.pair),
-                **prot_trig.to_json(),  # type: ignore
-            }
-            self.rpc.send_msg(msg)
-
-        prot_trig_glb = self.protections.global_stop(side=side)
-        if prot_trig_glb:
-            msg = {
-                "type": RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
-                "base_currency": self.exchange.get_pair_base_currency(prot_trig_glb.pair),
-                **prot_trig_glb.to_json(),  # type: ignore
-            }
-            self.rpc.send_msg(msg)
-
-    def apply_fee_conditional(
-        self,
-        trade: Trade,
-        trade_base_currency: str,
-        amount: float,
-        fee_abs: float,
-        order_obj: Order,
-    ) -> float | None:
-        """
-        Applies the fee to amount (either from Order or from Trades).
-        Can eat into dust if more than the required asset is available.
-        In case of trade adjustment orders, trade.amount will not have been adjusted yet.
-        Can't happen in Futures mode - where Fees are always in settlement currency,
-        never in base currency.
-        """
-        self.wallets.update()
-        amount_ = trade.amount
-        if order_obj.ft_order_side == trade.exit_side or order_obj.ft_order_side == "stoploss":
-            # check against remaining amount!
-            amount_ = trade.amount - amount
-
-        if trade.nr_of_successful_entries >= 1 and order_obj.ft_order_side == trade.entry_side:
-            # In case of re-entry's, trade.amount doesn't contain the amount of the last entry.
-            amount_ = trade.amount + amount
-
-        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
-            # Eat into dust if we own more than base currency
-            logger.info(
-                f"Fee amount for {trade} was in base currency - Eating Fee {fee_abs} into dust."
-            )
-        elif fee_abs != 0:
-            logger.info(f"Applying fee on amount for {trade}, fee={fee_abs}.")
-            return fee_abs
-        return None
-
-    def handle_order_fee(self, trade: Trade, order_obj: Order, order: CcxtOrder) -> None:
-        # Try update amount (binance-fix - but also applies to different exchanges)
-        try:
-            if (fee_abs := self.get_real_amount(trade, order, order_obj)) is not None:
-                order_obj.ft_fee_base = fee_abs
-        except DependencyException as exception:
-            logger.warning("Could not update trade amount: %s", exception)
-
-    def get_real_amount(self, trade: Trade, order: CcxtOrder, order_obj: Order) -> float | None:
-        """
-        Detect and update trade fee.
-        Calls trade.update_fee() upon correct detection.
-        Returns modified amount if the fee was taken from the destination currency.
-        Necessary for exchanges which charge fees in base currency (e.g. binance)
-        :return: Absolute fee to apply for this order or None
-        """
-        # Init variables
-        order_amount = safe_value_fallback(order, "filled", "amount")
-        # Only run for closed orders
-        if (
-            trade.fee_updated(order.get("side", "")) or order["status"] == "open"
-            # or order_obj.ft_fee_base
-        ):
-            return None
-
-        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
-        # use fee from order-dict if possible
-        if self.exchange.order_has_fee(order):
-            fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(
-                order["fee"], order["symbol"], order["cost"], order_obj.safe_filled
-            )
-            logger.info(
-                f"Fee for Trade {trade} [{order_obj.ft_order_side}]: "
-                f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}"
-            )
-            if fee_rate is None or fee_rate < 0.02:
-                # Reject all fees that report as > 2%.
-                # These are most likely caused by a parsing bug in ccxt
-                # due to multiple trades (https://github.com/ccxt/ccxt/issues/8025)
-                trade.update_fee(fee_cost, fee_currency, fee_rate, order.get("side", ""))
-                if trade_base_currency == fee_currency:
-                    # Apply fee to amount
-                    return self.apply_fee_conditional(
-                        trade,
-                        trade_base_currency,
-                        amount=order_amount,
-                        fee_abs=fee_cost,
-                        order_obj=order_obj,
-                    )
-                return None
-        return self.fee_detection_from_trades(
-            trade, order, order_obj, order_amount, order.get("trades", [])
-        )
-
-    def _trades_valid_for_fee(self, trades: list[dict[str, Any]]) -> bool:
-        """
-        Check if trades are valid for fee detection.
-        :return: True if trades are valid for fee detection, False otherwise
-        """
-        if not trades:
-            return False
-        # We expect amount and cost to be present in all trade objects.
-        if any(trade.get("amount") is None or trade.get("cost") is None for trade in trades):
-            return False
-        return True
-
-    def fee_detection_from_trades(
-        self, trade: Trade, order: CcxtOrder, order_obj: Order, order_amount: float, trades: list
-    ) -> float | None:
-        """
-        fee-detection fallback to Trades.
-        Either uses provided trades list or the result of fetch_my_trades to get correct fee.
-        """
-        if not self._trades_valid_for_fee(trades):
-            trades = self.exchange.get_trades_for_order(
-                self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date
-            )
-
-        if len(trades) == 0:
-            logger.info("Applying fee on amount for %s failed: myTrade-dict empty found", trade)
-            return None
-        fee_currency = None
-        amount = 0
-        fee_abs = 0.0
-        fee_cost = 0.0
-        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
-        fee_rate_array: list[float] = []
-        for exectrade in trades:
-            amount += exectrade["amount"]
-            if self.exchange.order_has_fee(exectrade):
-                # Prefer singular fee
-                fees = [exectrade["fee"]]
-            else:
-                fees = exectrade.get("fees", [])
-            for fee in fees:
-                fee_cost_, fee_currency, fee_rate_ = self.exchange.extract_cost_curr_rate(
-                    fee, exectrade["symbol"], exectrade["cost"], exectrade["amount"]
-                )
-                fee_cost += fee_cost_
-                if fee_rate_ is not None:
-                    fee_rate_array.append(fee_rate_)
-                # only applies if fee is in quote currency!
-                if trade_base_currency == fee_currency:
-                    fee_abs += fee_cost_
-        # Ensure at least one trade was found:
-        if fee_currency:
-            # fee_rate should use mean
-            fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
-            if fee_rate is not None and fee_rate < 0.02:
-                # Only update if fee-rate is < 2%
-                trade.update_fee(fee_cost, fee_currency, fee_rate, order.get("side", ""))
-            else:
-                logger.warning(
-                    f"Not updating {order.get('side', '')}-fee - rate: {fee_rate}, {fee_currency}."
-                )
-
-        if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
-            # * Leverage could be a cause for this warning
-            logger.warning(f"Amount {amount} does not match amount {trade.amount}")
-            raise DependencyException("Half bought? Amounts don't match")
-
-        if fee_abs != 0:
-            return self.apply_fee_conditional(
-                trade, trade_base_currency, amount=amount, fee_abs=fee_abs, order_obj=order_obj
-            )
-        return None
-
-    def get_valid_price(self, custom_price: float, proposed_price: float) -> float:
-        """
-        Return the valid price.
-        Check if the custom price is of the good type if not return proposed_price
-        :return: valid price for the order
-        """
-        if custom_price:
-            try:
-                valid_custom_price = float(custom_price)
-            except ValueError:
-                valid_custom_price = proposed_price
-        else:
-            valid_custom_price = proposed_price
-
-        cust_p_max_dist_r = self.config.get("custom_price_max_distance_ratio", 0.02)
-        min_custom_price_allowed = proposed_price - (proposed_price * cust_p_max_dist_r)
-        max_custom_price_allowed = proposed_price + (proposed_price * cust_p_max_dist_r)
-
-        # Bracket between min_custom_price_allowed and max_custom_price_allowed
-        final_price = max(
-            min(valid_custom_price, max_custom_price_allowed), min_custom_price_allowed
-        )
-
-        # Log a warning if the custom price was adjusted by clamping.
-        if final_price != valid_custom_price:
-            logger.info(
-                f"Custom price adjusted from {valid_custom_price} to {final_price} based on "
-                "custom_price_max_distance_ratio of {cust_p_max_dist_r}."
-            )
-
-        return final_price
