@@ -483,16 +483,32 @@ def test_should_exit_by_roi_with_funding(default_conf, fee) -> None:
     assert not res
     assert trade.calc_profit_ratio(curr_rate) < 0  # Check that the funding has an influence
 
-    res = strategy.should_exit(trade, curr_rate + funding_amount, now, enter=False, exit_=False, low=None, high=None)
+    res = strategy.should_exit(
+        trade, curr_rate + funding_amount, now, enter=False, exit_=False, low=None, high=None
+    )
     assert not res
 
-    res = strategy.should_exit(trade, curr_rate - funding_amount + profit, now, enter=False, exit_=False, low=None,
-                               high=None)
+    res = strategy.should_exit(
+        trade,
+        curr_rate - funding_amount + profit,
+        now,
+        enter=False,
+        exit_=False,
+        low=None,
+        high=None,
+    )
     assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
 
     # Check that low and high during backtest don't have an influence on the exit signal
-    res = strategy.should_exit(trade, curr_rate, now, enter=False, exit_=False, low=curr_rate * 0.9,
-                               high=curr_rate - funding_amount + profit)
+    res = strategy.should_exit(
+        trade,
+        curr_rate,
+        now,
+        enter=False,
+        exit_=False,
+        low=curr_rate * 0.9,
+        high=curr_rate - funding_amount + profit,
+    )
     assert not res
 
 
