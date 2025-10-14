@@ -1429,18 +1429,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: List of exit reasons - or empty list.
         """
         exits: list[ExitCheckTuple] = []
-        current_rate = rate
-        current_profit = trade.calc_profit_ratio(current_rate)
-        current_profit_best = current_profit
-        if low is not None or high is not None:
-            # Set current rate to high for backtesting ROI exits
-            current_rate_best = (low if trade.is_short else high) or rate
-            current_profit_best = trade.calc_profit_ratio(current_rate_best)
+        current_profit = trade.calc_profit_ratio(rate)
 
-        trade.adjust_min_max_rates(high or current_rate, low or current_rate)
+        trade.adjust_min_max_rates(high or rate, low or rate)
 
         stoplossflag = self.ft_stoploss_reached(
-            current_rate=current_rate,
+            current_rate=rate,
             trade=trade,
             current_time=current_time,
             current_profit=current_profit,
@@ -1451,7 +1445,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
         roi_reached = not (enter and self.ignore_roi_if_entry_signal) and self.min_roi_reached(
-            trade=trade, current_profit=current_profit_best, current_time=current_time
+            trade=trade, current_profit=current_profit, current_time=current_time
         )
 
         exit_signal = ExitType.NONE
@@ -1465,7 +1459,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     pair=trade.pair,
                     trade=trade,
                     current_time=current_time,
-                    current_rate=current_rate,
+                    current_rate=rate,
                     current_profit=current_profit,
                 )
                 if reason_cust:

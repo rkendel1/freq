@@ -455,6 +455,47 @@ def test_min_roi_reached_custom_roi(default_conf, fee) -> None:
     assert strategy.custom_roi.call_count == 10
 
 
+def test_should_exit_by_roi_with_funding(default_conf, fee) -> None:
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    curr_rate = 1
+    funding_amount = -0.1
+    profit = 0.05
+    trade = Trade(
+        pair="ETH/USDT:USDT",
+        stake_amount=0.01,
+        amount=curr_rate,
+        open_date=dt_now() - timedelta(hours=1),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange="binance",
+        open_rate=curr_rate,
+        leverage=5.0,
+        funding_fees=funding_amount,
+        trading_mode="futures",
+        stop_loss=0.0001,
+    )
+    strategy.custom_roi = MagicMock(side_effect=lambda: profit)
+    strategy.use_custom_roi = True
+    now = dt_now()
+
+    res = strategy.should_exit(trade, curr_rate, now, enter=False, exit_=False, low=None, high=None)
+    assert not res
+    assert trade.calc_profit_ratio(curr_rate) < 0  # Check that the funding has an influence
+
+    res = strategy.should_exit(trade, curr_rate + funding_amount, now, enter=False, exit_=False, low=None, high=None)
+    assert not res
+
+    res = strategy.should_exit(trade, curr_rate - funding_amount + profit, now, enter=False, exit_=False, low=None,
+                               high=None)
+    assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
+
+    # Check that low and high during backtest don't have an influence on the exit signal
+    res = strategy.should_exit(trade, curr_rate, now, enter=False, exit_=False, low=curr_rate * 0.9,
+                               high=curr_rate - funding_amount + profit)
+    assert not res
+
+
 @pytest.mark.parametrize(
     "profit,adjusted,expected,liq,trailing,custom,profit2,adjusted2,expected2,custom_stop",
     [
