@@ -49,6 +49,7 @@ AVAILABLE_PAIRLISTS = [
     "RemotePairList",
     "MarketCapPairList",
     "AgeFilter",
+    "DelistFilter",
     "FullTradesFilter",
     "OffsetFilter",
     "PerformanceFilter",
@@ -60,7 +61,7 @@ AVAILABLE_PAIRLISTS = [
     "VolatilityFilter",
 ]
 AVAILABLE_DATAHANDLERS = ["json", "jsongz", "feather", "parquet"]
-BACKTEST_BREAKDOWNS = ["day", "week", "month", "year"]
+BACKTEST_BREAKDOWNS = ["day", "week", "month", "year", "weekday"]
 BACKTEST_CACHE_AGE = ["none", "day", "week", "month"]
 BACKTEST_CACHE_DEFAULT = "day"
 DRY_RUN_WALLET = 1000

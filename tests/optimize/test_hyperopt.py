@@ -280,7 +280,7 @@ def test_start_no_data(mocker, hyperopt_conf, tmp_path) -> None:
         "5",
     ]
     pargs = get_args(args)
-    with pytest.raises(OperationalException, match="No data found. Terminating."):
+    with pytest.raises(OperationalException, match=r"No data found. Terminating\."):
         start_hyperopt(pargs)
 
     # Cleanup since that failed hyperopt start leaves a lockfile.
@@ -1127,12 +1127,14 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmp_path, fee) -> None
     assert opt.backtesting.strategy.max_open_trades != 1
 
     opt.custom_hyperopt.generate_estimator = lambda *args, **kwargs: "ET1"
-    with pytest.raises(OperationalException, match="Optuna Sampler ET1 not supported."):
+    with pytest.raises(OperationalException, match=r"Optuna Sampler ET1 not supported\."):
         opt.get_optimizer(42)
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path, fee) -> None:
+def test_in_strategy_auto_hyperopt_with_parallel(
+    mocker, hyperopt_conf, tmp_path, fee, caplog
+) -> None:
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.get_fee", fee)
     mocker.patch(f"{EXMS}.reload_markets")
@@ -1175,6 +1177,8 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmp_path
     assert len(list(buy_rsi_range)) == 51
 
     hyperopt.start()
+    # Test logs from parallel workers are shown.
+    assert log_has("Test: Bot loop started", caplog)
 
 
 def test_in_strategy_auto_hyperopt_per_epoch(mocker, hyperopt_conf, tmp_path, fee) -> None:

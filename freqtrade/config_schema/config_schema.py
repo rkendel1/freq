@@ -453,6 +453,7 @@ CONF_SCHEMA = {
         "pairlists": {
             "description": "Configuration for pairlists.",
             "type": "array",
+            "minItems": 1,
             "items": {
                 "type": "object",
                 "properties": {
@@ -1141,6 +1142,15 @@ CONF_SCHEMA = {
                     "type": "boolean",
                     "default": False,
                 },
+                "override_exchange_check": {
+                    "description": (
+                        "Override the exchange check to force FreqAI to use exchanges "
+                        "that may not have enough historic data. Turn this to True if "
+                        "you know your FreqAI model and strategy do not require historical data."
+                    ),
+                    "type": "boolean",
+                    "default": False,
+                },
                 "feature_parameters": {
                     "description": "The parameters used to engineer the feature set",
                     "type": "object",
@@ -1381,6 +1391,7 @@ SCHEMA_TRADE_REQUIRED = [
     "entry_pricing",
     "stoploss",
     "minimal_roi",
+    "pairlists",
     "internals",
     "dataformat_ohlcv",
     "dataformat_trades",
@@ -1390,6 +1401,7 @@ SCHEMA_BACKTEST_REQUIRED = [
     "exchange",
     "stake_currency",
     "stake_amount",
+    "pairlists",
     "dry_run_wallet",
     "dataformat_ohlcv",
     "dataformat_trades",
