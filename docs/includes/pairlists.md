@@ -26,6 +26,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 * [`ProducerPairList`](#producerpairlist)
 * [`RemotePairList`](#remotepairlist)
 * [`MarketCapPairList`](#marketcappairlist)
+* [`LiquidityPairList`](#liquiditypairlist)
 * [`AgeFilter`](#agefilter)
 * [`DelistFilter`](#delistfilter)
 * [`FullTradesFilter`](#fulltradesfilter)
@@ -396,6 +397,64 @@ Coins like 1000PEPE/USDT or KPEPE/USDT:USDT are detected on a best effort basis,
 
 !!! Danger "Duplicate symbols in coingecko"
     Coingecko often has duplicate symbols, where the same symbol is used for different coins. Freqtrade will use the symbol as is and try to search for it on the exchange. If the symbol exists - it will be used. Freqtrade will however not check if the _intended_ symbol is the one coingecko meant. This can sometimes lead to unexpected results, especially on low volume coins or with meme coin categories.
+
+#### LiquidityPairList
+
+`LiquidityPairList` filters pairs based on orderbook liquidity depth to ensure sufficient market depth for large trades without significant slippage. This filter is particularly useful for strategies that require high liquidity or when trading with larger position sizes.
+
+```json
+"pairlists": [
+    {
+        "method": "LiquidityPairList",
+        "min_liquidity": 100000,
+        "spread_pct_threshold": 0.5,
+        "min_top_level": 5000,
+        "cache_ttl": 300,
+        "ticker_prefilter_threshold": 0.1
+    }
+]
+```
+
+**Parameters:**
+
+- `min_liquidity`: Minimum total liquidity in quote currency within the price range (default: 100000)
+- `spread_pct_threshold`: Price range percentage for liquidity calculation (default: 0.5)
+- `min_top_level`: Minimum size at best bid/ask in quote currency (default: 5000)
+- `cache_ttl`: Cache TTL in seconds (default: 300)
+- `ticker_prefilter_threshold`: Pre-filter threshold as fraction of min_liquidity (default: 0.1)
+
+**How it works:**
+
+1. **Ticker Pre-filtering**: Uses ticker data to quickly eliminate obviously low-liquidity pairs before expensive orderbook calls
+2. **Orderbook Analysis**: Fetches L2 orderbook data and calculates liquidity within a configurable price range (±spread_pct_threshold% of mid-price)
+3. **Dual Criteria**: Both total liquidity within the range AND minimum size at best bid/ask levels must meet requirements
+4. **Performance Optimizations**: Includes early exit optimizations and caching to minimize API calls
+
+**Example Configuration:**
+
+```json
+"pairlists": [
+    {
+        "method": "StaticPairList"
+    },
+    {
+        "method": "LiquidityPairList",
+        "min_liquidity": 50000,
+        "spread_pct_threshold": 1.0,
+        "min_top_level": 2500,
+        "cache_ttl": 600
+    }
+]
+```
+
+!!! Note "Exchange Requirements"
+    This pairlist requires the exchange to support `fetchL2OrderBook`. If the exchange doesn't support this feature, the pairlist will raise an `OperationalException` during initialization.
+
+!!! Warning "Performance Considerations"
+    This pairlist makes individual API calls for each pair to fetch orderbook data. For large pairlists, consider using appropriate `cache_ttl` values and placing this filter after other filters that reduce the number of pairs.
+
+!!! Tip "Backtesting"
+    This pairlist does not support backtesting as orderbook data is real-time and not available in historical datasets.
 
 #### AgeFilter
 

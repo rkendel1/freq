@@ -587,6 +587,7 @@
               "ProducerPairList",
               "RemotePairList",
               "MarketCapPairList",
+              "LiquidityPairList",
               "AgeFilter",
               "DelistFilter",
               "FullTradesFilter",
