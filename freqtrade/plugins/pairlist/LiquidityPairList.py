@@ -2,7 +2,9 @@
 # flake8: noqa: F401
 # isort: skip_file
 # --- Do not remove these libs ---
+import concurrent.futures
 import logging
+from threading import Lock
 from typing import Dict, List, Optional, Tuple, Any
 
 from cachetools import TTLCache
@@ -91,6 +93,14 @@ class LiquidityPairList(IPairList):
                 f"many pairs. Consider using a lower value unless trading exotic pairs."
             )
 
+        # Add parallel processing support
+        # Use 10 workers to match default HTTP connection pool size
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=10,
+            thread_name_prefix="liquidity_filter"
+        )
+        self._lock = Lock()
+
         logger.info(f"LiquidityPairList initialized with:")
         logger.info(f"  - Min liquidity: {self._min_liquidity:,} (quote currency)")
         logger.info(f"  - Spread threshold: {self._spread_pct_threshold}%")
@@ -174,6 +184,20 @@ class LiquidityPairList(IPairList):
         # Cache the result
         self._liquidity_cache[cache_key] = result
         return result
+
+    def _verify_single_pair(self, pair: str) -> Tuple[str, bool, str, Dict[str, Any]]:
+        """
+        Verify liquidity for a single pair (thread-safe).
+
+        Returns:
+            tuple: (pair, passed, reason, metrics)
+        """
+        try:
+            passed, reason, metrics = self._calculate_orderbook_liquidity(pair)
+            return (pair, passed, reason, metrics)
+        except Exception as e:
+            logger.warning(f"Unexpected error verifying {pair}: {e}")
+            return (pair, False, f"Verification error: {str(e)}", {})
 
     def _calculate_liquidity_uncached(self, pair: str) -> Tuple[bool, str, Dict[str, Any]]:
         """
@@ -346,6 +370,47 @@ class LiquidityPairList(IPairList):
 
         return True, "Passed ticker pre-filter"
 
+    def _process_pairs_parallel(self, candidates: List[str], batch_size: int = 10) -> Tuple[List[str], List[Tuple[str, str]]]:
+        """
+        Process pairs in parallel batches.
+
+        Args:
+            candidates: List of pairs to verify
+            batch_size: Number of pairs to process in parallel
+
+        Returns:
+            tuple: (filtered_pairs, rejected_pairs_with_reasons)
+        """
+        filtered_pairs = []
+        orderbook_rejected = []
+
+        # Process in batches to avoid overwhelming the exchange
+        for i in range(0, len(candidates), batch_size):
+            batch = candidates[i:i + batch_size]
+
+            # Submit all pairs in batch to thread pool
+            future_to_pair = {
+                self._executor.submit(self._verify_single_pair, pair): pair
+                for pair in batch
+            }
+
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(future_to_pair):
+                try:
+                    pair, passed, reason, metrics = future.result()
+                    if passed:
+                        filtered_pairs.append(pair)
+                        logger.debug(f"LiquidityPairList: {pair} passed - {metrics}")
+                    else:
+                        orderbook_rejected.append((pair, reason))
+                        logger.debug(f"LiquidityPairList: {pair} rejected - {reason}")
+                except Exception as e:
+                    pair = future_to_pair[future]
+                    logger.error(f"Error processing {pair}: {e}")
+                    orderbook_rejected.append((pair, f"Processing error: {str(e)}"))
+
+        return filtered_pairs, orderbook_rejected
+
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         Filter pairlist based on orderbook liquidity with ticker pre-filtering.
@@ -378,19 +443,8 @@ class LiquidityPairList(IPairList):
 
             logger.info(f"LiquidityPairList: Ticker pre-filter passed {len(candidates)}/{len(pairlist)} pairs")
 
-        # Stage 2: Order book verification
-        filtered_pairs = []
-        orderbook_rejected = []
-
-        for pair in candidates:
-            passed, reason, metrics = self._calculate_orderbook_liquidity(pair)
-
-            if passed:
-                filtered_pairs.append(pair)
-                logger.debug(f"LiquidityPairList: {pair} passed - {metrics}")
-            else:
-                orderbook_rejected.append((pair, reason))
-                logger.debug(f"LiquidityPairList: {pair} rejected - {reason}")
+        # Stage 2: Order book verification (PARALLEL)
+        filtered_pairs, orderbook_rejected = self._process_pairs_parallel(candidates)
 
         # Log summary
         logger.info(f"LiquidityPairList: {len(filtered_pairs)}/{len(pairlist)} pairs passed final filter")
@@ -409,3 +463,8 @@ class LiquidityPairList(IPairList):
                 logger.info(f"  ... and {len(orderbook_rejected) - 10} more")
 
         return filtered_pairs
+
+    def __del__(self):
+        """Cleanup thread pool on deletion"""
+        if hasattr(self, '_executor'):
+            self._executor.shutdown(wait=False)
