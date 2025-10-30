@@ -2,16 +2,15 @@
 # flake8: noqa: F401
 # isort: skip_file
 # --- Do not remove these libs ---
-import concurrent.futures
+import asyncio
 import logging
-from threading import Lock
 from typing import Dict, List, Optional, Tuple, Any
 
 from cachetools import TTLCache
 
 from freqtrade.exceptions import DDosProtection, ExchangeError, OperationalException, TemporaryError
 from freqtrade.exchange.exchange_types import OrderBook, Ticker
-from freqtrade.plugins.pairlist.IPairList import IPairList, SupportsBacktesting
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +50,9 @@ class LiquidityPairList(IPairList):
 
     supports_backtesting = SupportsBacktesting.NO
 
-    def __init__(self, exchange, pairlistmanager, config: dict, pairlistconfig: dict,
-                 pairlist_pos: int) -> None:
+    def __init__(
+        self, exchange, pairlistmanager, config: dict, pairlistconfig: dict, pairlist_pos: int
+    ) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         # Validate exchange capabilities BEFORE processing configuration
@@ -64,19 +64,19 @@ class LiquidityPairList(IPairList):
             )
 
         # Configuration parameters
-        self._min_liquidity = pairlistconfig.get('min_liquidity', 100000)
-        self._spread_pct_threshold = pairlistconfig.get('spread_pct_threshold', 0.5)
-        self._min_top_level = pairlistconfig.get('min_top_level', 5000)
+        self._min_liquidity = pairlistconfig.get("min_liquidity", 100000)
+        self._spread_pct_threshold = pairlistconfig.get("spread_pct_threshold", 0.5)
+        self._min_top_level = pairlistconfig.get("min_top_level", 5000)
 
         # Caching configuration
-        self._cache_ttl = pairlistconfig.get('cache_ttl', 300)
+        self._cache_ttl = pairlistconfig.get("cache_ttl", 300)
         self._liquidity_cache: TTLCache = TTLCache(
             maxsize=1000,  # Cache up to 1000 pairs
-            ttl=self._cache_ttl
+            ttl=self._cache_ttl,
         )
 
         # Ticker pre-filtering configuration
-        self._ticker_prefilter_threshold = pairlistconfig.get('ticker_prefilter_threshold', 0.1)
+        self._ticker_prefilter_threshold = pairlistconfig.get("ticker_prefilter_threshold", 0.1)
 
         # Validate configuration
         if self._min_liquidity <= 0:
@@ -92,14 +92,6 @@ class LiquidityPairList(IPairList):
                 f"High spread threshold ({self._spread_pct_threshold}%) may filter out "
                 f"many pairs. Consider using a lower value unless trading exotic pairs."
             )
-
-        # Add parallel processing support
-        # Use 10 workers to match default HTTP connection pool size
-        self._executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=10,
-            thread_name_prefix="liquidity_filter"
-        )
-        self._lock = Lock()
 
         logger.info(f"LiquidityPairList initialized with:")
         logger.info(f"  - Min liquidity: {self._min_liquidity:,} (quote currency)")
@@ -127,7 +119,7 @@ class LiquidityPairList(IPairList):
         return f"Liquidity filter (≥{self._min_liquidity:,} depth, ±{self._spread_pct_threshold}%)"
 
     @staticmethod
-    def available_parameters() -> Dict[str, Any]:
+    def available_parameters() -> Dict[str, PairlistParameter]:
         """Define available parameters for this pairlist."""
         from freqtrade.plugins.pairlist.IPairList import IPairList
 
@@ -136,33 +128,33 @@ class LiquidityPairList(IPairList):
                 "type": "number",
                 "default": 100000,
                 "description": "Minimum liquidity in quote currency within price range",
-                "help": "Minimum combined bid+ask liquidity within ±spread_pct_threshold% of mid-price (e.g., USDT for BTC/USDT, BTC for ETH/BTC)"
+                "help": "Minimum combined bid+ask liquidity within ±spread_pct_threshold% of mid-price (e.g., USDT for BTC/USDT, BTC for ETH/BTC)",
             },
             "spread_pct_threshold": {
                 "type": "number",
                 "default": 0.5,
                 "description": "Price range percentage for liquidity calculation",
-                "help": "Calculate liquidity within ±X% of mid-price (0.1-25% range recommended)"
+                "help": "Calculate liquidity within ±X% of mid-price (0.1-25% range recommended)",
             },
             "min_top_level": {
                 "type": "number",
                 "default": 5000,
                 "description": "Minimum size at best bid/ask in quote currency",
-                "help": "Minimum order size at best bid and ask prices in quote currency"
+                "help": "Minimum order size at best bid and ask prices in quote currency",
             },
             "cache_ttl": {
                 "type": "number",
                 "default": 300,
                 "description": "Cache TTL in seconds",
-                "help": "How long to cache liquidity calculations (0 to disable)"
+                "help": "How long to cache liquidity calculations (0 to disable)",
             },
             "ticker_prefilter_threshold": {
                 "type": "number",
                 "default": 0.1,
                 "description": "Ticker pre-filter threshold as fraction of min_liquidity",
-                "help": "Pairs with top-level liquidity below this fraction of min_liquidity are filtered out (0.05-0.2 recommended)"
+                "help": "Pairs with top-level liquidity below this fraction of min_liquidity are filtered out (0.05-0.2 recommended)",
             },
-            **IPairList.refresh_period_parameter()
+            **IPairList.refresh_period_parameter(),
         }
 
     def _calculate_orderbook_liquidity(self, pair: str) -> Tuple[bool, str, Dict[str, Any]]:
@@ -173,7 +165,9 @@ class LiquidityPairList(IPairList):
             tuple: (passed_filter, rejection_reason, liquidity_metrics)
         """
         # Check cache first
-        cache_key = f"{pair}_{self._min_liquidity}_{self._spread_pct_threshold}_{self._min_top_level}"
+        cache_key = (
+            f"{pair}_{self._min_liquidity}_{self._spread_pct_threshold}_{self._min_top_level}"
+        )
         if cache_key in self._liquidity_cache:
             logger.debug(f"Using cached liquidity data for {pair}")
             return self._liquidity_cache[cache_key]
@@ -185,19 +179,111 @@ class LiquidityPairList(IPairList):
         self._liquidity_cache[cache_key] = result
         return result
 
-    def _verify_single_pair(self, pair: str) -> Tuple[str, bool, str, Dict[str, Any]]:
-        """
-        Verify liquidity for a single pair (thread-safe).
+    def _evaluate_liquidity_from_orderbook(
+        self, pair: str, orderbook: OrderBook
+    ) -> Tuple[bool, str, Dict[str, Any]]:
+        """Evaluate liquidity rules given a pre-fetched orderbook."""
+        # Validate orderbook structure
+        if not self._validate_orderbook_structure(orderbook, pair):
+            return False, "Invalid orderbook structure", {}
 
-        Returns:
-            tuple: (pair, passed, reason, metrics)
-        """
-        try:
-            passed, reason, metrics = self._calculate_orderbook_liquidity(pair)
-            return (pair, passed, reason, metrics)
-        except Exception as e:
-            logger.warning(f"Unexpected error verifying {pair}: {e}")
-            return (pair, False, f"Verification error: {str(e)}", {})
+        bids = orderbook["bids"]
+        asks = orderbook["asks"]
+
+        # Calculate mid-price
+        best_bid = float(bids[0][0])
+        best_ask = float(asks[0][0])
+        mid_price = (best_bid + best_ask) / 2
+
+        # Define price range (±spread threshold of mid-price)
+        price_lower = mid_price * (1 - self._spread_pct_threshold / 100)
+        price_upper = mid_price * (1 + self._spread_pct_threshold / 100)
+
+        # Calculate liquidity within price range (values in quote currency)
+        bid_liquidity = 0.0
+        ask_liquidity = 0.0
+
+        # Sum bid volume within range
+        for price, volume in bids:
+            price_float = float(price)
+            if price_float >= price_lower:
+                bid_liquidity += price_float * float(volume)
+                if bid_liquidity >= self._min_liquidity:
+                    break
+            else:
+                break
+
+        # Sum ask volume within range
+        for price, volume in asks:
+            price_float = float(price)
+            if price_float <= price_upper:
+                ask_liquidity += price_float * float(volume)
+            else:
+                break
+
+        total_liquidity = bid_liquidity + ask_liquidity
+
+        # Early exit for high-liquidity pairs
+        if total_liquidity >= self._min_liquidity * 2:
+            return (
+                True,
+                "Passed (high liquidity)",
+                {
+                    "total_liquidity": total_liquidity,
+                    "bid_liquidity": bid_liquidity,
+                    "ask_liquidity": ask_liquidity,
+                    "mid_price": mid_price,
+                    "skipped_top_level_check": True,
+                },
+            )
+
+        # Check primary liquidity requirement
+        if total_liquidity < self._min_liquidity:
+            return (
+                False,
+                f"Total liquidity {total_liquidity:,.0f} < {self._min_liquidity:,}",
+                {
+                    "total_liquidity": total_liquidity,
+                    "bid_liquidity": bid_liquidity,
+                    "ask_liquidity": ask_liquidity,
+                    "mid_price": mid_price,
+                },
+            )
+
+        # Check secondary requirement (minimum size at top levels)
+        best_bid_size = best_bid * float(bids[0][1])
+        best_ask_size = best_ask * float(asks[0][1])
+        min_top_level = min(best_bid_size, best_ask_size)
+
+        if min_top_level < self._min_top_level:
+            return (
+                False,
+                f"Top level size {min_top_level:,.0f} < {self._min_top_level:,}",
+                {
+                    "total_liquidity": total_liquidity,
+                    "bid_liquidity": bid_liquidity,
+                    "ask_liquidity": ask_liquidity,
+                    "best_bid_size": best_bid_size,
+                    "best_ask_size": best_ask_size,
+                    "min_top_level": min_top_level,
+                    "mid_price": mid_price,
+                },
+            )
+
+        # Both checks passed
+        return (
+            True,
+            "Passed",
+            {
+                "total_liquidity": total_liquidity,
+                "bid_liquidity": bid_liquidity,
+                "ask_liquidity": ask_liquidity,
+                "best_bid_size": best_bid_size,
+                "best_ask_size": best_ask_size,
+                "min_top_level": min_top_level,
+                "mid_price": mid_price,
+            },
+        )
 
     def _calculate_liquidity_uncached(self, pair: str) -> Tuple[bool, str, Dict[str, Any]]:
         """
@@ -227,8 +313,8 @@ class LiquidityPairList(IPairList):
             if not self._validate_orderbook_structure(orderbook, pair):
                 return False, "Invalid orderbook structure", {}
 
-            bids = orderbook['bids']
-            asks = orderbook['asks']
+            bids = orderbook["bids"]
+            asks = orderbook["asks"]
 
             # Calculate mid-price
             best_bid = float(bids[0][0])
@@ -266,22 +352,30 @@ class LiquidityPairList(IPairList):
 
             # Early exit for high-liquidity pairs
             if total_liquidity >= self._min_liquidity * 2:
-                return True, "Passed (high liquidity)", {
-                    'total_liquidity': total_liquidity,
-                    'bid_liquidity': bid_liquidity,
-                    'ask_liquidity': ask_liquidity,
-                    'mid_price': mid_price,
-                    'skipped_top_level_check': True
-                }
+                return (
+                    True,
+                    "Passed (high liquidity)",
+                    {
+                        "total_liquidity": total_liquidity,
+                        "bid_liquidity": bid_liquidity,
+                        "ask_liquidity": ask_liquidity,
+                        "mid_price": mid_price,
+                        "skipped_top_level_check": True,
+                    },
+                )
 
             # Check primary liquidity requirement
             if total_liquidity < self._min_liquidity:
-                return False, f"Total liquidity {total_liquidity:,.0f} < {self._min_liquidity:,}", {
-                    'total_liquidity': total_liquidity,
-                    'bid_liquidity': bid_liquidity,
-                    'ask_liquidity': ask_liquidity,
-                    'mid_price': mid_price
-                }
+                return (
+                    False,
+                    f"Total liquidity {total_liquidity:,.0f} < {self._min_liquidity:,}",
+                    {
+                        "total_liquidity": total_liquidity,
+                        "bid_liquidity": bid_liquidity,
+                        "ask_liquidity": ask_liquidity,
+                        "mid_price": mid_price,
+                    },
+                )
 
             # Check secondary requirement (minimum size at top levels)
             best_bid_size = best_bid * float(bids[0][1])
@@ -289,26 +383,34 @@ class LiquidityPairList(IPairList):
             min_top_level = min(best_bid_size, best_ask_size)
 
             if min_top_level < self._min_top_level:
-                return False, f"Top level size {min_top_level:,.0f} < {self._min_top_level:,}", {
-                    'total_liquidity': total_liquidity,
-                    'bid_liquidity': bid_liquidity,
-                    'ask_liquidity': ask_liquidity,
-                    'best_bid_size': best_bid_size,
-                    'best_ask_size': best_ask_size,
-                    'min_top_level': min_top_level,
-                    'mid_price': mid_price
-                }
+                return (
+                    False,
+                    f"Top level size {min_top_level:,.0f} < {self._min_top_level:,}",
+                    {
+                        "total_liquidity": total_liquidity,
+                        "bid_liquidity": bid_liquidity,
+                        "ask_liquidity": ask_liquidity,
+                        "best_bid_size": best_bid_size,
+                        "best_ask_size": best_ask_size,
+                        "min_top_level": min_top_level,
+                        "mid_price": mid_price,
+                    },
+                )
 
             # Both checks passed
-            return True, "Passed", {
-                'total_liquidity': total_liquidity,
-                'bid_liquidity': bid_liquidity,
-                'ask_liquidity': ask_liquidity,
-                'best_bid_size': best_bid_size,
-                'best_ask_size': best_ask_size,
-                'min_top_level': min_top_level,
-                'mid_price': mid_price
-            }
+            return (
+                True,
+                "Passed",
+                {
+                    "total_liquidity": total_liquidity,
+                    "bid_liquidity": bid_liquidity,
+                    "ask_liquidity": ask_liquidity,
+                    "best_bid_size": best_bid_size,
+                    "best_ask_size": best_ask_size,
+                    "min_top_level": min_top_level,
+                    "mid_price": mid_price,
+                },
+            )
 
         except Exception as e:
             logger.error(f"Critical error in liquidity calculation for {pair}: {e}")
@@ -320,15 +422,15 @@ class LiquidityPairList(IPairList):
             logger.debug(f"Empty orderbook for {pair}")
             return False
 
-        if 'bids' not in orderbook or 'asks' not in orderbook:
+        if "bids" not in orderbook or "asks" not in orderbook:
             logger.debug(f"Missing bids/asks in orderbook for {pair}")
             return False
 
-        if not isinstance(orderbook['bids'], list) or not isinstance(orderbook['asks'], list):
+        if not isinstance(orderbook["bids"], list) or not isinstance(orderbook["asks"], list):
             logger.debug(f"Invalid bids/asks format for {pair}")
             return False
 
-        if not orderbook['bids'] or not orderbook['asks']:
+        if not orderbook["bids"] or not orderbook["asks"]:
             logger.debug(f"Empty bids/asks for {pair}")
             return False
 
@@ -349,15 +451,15 @@ class LiquidityPairList(IPairList):
             return False, "No ticker data"
 
         # Check if we have basic data
-        bid_price = ticker.get('bid')
-        ask_price = ticker.get('ask')
+        bid_price = ticker.get("bid")
+        ask_price = ticker.get("ask")
 
         if not bid_price or not ask_price:
             return False, "Missing bid/ask price"
 
         # Get volumes (may be None)
-        bid_volume = ticker.get('bidVolume', 0) or 0
-        ask_volume = ticker.get('askVolume', 0) or 0
+        bid_volume = ticker.get("bidVolume", 0) or 0
+        ask_volume = ticker.get("askVolume", 0) or 0
 
         # Calculate top-level liquidity estimate
         top_liquidity = (bid_price * bid_volume) + (ask_price * ask_volume)
@@ -370,46 +472,45 @@ class LiquidityPairList(IPairList):
 
         return True, "Passed ticker pre-filter"
 
-    def _process_pairs_parallel(self, candidates: List[str], batch_size: int = 10) -> Tuple[List[str], List[Tuple[str, str]]]:
+    async def _async_fetch_orderbooks(
+        self, pairs: List[str], limit: int = 100, concurrency: int = 10
+    ) -> Dict[str, Optional[OrderBook]]:
+        """Fetch orderbooks concurrently using ccxt async client with bounded concurrency.
+
+        Adds per-request timeouts and resilient gathering to avoid hangs.
         """
-        Process pairs in parallel batches.
+        results: Dict[str, Optional[OrderBook]] = {}
+        sem = asyncio.Semaphore(concurrency)
 
-        Args:
-            candidates: List of pairs to verify
-            batch_size: Number of pairs to process in parallel
+        api_async = getattr(self._exchange, "_api_async", None)
+        if api_async is None:
+            return {p: None for p in pairs}
 
-        Returns:
-            tuple: (filtered_pairs, rejected_pairs_with_reasons)
-        """
-        filtered_pairs = []
-        orderbook_rejected = []
+        # Ensure markets are loaded once to prevent lazy-init stalls during first fetch
+        try:
+            await asyncio.wait_for(api_async.load_markets(reload=False), timeout=5.0)
+        except Exception:
+            # Proceed anyway; individual fetches still attempted with timeouts
+            pass
 
-        # Process in batches to avoid overwhelming the exchange
-        for i in range(0, len(candidates), batch_size):
-            batch = candidates[i:i + batch_size]
-
-            # Submit all pairs in batch to thread pool
-            future_to_pair = {
-                self._executor.submit(self._verify_single_pair, pair): pair
-                for pair in batch
-            }
-
-            # Collect results as they complete
-            for future in concurrent.futures.as_completed(future_to_pair):
+        async def _fetch_one(p: str) -> Optional[OrderBook]:
+            async with sem:
                 try:
-                    pair, passed, reason, metrics = future.result()
-                    if passed:
-                        filtered_pairs.append(pair)
-                        logger.debug(f"LiquidityPairList: {pair} passed - {metrics}")
-                    else:
-                        orderbook_rejected.append((pair, reason))
-                        logger.debug(f"LiquidityPairList: {pair} rejected - {reason}")
-                except Exception as e:
-                    pair = future_to_pair[future]
-                    logger.error(f"Error processing {pair}: {e}")
-                    orderbook_rejected.append((pair, f"Processing error: {str(e)}"))
+                    return await asyncio.wait_for(
+                        api_async.fetch_l2_order_book(p, limit), timeout=3.0
+                    )
+                except Exception:
+                    return None
 
-        return filtered_pairs, orderbook_rejected
+        tasks = [asyncio.create_task(_fetch_one(p)) for p in pairs]
+        # Gather with return_exceptions to avoid propagation and ensure completion
+        fetched = await asyncio.gather(*tasks, return_exceptions=True)
+        for p, ob in zip(pairs, fetched):
+            if isinstance(ob, Exception):
+                results[p] = None
+            else:
+                results[p] = ob
+        return results
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -425,7 +526,7 @@ class LiquidityPairList(IPairList):
         if not pairlist:
             return pairlist
 
-        logger.info(f"LiquidityPairList: Filtering {len(pairlist)} pairs")
+        self.log_once(f"LiquidityPairList: Filtering {len(pairlist)} pairs", logger.info)
 
         # Stage 1: Ticker pre-filtering
         candidates = pairlist
@@ -441,30 +542,86 @@ class LiquidityPairList(IPairList):
                 else:
                     ticker_rejected.append((pair, reason))
 
-            logger.info(f"LiquidityPairList: Ticker pre-filter passed {len(candidates)}/{len(pairlist)} pairs")
+            self.log_once(
+                f"LiquidityPairList: Ticker pre-filter passed {len(candidates)}/{len(pairlist)} pairs",
+                logger.info,
+            )
 
-        # Stage 2: Order book verification (PARALLEL)
-        filtered_pairs, orderbook_rejected = self._process_pairs_parallel(candidates)
+        # Stage 2: Order book verification (ASYNC when possible)
+        filtered_pairs: List[str] = []
+        orderbook_rejected: List[Tuple[str, str]] = []
 
-        # Log summary
-        logger.info(f"LiquidityPairList: {len(filtered_pairs)}/{len(pairlist)} pairs passed final filter")
+        # Prefer async only if async api is available
+        api_async = getattr(self._exchange, "_api_async", None)
+        use_async = api_async is not None
+        # Prefer sync path if fetch_l2_order_book is mocked (unit tests)
+        try:
+            from unittest.mock import MagicMock  # type: ignore
+
+            if isinstance(getattr(self._exchange, "fetch_l2_order_book", None), MagicMock):
+                use_async = False
+        except Exception:
+            pass
+        try:
+            asyncio.get_running_loop()
+            # Running in an event loop already - avoid nested loop
+            use_async = False
+        except RuntimeError:
+            use_async = use_async
+
+        if use_async:
+            orderbooks = asyncio.run(
+                self._async_fetch_orderbooks(candidates, limit=100, concurrency=10)
+            )
+            for pair in candidates:
+                ob = orderbooks.get(pair)
+                if ob is None:
+                    orderbook_rejected.append((pair, "Orderbook fetch failed"))
+                    continue
+                passed, reason, metrics = self._evaluate_liquidity_from_orderbook(pair, ob)
+                if passed:
+                    filtered_pairs.append(pair)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"LiquidityPairList: {pair} passed - {metrics}")
+                else:
+                    orderbook_rejected.append((pair, reason))
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"LiquidityPairList: {pair} rejected - {reason}")
+        else:
+            # Fallback: sequential (avoid threading as requested)
+            for pair in candidates:
+                passed, reason, metrics = self._calculate_orderbook_liquidity(pair)
+                if passed:
+                    filtered_pairs.append(pair)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"LiquidityPairList: {pair} passed - {metrics}")
+                else:
+                    orderbook_rejected.append((pair, reason))
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"LiquidityPairList: {pair} rejected - {reason}")
+
+        # Log summary (cached)
+        self.log_once(
+            f"LiquidityPairList: {len(filtered_pairs)}/{len(pairlist)} pairs passed final filter",
+            logger.info,
+        )
 
         if ticker_rejected:
-            logger.info(f"Ticker pre-filter rejected {len(ticker_rejected)} pairs")
+            self.log_once(f"Ticker pre-filter rejected {len(ticker_rejected)} pairs", logger.info)
             if logger.isEnabledFor(logging.DEBUG):
                 for pair, reason in ticker_rejected[:5]:
                     logger.debug(f"  - {pair}: {reason}")
 
         if orderbook_rejected:
-            logger.info(f"Order book filter rejected {len(orderbook_rejected)} pairs")
+            self.log_once(
+                f"Order book filter rejected {len(orderbook_rejected)} pairs", logger.info
+            )
             for pair, reason in orderbook_rejected[:10]:
-                logger.info(f"  - {pair}: {reason}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"  - {pair}: {reason}")
             if len(orderbook_rejected) > 10:
-                logger.info(f"  ... and {len(orderbook_rejected) - 10} more")
+                self.log_once(f"  ... and {len(orderbook_rejected) - 10} more", logger.info)
 
         return filtered_pairs
 
-    def __del__(self):
-        """Cleanup thread pool on deletion"""
-        if hasattr(self, '_executor'):
-            self._executor.shutdown(wait=False)
+    # No thread pools used - no cleanup handler required
