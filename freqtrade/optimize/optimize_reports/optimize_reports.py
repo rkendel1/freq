@@ -8,6 +8,7 @@ from pandas import DataFrame, Series, concat, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT
 from freqtrade.data.metrics import (
+    calculate_alpha_beta,
     calculate_cagr,
     calculate_calmar,
     calculate_csum,
@@ -83,7 +84,6 @@ def _generate_result_line(
     """
     Generate one result dict, with "first_column" as key.
     """
-    # (end-capital - starting capital) / starting capital
     profit_total = result["profit_abs"].sum() / starting_balance
     backtest_days = (max_date - min_date).days or 1
     final_balance = starting_balance + result["profit_abs"].sum()
@@ -115,12 +115,6 @@ def _generate_result_line(
             if not result.empty
             else "0:00"
         ),
-        # 'duration_max': str(timedelta(
-        #                     minutes=round(result['trade_duration'].max()))
-        #                     ) if not result.empty else '0:00',
-        # 'duration_min': str(timedelta(
-        #                     minutes=round(result['trade_duration'].min()))
-        #                     ) if not result.empty else '0:00',
         "wins": len(result[result["profit_abs"] > 0]),
         "draws": len(result[result["profit_abs"] == 0]),
         "losses": len(result[result["profit_abs"] < 0]),
@@ -145,7 +139,7 @@ def calculate_trade_volume(trades_dict: list[dict[str, Any]]) -> float:
     return sum(sum(order["cost"] for order in trade.get("orders", [])) for trade in trades_dict)
 
 
-def generate_pair_metrics(  #
+def generate_pair_metrics(
     pairlist: list[str],
     stake_currency: str,
     starting_balance: float,
@@ -562,6 +556,21 @@ def generate_strategy_stats(
     expectancy, expectancy_ratio = calculate_expectancy(results)
     backtest_days = (max_date - min_date).days or 1
     trades_dict = results.to_dict(orient="records")
+
+    alpha, beta = (0.0, 0.0)
+    if content.get("processed_data"):
+        try:
+            alpha, beta = calculate_alpha_beta(
+                results,
+                content["processed_data"],
+                min_date,
+                max_date,
+                start_balance,
+            )
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Failed to calculate alpha/beta: {e}")
+            alpha, beta = 0.0, 0.0
+
     strat_stats = {
         "trades": trades_dict,
         "locks": [lock.to_json() for lock in content["locks"]],
@@ -592,6 +601,8 @@ def generate_strategy_stats(
         "sharpe": calculate_sharpe(results, min_date, max_date, start_balance),
         "calmar": calculate_calmar(results, min_date, max_date, start_balance),
         "sqn": calculate_sqn(results, start_balance),
+        "alpha": alpha,
+        "beta": beta,
         "profit_factor": profit_factor,
         "backtest_start": min_date.strftime(DATETIME_PRINT_FORMAT),
         "backtest_start_ts": int(min_date.timestamp() * 1000),

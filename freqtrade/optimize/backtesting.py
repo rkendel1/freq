@@ -1735,6 +1735,7 @@ class Backtesting:
             "canceled_entry_orders": self.canceled_entry_orders,
             "replaced_entry_orders": self.replaced_entry_orders,
             "final_balance": self.wallets.get_total(self.strategy.config["stake_currency"]),
+            "processed_data": processed,
         }
 
     def backtest_one_strategy(
