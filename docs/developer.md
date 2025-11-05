@@ -2,13 +2,13 @@
 
 This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
-All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/p7nuUNVfP7) where you can ask questions.
+All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://GitHub.com/freqtrade/freqtrade/issues) on [GitHub](https://GitHub.com) and also have a dev channel on [discord](https://discord.gg/p7nuUNVfP7) where you can ask questions.
 
 ## Documentation
 
 Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) and needs to be provided with every new feature PR.
 
-Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/reference/admonitions/).
+Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.GitHub.io/mkdocs-material/reference/admonitions/).
 
 To test the documentation locally use the following commands.
 
@@ -29,7 +29,7 @@ This will install all required tools for development, including `pytest`, `ruff`
 Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
 This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
 
-Before opening a pull request, please familiarize yourself with our [Contributing Guidelines](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md).
+Before opening a pull request, please familiarize yourself with our [Contributing Guidelines](https://GitHub.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md).
 
 ### Devcontainer setup
 
@@ -162,7 +162,7 @@ Hopefully you also want to contribute this back upstream.
 
 Whatever your motivations are - This should get you off the ground in trying to develop a new Pairlist Handler.
 
-First of all, have a look at the [VolumePairList](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/plugins/pairlist/VolumePairList.py) Handler, and best copy this file with a name of your new Pairlist Handler.
+First of all, have a look at the [VolumePairList](https://GitHub.com/freqtrade/freqtrade/blob/develop/freqtrade/plugins/pairlist/VolumePairList.py) Handler, and best copy this file with a name of your new Pairlist Handler.
 
 This is a simple Handler, which however serves as a good example on how to start developing.
 
@@ -337,7 +337,7 @@ Additional tests / steps to complete:
 
 Check if the new exchange supports Stoploss on Exchange orders through their API.
 
-Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need to implement the exchange-specific parameters ourselves. Best look at `binance.py` for an example implementation of this. You'll need to dig through the documentation of the Exchange's API on how exactly this can be done. [CCXT Issues](https://github.com/ccxt/ccxt/issues) may also provide great help, since others may have implemented something similar for their projects.
+Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need to implement the exchange-specific parameters ourselves. Best look at `binance.py` for an example implementation of this. You'll need to dig through the documentation of the Exchange's API on how exactly this can be done. [CCXT Issues](https://GitHub.com/ccxt/ccxt/issues) may also provide great help, since others may have implemented something similar for their projects.
 
 ### Incomplete candles
 
@@ -483,11 +483,11 @@ To keep the release-log short, best wrap the full git changelog into a collapsib
 If FreqUI has been updated substantially, make sure to create a release before merging the release branch.
 Make sure that freqUI CI on the release is finished and passed before merging the release.
 
-### Create github release / tag
+### Create GitHub release / tag
 
 Once the PR against stable is merged (best right after merging):
 
-* Use the button "Draft a new release" in the Github UI (subsection releases).
+* Use the button "Draft a new release" in the GitHub UI (subsection releases).
 * Use the version-number specified as tag.
 * Use "stable" as reference (this step comes after the above PR is merged).
 * Use the above changelog as release comment (as codeblock).
@@ -503,7 +503,7 @@ Once the PR against stable is merged (best right after merging):
 ### pypi
 
 !!! Warning "Manual Releases"
-    This process is automated as part of Github Actions.  
+    This process is automated as part of GitHub Actions.  
     Manual pypi pushes should not be necessary.
 
 ??? example "Manual release"
