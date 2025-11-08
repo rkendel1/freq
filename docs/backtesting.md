@@ -447,12 +447,11 @@ Alpha: 8.5%
 
 This means:
 
-1. Your strategy is 20% less volatile than the market (β = 0.80)
-2. Despite lower volatility, you're generating 8.5% more annual return than a buy-and-hold strategy would predict (α = 8.5%)
-3. This indicates excellent risk-adjusted performance - you're achieving returns with less downside exposure
+1. Your strategy is 20% less volatile than the market (β = 0.80).
+2. Despite lower volatility, you're generating 8.5% more annual return than a buy-and-hold strategy would predict (α = 8.5%).
+3. This indicates excellent risk-adjusted performance - you're achieving returns with less downside exposure.
 
-!!! Note
-    Alpha and Beta require historical market data for all pairs in your pairlist. They will show as "N/A" if this data is unavailable. The calculations use the Capital Asset Pricing Model (CAPM) formula with a risk-free rate of 0%, consistent with Sharpe and Sortino calculations.
+The calculations use the Capital Asset Pricing Model (CAPM) formula with a risk-free rate of 0%, consistent with Sharpe and Sortino calculations.
 
 ### Daily / Weekly / Monthly / Yearly breakdown
 
