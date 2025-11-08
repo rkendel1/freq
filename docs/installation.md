@@ -17,7 +17,7 @@ Please consider using the prebuilt [docker images](docker_quickstart.md) to get 
 
 For Windows installation, please use the [windows installation guide](windows_installation.md).
 
-The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the `./setup.sh` script, if it's available for your platform.
+The easiest way to install and run Freqtrade is to clone the bot GitHub repository and then run the `./setup.sh` script, if it's available for your platform.
 
 !!! Note "Version considerations"
     When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests).
@@ -90,7 +90,7 @@ OS Specific steps are listed first, the common section below is necessary for al
     # Use piwheels.org to speed up installation
     sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
 
-    git clone https://github.com/freqtrade/freqtrade.git
+    git clone https://GitHub.com/freqtrade/freqtrade.git
     cd freqtrade
 
     bash setup.sh -i
@@ -108,11 +108,11 @@ OS Specific steps are listed first, the common section below is necessary for al
 
 ## Freqtrade repository
 
-Freqtrade is an open source crypto-currency trading bot, whose code is hosted on `github.com`
+Freqtrade is an open source crypto-currency trading bot, whose code is hosted on `GitHub.com`
 
 ```bash
 # Download `develop` branch of freqtrade repository
-git clone https://github.com/freqtrade/freqtrade.git
+git clone https://GitHub.com/freqtrade/freqtrade.git
 
 # Enter downloaded directory
 cd freqtrade
@@ -256,7 +256,7 @@ Download and install freqtrade.
 
 ```bash
 # download freqtrade
-git clone https://github.com/freqtrade/freqtrade.git
+git clone https://GitHub.com/freqtrade/freqtrade.git
 
 # enter downloaded directory 'freqtrade'
 cd freqtrade      
