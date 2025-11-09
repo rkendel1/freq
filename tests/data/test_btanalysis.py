@@ -528,9 +528,7 @@ def test_calculate_alpha_beta(testdatadir):
     # Create mock market data
     min_date = bt_data["open_date"].min()
     max_date = bt_data["close_date"].max()
-    date_range = DataFrame(
-        {"date": [min_date + timedelta(hours=i) for i in range(100)]}
-    )
+    date_range = DataFrame({"date": [min_date + timedelta(hours=i) for i in range(100)]})
 
     # Create simple market data (trending up)
     market_data = {
@@ -616,9 +614,7 @@ def test_calculate_alpha_beta_synthetic(
 def test_calculate_alpha_beta_edge_cases():
     """Test edge cases for alpha/beta calculation."""
     # Single trade
-    trades = DataFrame(
-        {"close_date": [dt_utc(2024, 1, 1)], "profit_abs": [100.0]}
-    )
+    trades = DataFrame({"close_date": [dt_utc(2024, 1, 1)], "profit_abs": [100.0]})
     market_data = {
         "PAIR1/USDT": DataFrame(
             {
@@ -640,9 +636,7 @@ def test_calculate_alpha_beta_edge_cases():
     assert isinstance(beta, float)
 
     # No market data
-    alpha, beta = calculate_alpha_beta(
-        trades, {}, dt_utc(2024, 1, 1), dt_utc(2024, 1, 2), 1000.0
-    )
+    alpha, beta = calculate_alpha_beta(trades, {}, dt_utc(2024, 1, 1), dt_utc(2024, 1, 2), 1000.0)
     assert alpha == 0.0
     assert beta == 0.0
 
@@ -652,6 +646,45 @@ def test_calculate_alpha_beta_edge_cases():
     )
     assert alpha == 0.0
     assert beta == 0.0
+
+
+def test_calculate_alpha_beta_compounding():
+    """
+    Test that alpha/beta calculation properly handles compounding.
+    Verifies returns are calculated relative to current portfolio value,
+    not static starting balance.
+    """
+    dates = [dt_utc(2024, 1, 1), dt_utc(2024, 1, 2)]
+    trades = DataFrame({"close_date": dates, "profit_abs": [100.0, 100.0]})
+
+    market_data = {
+        "PAIR1/USDT": DataFrame(
+            {
+                "date": [dt_utc(2023, 12, 31), dt_utc(2024, 1, 1), dt_utc(2024, 1, 2)],
+                "open": [100.0, 105.0, 110.25],
+                "high": [100.0, 105.0, 110.25],
+                "low": [100.0, 105.0, 110.25],
+                "close": [100.0, 105.0, 110.25],
+                "volume": [1000, 1000, 1000],
+            }
+        )
+    }
+
+    alpha, beta = calculate_alpha_beta(trades, market_data, dates[0], dates[-1], 1000.0)
+
+    from freqtrade.data.metrics import _calculate_daily_returns
+
+    strategy_returns = _calculate_daily_returns(trades, dates[0], dates[-1], 1000.0)
+
+    # Day 1: 100/1000 = 0.10
+    assert abs(strategy_returns[dates[0]] - 0.10) < 0.0001
+
+    # Day 2: 100/1100 = 0.0909 (compounded, NOT 100/1000 = 0.10)
+    expected_day2 = 100.0 / 1100.0
+    assert abs(strategy_returns[dates[1]] - expected_day2) < 0.0001
+
+    assert isinstance(alpha, float)
+    assert isinstance(beta, float)
 
 
 def test_calculate_max_drawdown2():

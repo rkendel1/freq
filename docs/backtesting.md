@@ -438,6 +438,8 @@ Alpha and Beta are metrics from Modern Portfolio Theory that help evaluate strat
 
 **The Market Benchmark**: For Freqtrade, the "market" is defined as a buy-and-hold portfolio consisting of equal weights of all pairs in your pairlist. This represents what you would earn by simply buying and holding instead of actively trading.
 
+**Calculation Method**: Strategy returns are calculated using a portfolio value approach that properly accounts for compounding. Each day's return is calculated as the profit divided by the current portfolio value (not the initial balance), ensuring accurate comparison with the market benchmark regardless of trade frequency or holding period. This makes alpha/beta meaningful for both high-frequency scalping strategies and longer-term position-holding strategies.
+
 **Example Interpretation**:
 
 ```

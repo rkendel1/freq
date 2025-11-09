@@ -494,7 +494,12 @@ def _calculate_daily_returns(
     trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
 ) -> pd.Series:
     """
-    Calculate daily returns from trades.
+    Calculate daily returns from trades using portfolio value approach.
+
+    This function properly accounts for compounding by tracking the portfolio value
+    over time and calculating returns relative to the current portfolio value,
+    not the static starting balance. This ensures accurate comparison with market
+    returns for strategies with different holding periods.
 
     :param trades: DataFrame containing trades with close_date and profit_abs
     :param min_date: Start date
@@ -502,17 +507,32 @@ def _calculate_daily_returns(
     :param starting_balance: Starting balance for normalization
     :return: Series with date index and daily returns (as ratio)
     """
+    if starting_balance <= 0:
+        date_range = pd.date_range(start=min_date, end=max_date, freq="D")
+        return pd.Series(0.0, index=date_range)
+
     trades_copy = trades.copy()
     trades_copy["close_date"] = pd.to_datetime(trades_copy["close_date"])
 
+    # Aggregate profits by day
     daily_profits = trades_copy.resample("D", on="close_date")["profit_abs"].sum()
 
+    # Create full date range
     date_range = pd.date_range(start=min_date, end=max_date, freq="D")
+
+    # Build portfolio value over time
+    portfolio_value = starting_balance
     daily_returns = pd.Series(0.0, index=date_range)
 
-    for date, profit in daily_profits.items():
-        if date in daily_returns.index and starting_balance > 0:
-            daily_returns[date] = profit / starting_balance
+    for date in date_range:
+        if date in daily_profits.index:
+            profit = daily_profits[date]
+            # Calculate return as profit / portfolio_value_before_profit
+            if portfolio_value > 0:
+                daily_returns[date] = profit / portfolio_value
+            # Update portfolio value with the profit
+            portfolio_value += profit
+        # else: no trades closed this day, return remains 0.0
 
     return daily_returns
 
