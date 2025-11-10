@@ -463,6 +463,7 @@ def generate_strategy_stats(
     max_date: datetime,
     market_change: float,
     is_hyperopt: bool = False,
+    btdata: dict[str, DataFrame] | None = None,
 ) -> dict[str, Any]:
     """
     :param pairlist: List of pairs to backtest
@@ -472,6 +473,7 @@ def generate_strategy_stats(
     :param min_date: Backtest start date
     :param max_date: Backtest end date
     :param market_change: float indicating the market change
+    :param btdata: OHLCV data for market benchmark calculations
     :return: Dictionary containing results per strategy and a strategy summary.
     """
     results: DataFrame = content["results"]
@@ -558,11 +560,11 @@ def generate_strategy_stats(
     trades_dict = results.to_dict(orient="records")
 
     alpha, beta = (0.0, 0.0)
-    if content.get("processed_data"):
+    if btdata:
         try:
             alpha, beta = calculate_alpha_beta(
                 results,
-                content["processed_data"],
+                btdata,
                 min_date,
                 max_date,
                 start_balance,
@@ -726,7 +728,13 @@ def generate_backtest_stats(
     pairlist = list(btdata.keys())
     for strategy, content in all_results.items():
         strat_stats = generate_strategy_stats(
-            pairlist, strategy, content, min_date, max_date, market_change=market_change
+            pairlist,
+            strategy,
+            content,
+            min_date,
+            max_date,
+            market_change=market_change,
+            btdata=btdata,
         )
         metadata[strategy] = {
             "run_id": content["run_id"],
