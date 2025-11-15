@@ -20,6 +20,7 @@ from freqtrade.constants import DOCS_LINK, ORDERFLOW_ADDED_COLUMNS, Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.freqai import lopez_de_prado as ldp
 from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -129,24 +130,21 @@ class FreqaiDataKitchen:
         self, filtered_dataframe: DataFrame, labels: DataFrame
     ) -> dict[Any, Any]:
         """
-        Given the dataframe for the full history for training, split the data into
-        training and test data according to user specified parameters in configuration
-        file.
-        :param filtered_dataframe: cleaned dataframe ready to be split.
-        :param labels: cleaned labels ready to be split.
+        Split data into training and test sets using standard or Purged K-Fold CV.
         """
         feat_dict = self.freqai_config["feature_parameters"]
 
         if "shuffle" not in self.freqai_config["data_split_parameters"]:
             self.freqai_config["data_split_parameters"].update({"shuffle": False})
 
-        weights: npt.ArrayLike
-        if feat_dict.get("weight_factor", 0) > 0:
-            weights = self.set_weights_higher_recent(len(filtered_dataframe))
-        else:
-            weights = np.ones(len(filtered_dataframe))
+        weights = self.calculate_sample_weights(filtered_dataframe, labels)
+        use_purged_cv = feat_dict.get("use_purged_kfold_cv", False)
 
-        if self.freqai_config.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
+        if use_purged_cv:
+            train_features, test_features, train_labels, test_labels, train_weights, test_weights = (
+                self._split_with_purged_kfold(filtered_dataframe, labels, weights)
+            )
+        elif self.freqai_config.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
             (
                 train_features,
                 test_features,
@@ -412,14 +410,100 @@ class FreqaiDataKitchen:
         labels = [c for c in column_names if "&" in c]
         self.label_list = labels
 
+    def calculate_sample_weights(
+        self, dataframe: DataFrame, labels: DataFrame
+    ) -> npt.ArrayLike:
+        """
+        Calculate sample weights using Lopez de Prado methods or traditional decay.
+        """
+        feat_dict = self.freqai_config["feature_parameters"]
+        num_samples = len(dataframe)
+        weights = np.ones(num_samples)
+
+        if feat_dict.get("weight_factor", 0) > 0:
+            weights = self.set_weights_higher_recent(num_samples)
+
+        if feat_dict.get("ldp_time_decay", 0) > 0:
+            if isinstance(dataframe.index, pd.DatetimeIndex):
+                decay_factor = feat_dict.get("ldp_time_decay", 1.0)
+                weights = ldp.get_sample_weights_by_time_decay(
+                    dataframe.index.to_series(), decay_factor=decay_factor
+                )
+            else:
+                logger.warning("ldp_time_decay requires DatetimeIndex.")
+
+        if feat_dict.get("ldp_sample_uniqueness", False):
+            if isinstance(dataframe.index, pd.DatetimeIndex):
+                horizon_candles = feat_dict.get("label_horizon_candles", 10)
+                close_times = pd.Series(
+                    dataframe.index + pd.Timedelta(hours=horizon_candles),
+                    index=dataframe.index
+                )
+                uniqueness_weights = ldp.get_sample_weights_by_uniqueness(close_times)
+                weights = weights * uniqueness_weights.values
+                weights = weights / weights.sum()
+            else:
+                logger.warning("ldp_sample_uniqueness requires DatetimeIndex.")
+
+        if feat_dict.get("ldp_return_weighting", False):
+            if len(labels.columns) > 0 and isinstance(labels, pd.DataFrame):
+                returns = labels.iloc[:, 0]
+                if not returns.isna().all():
+                    span = feat_dict.get("ldp_return_weight_span", 60)
+                    return_weights = ldp.get_sample_weights_by_returns(returns, span=span)
+                    weights = weights * return_weights
+                    weights = weights / weights.sum()
+
+        return weights
+
     def set_weights_higher_recent(self, num_weights: int) -> npt.ArrayLike:
-        """
-        Set weights so that recent data is more heavily weighted during
-        training than older data.
-        """
+        """Weight recent data more heavily using exponential decay."""
         wfactor = self.config["freqai"]["feature_parameters"]["weight_factor"]
         weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
+
+    def _split_with_purged_kfold(
+        self, dataframe: DataFrame, labels: DataFrame, weights: npt.ArrayLike
+    ) -> tuple[DataFrame, DataFrame, DataFrame, DataFrame, npt.ArrayLike, npt.ArrayLike]:
+        """Split data using Purged K-Fold with embargo to prevent look-ahead bias."""
+        feat_dict = self.freqai_config["feature_parameters"]
+        n_splits = feat_dict.get("purged_cv_n_splits", 5)
+        pct_embargo = feat_dict.get("purged_cv_embargo_pct", 0.01)
+
+        samples_info_sets = None
+        if feat_dict.get("purged_cv_enable_purging", True):
+            if isinstance(dataframe.index, pd.DatetimeIndex):
+                horizon_candles = feat_dict.get("label_horizon_candles", 10)
+                timeframe = self.config.get("timeframe", "5m")
+                horizon_seconds = horizon_candles * timeframe_to_seconds(timeframe)
+                samples_info_sets = pd.Series(
+                    dataframe.index + pd.Timedelta(seconds=horizon_seconds),
+                    index=dataframe.index
+                )
+            else:
+                logger.warning("Purging requires DatetimeIndex.")
+
+        cv = ldp.PurgedKFold(
+            n_splits=n_splits,
+            samples_info_sets=samples_info_sets,
+            pct_embargo=pct_embargo
+        )
+
+        train_idx, test_idx = next(cv.split(dataframe))
+
+        train_features = dataframe.iloc[train_idx]
+        test_features = dataframe.iloc[test_idx]
+        train_labels = labels.iloc[train_idx]
+        test_labels = labels.iloc[test_idx]
+        train_weights = weights[train_idx]
+        test_weights = weights[test_idx]
+
+        logger.info(
+            f"Purged K-Fold: train={len(train_idx)}, test={len(test_idx)}, "
+            f"embargo={pct_embargo*100:.1f}%"
+        )
+
+        return train_features, test_features, train_labels, test_labels, train_weights, test_weights
 
     def get_predictions_to_append(
         self, predictions: DataFrame, do_predict: npt.ArrayLike, dataframe_backtest: DataFrame
