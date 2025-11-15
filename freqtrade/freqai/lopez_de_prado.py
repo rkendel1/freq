@@ -762,6 +762,7 @@ def get_events_triple_barrier(
     stop_loss: float,
     vertical_barrier_timedelta: Optional[pd.Timedelta] = None,
     side: Optional[pd.Series] = None,
+    dates: Optional[pd.Series] = None,
 ) -> pd.DataFrame:
     """
     Triple-barrier labeling method for financial ML.
@@ -776,9 +777,9 @@ def get_events_triple_barrier(
     Parameters
     ----------
     close : pd.Series
-        Close prices indexed by timestamp
-    events : pd.DatetimeIndex
-        Timestamps when positions would be opened
+        Close prices indexed by timestamp or integer index
+    events : pd.DatetimeIndex or pd.Index
+        Index positions when positions would be opened (DatetimeIndex or integer index)
     profit_target : float
         Upper barrier (e.g., 0.02 for 2% profit target)
     stop_loss : float
@@ -787,12 +788,15 @@ def get_events_triple_barrier(
         Maximum holding period. If None, no time limit.
     side : pd.Series, optional
         Predicted side (1=long, -1=short). If provided, barriers are adjusted.
+    dates : pd.Series, optional
+        Datetime series corresponding to close prices. Required when close has integer index
+        and vertical_barrier_timedelta is specified. Should have the same index as close.
 
     Returns
     -------
     pd.DataFrame
         Columns:
-        - t1: timestamp when barrier was touched
+        - t1: timestamp/index when barrier was touched
         - label: 1 (profit), -1 (loss), or sign(return) (timeout)
         - return: actual return achieved
         - barrier_touched: 'profit', 'stop', or 'vertical'
@@ -807,10 +811,29 @@ def get_events_triple_barrier(
     ...     stop_loss=-0.01,
     ...     vertical_barrier_timedelta=pd.Timedelta(hours=24)
     ... )
+
+    For integer-indexed data (e.g., FreqAI):
+    >>> close = dataframe['close']  # Integer indexed
+    >>> dates = dataframe['date']   # Datetime column
+    >>> events = close.index
+    >>> barriers = get_events_triple_barrier(
+    ...     close, events,
+    ...     profit_target=0.02,
+    ...     stop_loss=-0.01,
+    ...     vertical_barrier_timedelta=pd.Timedelta(hours=24),
+    ...     dates=dates
+    ... )
     """
+    # Check if we need dates for vertical barrier calculation
+    use_dates_for_vertical = (
+        vertical_barrier_timedelta is not None
+        and dates is not None
+        and not isinstance(close.index, pd.DatetimeIndex)
+    )
+
     # Initialize output
     out = pd.DataFrame(index=events)
-    out['t1'] = pd.NaT
+    out['t1'] = pd.NaT if isinstance(close.index, pd.DatetimeIndex) else pd.NA
     out['label'] = 0
     out['return'] = 0.0
     out['barrier_touched'] = ''
@@ -824,8 +847,18 @@ def get_events_triple_barrier(
 
         # Set vertical barrier
         if vertical_barrier_timedelta is not None:
-            t1_vertical = t0 + vertical_barrier_timedelta
-            df_future = df_future[df_future.index <= t1_vertical]
+            if use_dates_for_vertical:
+                # Use dates series for time-based vertical barrier
+                t0_datetime = dates.loc[t0]
+                t1_vertical_datetime = t0_datetime + vertical_barrier_timedelta
+                # Find indices where date is within the vertical barrier
+                future_dates = dates.loc[df_future.index]
+                valid_indices = future_dates[future_dates <= t1_vertical_datetime].index
+                df_future = df_future.loc[valid_indices]
+            else:
+                # Original behavior: index is DatetimeIndex
+                t1_vertical = t0 + vertical_barrier_timedelta
+                df_future = df_future[df_future.index <= t1_vertical]
 
         if len(df_future) == 0:
             continue

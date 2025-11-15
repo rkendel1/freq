@@ -315,6 +315,27 @@ class TestTripleBarrier:
         assert barriers.iloc[0]['label'] == 1
         assert barriers.iloc[1]['label'] == -1
 
+    def test_triple_barrier_integer_index_with_dates(self):
+        """Test triple barrier with integer index and dates parameter (FreqAI case)."""
+        # Simulate FreqAI-style integer-indexed dataframe
+        dates_series = pd.Series(pd.date_range('2024-01-01', periods=100, freq='1h'))
+        prices = pd.Series([100] + [100 + i*0.5 for i in range(1, 100)])
+        events = prices.index  # Integer RangeIndex
+
+        barriers = get_events_triple_barrier(
+            close=prices,
+            events=events,
+            profit_target=0.03,
+            stop_loss=-0.02,
+            vertical_barrier_timedelta=pd.Timedelta(hours=50),
+            dates=dates_series
+        )
+
+        # Should hit profit target at 3% gain (around index 6, when price is 103)
+        assert len(barriers) > 0
+        assert barriers.iloc[0]['label'] == 1
+        assert barriers.iloc[0]['barrier_touched'] == 'profit'
+
     def test_bins_from_triple_barrier(self):
         dates = pd.date_range('2024-01-01', periods=10, freq='1h')
         prices = pd.Series([100, 102, 101, 103, 102, 104, 103, 105, 104, 106], index=dates)

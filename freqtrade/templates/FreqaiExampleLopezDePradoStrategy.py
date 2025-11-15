@@ -122,6 +122,10 @@ class FreqaiExampleLopezDePradoStrategy(IStrategy):
         # In practice, you might use specific signals
         events = close.index
 
+        # Get dates for vertical barrier calculation
+        # FreqAI uses integer-indexed dataframes with a 'date' column
+        dates = dataframe['date'] if 'date' in dataframe.columns else None
+
         # Calculate triple-barrier labels
         barriers = ldp.get_events_triple_barrier(
             close=close,
@@ -129,7 +133,8 @@ class FreqaiExampleLopezDePradoStrategy(IStrategy):
             profit_target=self.profit_target.value,
             stop_loss=self.stop_loss_barrier.value,
             vertical_barrier_timedelta=pd.Timedelta(hours=self.max_holding_hours.value),
-            side=None  # None = symmetric barriers for long/short
+            side=None,  # None = symmetric barriers for long/short
+            dates=dates
         )
 
         # Convert to binary classification labels
