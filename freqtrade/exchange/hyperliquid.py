@@ -50,11 +50,14 @@ class Hyperliquid(Exchange):
 
     @property
     def _ccxt_config(self) -> dict:
+        config = super()._ccxt_config.copy()
+        # Force main hip3 dex by default to prevent "Too many DEXes" error
+        config.setdefault("options", {})
+        config["options"].setdefault("fetchMarkets", {})
+        config["options"]["fetchMarkets"]["hip3"] = {"dex": ["xyz"]}
         # ccxt Hyperliquid defaults to swap
-        config = {}
         if self.trading_mode == TradingMode.SPOT:
-            config.update({"options": {"defaultType": "spot"}})
-        config.update(super()._ccxt_config)
+            config["options"]["defaultType"] = "spot"
         return config
 
     def market_is_tradable(self, market: dict[str, Any]) -> bool:
