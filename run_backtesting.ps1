@@ -1,0 +1,1 @@
+ python .\freqtrade\main.py backtesting -c .\user_data\config_test.json --strategy BD70Strategy  --strategy-path user_data/strategies/ --timeframe 5m --timerange=20250101-20251130 --breakdown day week month --cache none

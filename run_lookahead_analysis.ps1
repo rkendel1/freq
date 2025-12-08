@@ -1,0 +1,1 @@
+python .\freqtrade\main.py lookahead-analysis -c .\user_data\config_test.json --strategy EMAStrategy --timerange=20241011-20241211  --enable-protections

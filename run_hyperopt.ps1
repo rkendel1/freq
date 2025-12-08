@@ -1,0 +1,1 @@
+python .\freqtrade\main.py hyperopt --hyperopt-loss ShortTradeDurHyperOptLoss --strategy BD70Strategy --spaces roi stoploss trailing buy sell -c .\user_data\config_test.json --timerange=20250101-20251205 -e 100

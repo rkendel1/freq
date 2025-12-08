@@ -1,0 +1,1 @@
+ python .\freqtrade\main.py trade -c .\user_data\config_test.json --strategy BD70Strategy --db-url sqlite:///user_data/trade_test_live_bd70.sqlite  --logfile ./logs1

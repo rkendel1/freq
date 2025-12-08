@@ -1,0 +1,1 @@
+ python .\freqtrade\main.py webserver -c .\user_data\config_test.json

@@ -1,3 +1,7 @@
+.venv/
+.vscode/
+.idea/
+.github/
 .git
 .gitignore
 Dockerfile
