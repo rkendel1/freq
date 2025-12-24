@@ -63,7 +63,7 @@ def json_load(datafile: TextIO) -> Any:
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
 
-def file_load_json(file: Path):
+def file_load_json(file: Path) -> Any | None:
     if file.suffix != ".gz":
         gzipfile = file.with_suffix(file.suffix + ".gz")
     else:
@@ -95,7 +95,8 @@ def pair_to_filename(pair: str) -> str:
     return pair
 
 
-def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
+def deep_merge_dicts(source: dict[str, Any], destination: dict[str, Any],
+                     allow_null_overrides: bool = True) -> dict[str, Any]:
     """
     Values from Source override destination, destination is returned (and modified!!)
     Sample:
@@ -115,7 +116,7 @@ def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
     return destination
 
 
-def round_dict(d, n):
+def round_dict(d: dict[str, Any], n: int) -> dict[str, Any]:
     """
     Rounds float values in the dict to n digits after the decimal point.
     """
@@ -163,7 +164,7 @@ def chunks(lst: list[Any], n: int) -> Iterator[list[Any]]:
     Split lst into chunks of the size n.
     :param lst: list to split into chunks
     :param n: number of max elements per chunk
-    :return: None
+    :return: Iterator yielding lists of size n
     """
     for chunk in range(0, len(lst), n):
         yield (lst[chunk : chunk + n])
