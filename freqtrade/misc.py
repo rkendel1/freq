@@ -95,8 +95,8 @@ def pair_to_filename(pair: str) -> str:
     return pair
 
 
-def deep_merge_dicts(source: dict[str, Any], destination: dict[str, Any],
-                     allow_null_overrides: bool = True) -> dict[str, Any]:
+def deep_merge_dicts(source: Any, destination: Any,
+                     allow_null_overrides: bool = True) -> Any:
     """
     Values from Source override destination, destination is returned (and modified!!)
     Sample:
@@ -116,7 +116,7 @@ def deep_merge_dicts(source: dict[str, Any], destination: dict[str, Any],
     return destination
 
 
-def round_dict(d: dict[str, Any], n: int) -> dict[str, Any]:
+def round_dict(d: Any, n: int) -> Any:
     """
     Rounds float values in the dict to n digits after the decimal point.
     """
