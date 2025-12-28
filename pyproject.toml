@@ -44,6 +44,7 @@ dependencies = [
   "TA-Lib<0.7",
   "ft-pandas-ta",
   "technical",
+  "pandas_market_calendars",
   "tabulate",
   "pycoingecko>=3.2.0",
   "python-rapidjson",
