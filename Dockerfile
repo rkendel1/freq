@@ -16,7 +16,8 @@ RUN mkdir /freqtrade \
   && useradd -u 1000 -G sudo -U -m -s /bin/bash ftuser \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
-  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers \
+  && pip install --upgrade pip
 
 WORKDIR /freqtrade
 
@@ -24,14 +25,11 @@ WORKDIR /freqtrade
 FROM base AS python-deps
 RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
-  && apt-get clean \
-  && pip install --upgrade pip wheel
-
+  && apt-get clean
 # Install dependencies
 COPY --chown=ftuser:ftuser requirements.txt requirements-hyperopt.txt /freqtrade/
 USER ftuser
-RUN  pip install --user --no-cache-dir "numpy<3.0" \
-  && pip install --user --no-cache-dir -r requirements-hyperopt.txt
+RUN  pip install --user --no-cache-dir -r requirements-hyperopt.txt
 
 # Copy dependencies to runtime-image
 FROM base AS runtime-image
