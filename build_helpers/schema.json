@@ -659,7 +659,8 @@
               "RangeStabilityFilter",
               "ShuffleFilter",
               "SpreadFilter",
-              "VolatilityFilter"
+              "VolatilityFilter",
+              "SpotToFuturesVolumePairList"
             ]
           }
         },
