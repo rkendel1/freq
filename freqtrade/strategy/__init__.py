@@ -9,6 +9,7 @@ from freqtrade.exchange import (
 from freqtrade.ft_types import AnnotationType
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.informative_decorator import informative
+from freqtrade.strategy.producer_decorator import producer
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.parameters import (
     BooleanParameter,
@@ -31,6 +32,7 @@ __all__ = [
     "Order",
     "PairLocks",
     "informative",
+    "producer",
     # Parameters
     "BooleanParameter",
     "CategoricalParameter",
