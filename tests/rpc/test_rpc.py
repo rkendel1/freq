@@ -619,15 +619,20 @@ def test_rpc_balance_handle(default_conf_usdt, mocker, tickers, proxy_coin, marg
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter({})
     mocker.patch.object(rpc._fiat_converter, "get_price", return_value=1.2)
-
+    mocker.patch(
+        "freqtrade.persistence.trade_model.Trade.get_open_trades",
+        return_value=[
+            MagicMock(pair="ETH/USDT:USDT", safe_base_currency="ETH"),
+        ],
+    )
     result = rpc._rpc_balance(
         default_conf_usdt["stake_currency"], default_conf_usdt["fiat_display_currency"]
     )
 
-    assert tickers.call_count == 4 if not proxy_coin else 6
+    assert tickers.call_count == (7 if proxy_coin and margin_mode != "cross" else 5)
     assert tickers.call_args_list[0][1]["cached"] is True
     # Testing futures - so we should get spot tickers
-    assert tickers.call_args_list[-1][1]["market_type"] == "spot"
+    tickers.assert_any_call(symbols=None, cached=True, market_type=TradingMode.SPOT)
     assert "USD" == result["symbol"]
     expected_curr = [
         {
@@ -692,8 +697,8 @@ def test_rpc_balance_handle(default_conf_usdt, mocker, tickers, proxy_coin, marg
             "balance": 0,
             "used": 0,
             "position": 10.0,
-            "est_stake": 20,
-            "est_stake_bot": 20,
+            "est_stake": 5222.1,
+            "est_stake_bot": 5222.1,
             "stake": "USDT",
             "side": "short",
             "is_bot_managed": True,
@@ -755,15 +760,15 @@ def test_rpc_balance_handle(default_conf_usdt, mocker, tickers, proxy_coin, marg
 
     assert result["currencies"] == expected_curr
     if proxy_coin and margin_mode == "cross":
-        assert pytest.approx(result["total_bot"]) == 1505.0
-        assert pytest.approx(result["total"]) == 2186.6972  # ETH stake is missing.
+        assert pytest.approx(result["total_bot"]) == 6707.1
+        assert pytest.approx(result["total"]) == 7388.7972  # ETH stake is missing.
         assert result["starting_capital"] == 1500 * default_conf_usdt["tradable_balance_ratio"]
-        assert result["starting_capital_ratio"] == pytest.approx(0.013468013468013407)
+        assert result["starting_capital_ratio"] == pytest.approx(3.5165656)
     else:
-        assert pytest.approx(result["total_bot"]) == 69.5
-        assert pytest.approx(result["total"]) == 686.6972  # ETH stake is missing.
+        assert pytest.approx(result["total_bot"]) == 5271.6
+        assert pytest.approx(result["total"]) == 5888.7972  # ETH stake is missing.
         assert result["starting_capital"] == 50 * default_conf_usdt["tradable_balance_ratio"]
-        assert result["starting_capital_ratio"] == pytest.approx(0.4040404)
+        assert result["starting_capital_ratio"] == pytest.approx(105.496969)
     assert pytest.approx(result["value"]) == result["total"] * 1.2
 
 
