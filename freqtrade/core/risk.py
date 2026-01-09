@@ -10,7 +10,7 @@ Risk is checked BEFORE execution, not during signal generation.
 import logging
 from dataclasses import dataclass
 
-from freqtrade.exploits.exploit_module import Action, ActionType
+from freqtrade.core.actions import Action, ActionType
 
 
 logger = logging.getLogger(__name__)
@@ -84,12 +84,12 @@ class RiskManager:
             If not allowed, reason explains why.
         """
         # Check position limit
-        if action.type in (ActionType.OPEN_LONG, ActionType.OPEN_SHORT):
+        if action.type == ActionType.OPEN:
             if open_positions >= self.limits.max_open_positions:
                 return False, f"Max positions reached: {self.limits.max_open_positions}"
 
         # Check exposure limit
-        if action.type in (ActionType.OPEN_LONG, ActionType.OPEN_SHORT):
+        if action.type == ActionType.OPEN:
             total_capital = available + deployed
             if total_capital == 0:
                 return False, "No capital available"
@@ -99,12 +99,11 @@ class RiskManager:
                 return False, f"Max exposure reached: {exposure:.2%}"
 
         # Check position size limit
-        if action.size is not None:
-            if action.size > self.limits.max_position_size:
-                return (
-                    False,
-                    f"Position size {action.size:.2%} exceeds limit {self.limits.max_position_size:.2%}",
-                )
+        if action.size > self.limits.max_position_size:
+            return (
+                False,
+                f"Position size {action.size:.2%} exceeds limit {self.limits.max_position_size:.2%}",
+            )
 
         # Check daily loss limit
         if self._daily_loss >= self.limits.max_daily_loss:
