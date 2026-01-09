@@ -1,11 +1,7 @@
-# Include all requirements to run the bot.
+# Include all requirements to run the execution engine
 -r requirements.txt
--r requirements-plot.txt
--r requirements-hyperopt.txt
--r requirements-freqai.txt
--r requirements-freqai-rl.txt
--r docs/requirements-docs.txt
 
+# Development tools
 ruff==0.14.10
 mypy==1.19.1
 pre-commit==4.5.1
@@ -17,16 +13,12 @@ pytest-random-order==1.2.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
 isort==7.0.0
+
 # For datetime mocking
 time-machine==3.2.0
 
-# Convert jupyter notebooks to markdown documents
-nbconvert==7.16.6
-
 # mypy types
-scipy-stubs==1.16.3.3  # keep in sync with `scipy` in `requirements-hyperopt.txt`
 types-cachetools==6.2.0.20251022
-types-filelock==3.2.7
 types-requests==2.32.4.20250913
 types-tabulate==0.9.0.20241207
 types-python-dateutil==2.9.0.20251115

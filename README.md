@@ -1,52 +1,262 @@
-# ![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade_poweredby.svg)
+# Minimal Trading Execution Engine
 
-[![Freqtrade CI](https://github.com/freqtrade/freqtrade/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/freqtrade/freqtrade/actions/workflows/ci.yml)
-[![DOI](https://joss.theoj.org/papers/10.21105/joss.04864/status.svg)](https://doi.org/10.21105/joss.04864)
-[![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
-[![Documentation](https://readthedocs.org/projects/freqtrade/badge/)](https://www.freqtrade.io)
+**This is infrastructure, not a trading bot.**
 
-Freqtrade is a free and open source crypto trading bot written in Python. It is designed to support all major exchanges and be controlled via Telegram or webUI. It contains backtesting, plotting and money management tools as well as strategy optimization by machine learning.
+This repository has been stripped down from Freqtrade into a minimal, deterministic execution engine.
+It provides the core infrastructure for order execution, position tracking, and PnL attribution,
+but contains **no trading logic** or signal generation.
 
-![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
+## ⚠️ What This Is NOT
+
+- ❌ A trading bot
+- ❌ A strategy framework
+- ❌ An indicator library (TA-Lib removed)
+- ❌ A machine learning system (FreqAI removed)
+- ❌ A retail trading platform (UI/API removed)
+- ❌ A hyperparameter optimizer (Hyperopt removed)
+
+## ✅ What This IS
+
+- ✅ Order execution engine
+- ✅ Position tracking system
+- ✅ PnL attribution
+- ✅ Exchange abstraction layer (ccxt-based)
+- ✅ Backtesting/simulation framework (price replay)
+- ✅ Risk management primitives
+- ✅ Capital and state isolation
+
+## Architecture
+
+This system follows a strict **Intent → Execution** separation:
+
+```
+External System → ExploitModule → Action → Risk Check → Execution → Result
+```
+
+### Key Principle
+
+**The engine NEVER decides when to trade — only HOW.**
+
+All trading decisions (WHEN to trade) come from external ExploitModules.
+The engine only executes explicit Actions and enforces risk limits.
+
+### Core Components
+
+#### `/freqtrade/core/` - Execution Infrastructure
+- `risk.py` - Risk management with hard bounds
+- `state.py` - Capital and state isolation
+
+#### `/freqtrade/exploits/` - Signal Providers (Empty by Design)
+- `exploit_module.py` - Base interface
+- `example_exploit.py` - Stub implementation
+
+External systems (DSPy, MYCELIUM, etc.) implement `ExploitModule` to provide trading intent.
+
+#### `/freqtrade/exchange/` - Exchange Connectors
+- Exchange abstraction (ccxt-based)
+- Order placement and tracking
+- Balance management
+
+#### `/freqtrade/persistence/` - State Persistence
+- Trade and Order models
+- Database migrations
+- Key-value store
+
+#### `/freqtrade/optimize/` - Backtesting Only
+- Deterministic price replay
+- Result reporting
+
+## What Was Removed
+
+Over **40,000 lines of code** deleted, including:
+
+- ❌ **FreqAI** - All ML/AI features
+- ❌ **RPC/API/Telegram** - All communication systems
+- ❌ **Plotting** - All visualization
+- ❌ **Hyperopt** - All optimization
+- ❌ **Strategy Templates** - All example strategies
+- ❌ **TA-Lib** - All technical indicators
+- ❌ **Analysis Tools** - Lookahead/recursive analysis
+- ❌ **Web UI** - All UI components
+- ❌ **Documentation** - 140+ markdown files
+
+See [FILES_DELETED.md](FILES_DELETED.md) for complete list.
+
+## Dependencies
+
+Minimal dependencies only:
+
+**Core:**
+- `ccxt` - Exchange connectivity
+- `SQLAlchemy` - Persistence
+- `pandas`/`numpy` - Data handling
+- `requests`/`aiohttp` - Networking
+
+**Removed:**
+- TA-Lib, ft-pandas-ta, technical (indicators)
+- python-telegram-bot (notifications)
+- FastAPI, uvicorn, websockets (API/WebSocket)
+- scipy, scikit-learn, optuna (ML/optimization)
+- LightGBM, XGBoost, torch (ML models)
+- plotly (plotting)
+
+## Quick Start
+
+### 1. Implement an ExploitModule
+
+```python
+from freqtrade.exploits.exploit_module import (
+    ExploitModule,
+    ExecutionState,
+    Action,
+    ActionType,
+)
+
+class MyExploit(ExploitModule):
+    def evaluate(self, state: ExecutionState) -> list[Action]:
+        # Your logic here - connect to DSPy, MYCELIUM, etc.
+        if should_open_long(state):
+            return [Action(
+                type=ActionType.OPEN_LONG,
+                symbol=state.symbol,
+                size=0.1,  # 10% of capital
+                reason="my_signal",
+            )]
+        return []
+    
+    def on_execution_result(self, action: Action, result: ExecutionResult) -> None:
+        # Handle result - feed back to your system
+        pass
+```
+
+### 2. Configure
+
+```json
+{
+  "exploit_module": "my_module.MyExploit",
+  "max_open_trades": 3,
+  "max_position_size": 0.1,
+  "max_total_exposure": 0.95,
+  "exchange": {
+    "name": "binance",
+    "key": "...",
+    "secret": "..."
+  }
+}
+```
+
+### 3. Run
+
+```bash
+freqtrade trade --config config.json
+```
+
+The engine will:
+1. Call your `evaluate()` method with current state
+2. Check Actions against risk limits
+3. Execute approved Actions
+4. Return results to your `on_execution_result()`
+
+## Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [DEPENDENCIES.md](DEPENDENCIES.md) - Dependency graph
+- [FILES_DELETED.md](FILES_DELETED.md) - What was removed
+- [REMAINING_WORK.md](REMAINING_WORK.md) - What still needs work
+
+## Testing
+
+The system can run with **zero exploits** loaded (NullExploitModule).
+It should do nothing - this proves execution is decoupled from decision-making.
+
+```python
+# Engine with no exploits = no trades
+engine = ExecutionEngine(NullExploitModule())
+engine.run()  # Does nothing
+```
+
+## Example: Position Lifecycle
+
+```python
+# 1. ExploitModule proposes action
+action = Action(
+    type=ActionType.OPEN_LONG,
+    symbol="BTC/USDT",
+    size=0.1,
+    reason="external_signal"
+)
+
+# 2. Engine checks risk
+allowed, reason = risk_manager.check_action(action, state)
+
+# 3. If allowed, execute
+if allowed:
+    result = engine.execute(action)
+    
+# 4. Result returned to exploit
+exploit.on_execution_result(action, result)
+```
+
+## Integration Points
+
+### DSPy Integration (External)
+```
+DSPy → ExploitModule.evaluate() → Actions → Engine → Results → DSPy
+```
+
+### MYCELIUM Exploits (External)
+Each micro-exploit implements ExploitModule independently.
+Capital is explicitly managed, no hidden coupling.
+
+## Risk Management
+
+Risk limits are enforced **before execution**:
+
+```python
+RiskLimits(
+    max_position_size=0.10,      # Max 10% per position
+    max_total_exposure=0.95,     # Max 95% deployed
+    max_open_positions=3,         # Max 3 simultaneous
+    max_daily_loss=0.20,         # Max 20% daily loss
+    position_cooldown=0,         # Cooldown in seconds
+)
+```
+
+All risk is config-driven, not code-driven.
+
+## State Isolation
+
+All capital is explicitly tracked:
+
+```python
+CapitalState(
+    total_capital=10000.0,
+    available_capital=9000.0,    # Available for new positions
+    deployed_capital=1000.0,     # Currently in positions
+    reserved_capital=0.0,        # Reserved for fees/margin
+    pnl_realized=0.0,
+    pnl_unrealized=0.0,
+)
+```
+
+No global mutable state - everything is explicit.
+
+## Original Freqtrade
+
+This was derived from [Freqtrade](https://github.com/freqtrade/freqtrade).
+
+**Original purpose:** Retail crypto trading bot with strategies, indicators, optimization.
+
+**New purpose:** Infrastructure for building custom execution systems.
+
+## License
+
+GPLv3 (inherited from Freqtrade)
 
 ## Disclaimer
 
-This software is for educational purposes only. Do not risk money which
-you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS
-AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
-
-Always start by running a trading bot in Dry-Run and do not engage money
-before you understand how it works and what profit/loss you should
-expect.
-
-We strongly recommend you to have coding and Python knowledge. Do not
-hesitate to read the source code and understand the mechanism of this bot.
-
-## Supported Exchange marketplaces
-
-Please read the [exchange-specific notes](docs/exchanges.md) to learn about special configurations that maybe needed for each exchange.
-
-- [X] [Binance](https://www.binance.com/)
-- [X] [BingX](https://bingx.com/invite/0EM9RX)
-- [X] [Bitget](https://www.bitget.com/)
-- [X] [Bitmart](https://bitmart.com/)
-- [X] [Bybit](https://bybit.com/)
-- [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [HTX](https://www.htx.com/)
-- [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
-- [X] [Kraken](https://kraken.com/)
-- [X] [OKX](https://okx.com/)
-- [X] [MyOKX](https://okx.com/) (OKX EEA)
-- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
-
-### Supported Futures Exchanges (experimental)
-
-- [X] [Binance](https://www.binance.com/)
-- [X] [Bitget](https://www.bitget.com/)
-- [X] [Gate.io](https://www.gate.io/ref/6266643)
-- [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
-- [X] [OKX](https://okx.com/)
-- [X] [Bybit](https://bybit.com/)
+This software is for educational purposes only. Do not risk money you cannot afford to lose.
+USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
 Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 
