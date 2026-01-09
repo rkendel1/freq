@@ -242,10 +242,13 @@ class DemoServer:
             elif action.type == ActionType.CLOSE:
                 # Simulate closing position with profit
                 if self.demo_positions:
-                    position = self.demo_positions[0]  # Close first position
+                    # Retrieve and remove the first position atomically
+                    position = self.demo_positions.pop(0)
                     entry_capital = position["size"]
                     
                     # Simulate 8% profit on the position
+                    # This is a demo value chosen to clearly show profitable outcomes
+                    # In real trading, profit depends on market movement
                     profit_pct = 0.08
                     profit_amount = entry_capital * profit_pct
                     exit_capital = entry_capital + profit_amount
@@ -258,10 +261,7 @@ class DemoServer:
                     self.engine_state.capital.available_capital += net_profit
                     self.engine_state.capital.pnl_realized += net_profit
                     
-                    # Remove position
-                    self.demo_positions.pop(0)
-                    
-                    # Also remove from exploit tracking
+                    # Also remove from exploit tracking (maintains sync with demo_positions)
                     if self.exploit.simulated_positions:
                         self.exploit.simulated_positions.pop(0)
                     
