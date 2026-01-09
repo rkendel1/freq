@@ -145,6 +145,9 @@ def main():
     print(f"Starting Capital: ${current_capital:,.2f}")
     print()
     
+    # Calculate PnL for each trade
+    pnl_per_trade = []
+    
     for i, (outcome, direction) in enumerate(trade_outcomes, 1):
         # Entry
         entry_price = 50000.0
@@ -160,6 +163,7 @@ def main():
             pnl_pct = (entry_price - exit_price) / entry_price
         
         pnl_dollar = position_size * pnl_pct
+        pnl_per_trade.append(pnl_dollar)
         current_capital += pnl_dollar
         total_pnl += pnl_dollar
         
@@ -194,8 +198,6 @@ def main():
     
     total_trades = len(trade_outcomes)
     win_rate = wins / total_trades
-    avg_win = total_pnl / wins if wins > 0 else 0
-    avg_loss = total_pnl / losses if losses > 0 else 0  # Note: This is incorrect but for demo
     
     print(f"Total Trades: {total_trades}")
     print(f"Wins: {wins} ({win_rate:.1%})")
@@ -206,30 +208,18 @@ def main():
     print(f"Total PnL: ${total_pnl:+,.2f} ({(total_pnl/initial_capital):+.2%})")
     print()
     
-    # Calculate proper statistics per trade
-    pnl_per_trade = []
-    for i, (outcome, direction) in enumerate(trade_outcomes, 1):
-        entry_price = 50000.0
-        exit_price, _ = simulate_trade_outcome(entry_price, outcome)
-        
-        if direction == 'LONG':
-            pnl_pct = (exit_price - entry_price) / entry_price
-        else:
-            pnl_pct = (entry_price - exit_price) / entry_price
-        
-        pnl_per_trade.append(pnl_pct)
-    
+    # Calculate proper statistics from per-trade PnL
     winning_trades = [p for p in pnl_per_trade if p > 0]
     losing_trades = [p for p in pnl_per_trade if p <= 0]
     
-    avg_win_pct = sum(winning_trades) / len(winning_trades) if winning_trades else 0
-    avg_loss_pct = sum(losing_trades) / len(losing_trades) if losing_trades else 0
+    avg_win = sum(winning_trades) / len(winning_trades) if winning_trades else 0
+    avg_loss = sum(losing_trades) / len(losing_trades) if losing_trades else 0
     
     print("Per-Trade Statistics:")
-    print(f"  Average Win: {avg_win_pct:+.2%}")
-    print(f"  Average Loss: {avg_loss_pct:+.2%}")
-    if avg_loss_pct != 0:
-        print(f"  Avg Win/Loss Ratio: {abs(avg_win_pct / avg_loss_pct):.2f}x")
+    print(f"  Average Win: ${avg_win:+,.2f}")
+    print(f"  Average Loss: ${avg_loss:+,.2f}")
+    if avg_loss != 0:
+        print(f"  Avg Win/Loss Ratio: {abs(avg_win / avg_loss):.2f}x")
     print()
     
     # Explain the strategy
