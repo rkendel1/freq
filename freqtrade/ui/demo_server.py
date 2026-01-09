@@ -45,7 +45,11 @@ class DemoServer:
         self.setup_routes()
 
         # Initial state
-        self.engine_state = create_initial_state(10000.0)
+        self.initial_capital = 10000.0
+        self.current_symbol = "BTC/USDT"
+        self.current_price = 50000.0
+        
+        self.engine_state = create_initial_state(self.initial_capital)
         self.risk_limits = RiskLimits(
             max_position_size=0.2,  # 20% max per position
             max_total_exposure=0.8,  # 80% max total
@@ -67,7 +71,7 @@ class DemoServer:
         # Automated mode
         self.automated_mode = False
         self.automated_exploit = AutomatedExploit({})
-        self.market_simulator = MarketSimulator(initial_price=50000.0, condition="mixed")
+        self.market_simulator = MarketSimulator(initial_price=self.current_price, condition="mixed")
         self.price_history: list[dict[str, Any]] = []  # For charting
         
         # DSPy Advisor integration
@@ -116,16 +120,48 @@ class DemoServer:
         @self.app.route("/api/reset", methods=["POST"])
         def reset():
             """Reset the demo to initial state."""
-            self.engine_state = create_initial_state(10000.0)
+            self.engine_state = create_initial_state(self.initial_capital)
             self.flow_history = []
             self.current_step = 0
             self.demo_positions = []
             self.exploit.clear_simulated_positions()
             self.automated_exploit.clear_simulated_positions()
             self.market_simulator.reset()
+            self.market_simulator.current_price = self.current_price
+            self.market_simulator.initial_price = self.current_price
             self.price_history = []
             self.automated_mode = False
             return jsonify({"status": "reset"})
+
+        @self.app.route("/api/config/symbol", methods=["POST"])
+        def config_symbol():
+            """Update the trading symbol and price."""
+            data = request.json or {}
+            symbol = data.get("symbol", "BTC/USDT")
+            initial_price = data.get("initial_price", 50000.0)
+            
+            self.current_symbol = symbol
+            self.current_price = initial_price
+            self.market_simulator.current_price = initial_price
+            self.market_simulator.initial_price = initial_price
+            
+            logger.info(f"Symbol updated to {symbol} at ${initial_price}")
+            return jsonify({"status": "updated", "symbol": symbol, "price": initial_price})
+        
+        @self.app.route("/api/config/capital", methods=["POST"])
+        def config_capital():
+            """Update the initial capital."""
+            data = request.json or {}
+            capital = data.get("capital", 10000.0)
+            
+            if capital < 1000 or capital > 1000000:
+                return jsonify({"error": "Capital must be between 1000 and 1000000"}), 400
+            
+            self.initial_capital = capital
+            self.engine_state = create_initial_state(capital)
+            
+            logger.info(f"Capital updated to ${capital}")
+            return jsonify({"status": "updated", "capital": capital})
 
         @self.app.route("/api/automated/start", methods=["POST"])
         def start_automated():
@@ -397,12 +433,12 @@ class DemoServer:
 
         # Step 2: Create ExecutionState for exploit
         exec_state = ExecutionState(
-            symbol="BTC/USDT",
+            symbol=self.current_symbol,
             available_capital=self.engine_state.capital.available_capital,
             deployed_capital=self.engine_state.capital.deployed_capital,
             open_positions=list(self.engine_state.open_trades),
             recent_trades=list(self.engine_state.closed_trades[-5:]),
-            current_price=50000.0,
+            current_price=self.current_price,
             timestamp=timestamp,
         )
 
@@ -612,7 +648,7 @@ class DemoServer:
         
         # Step 2: Create ExecutionState for exploit
         exec_state = ExecutionState(
-            symbol="BTC/USDT",
+            symbol=self.current_symbol,
             available_capital=self.engine_state.capital.available_capital,
             deployed_capital=self.engine_state.capital.deployed_capital,
             open_positions=[],  # Using simulated positions

@@ -60,6 +60,14 @@
             gap: 10px;
             align-items: center;
         }
+        
+        .control-group input[type="number"] {
+            width: 120px;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 14px;
+        }
 
         label {
             font-weight: 600;
@@ -134,6 +142,45 @@
         }
 
         .state-card.negative .value {
+            color: #dc3545;
+        }
+        
+        /* Price Ticker Animation */
+        .price-ticker {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .price-ticker .value {
+            transition: color 0.3s ease;
+        }
+        
+        .price-ticker.price-up .value {
+            color: #28a745;
+            animation: priceFlash 0.5s ease;
+        }
+        
+        .price-ticker.price-down .value {
+            color: #dc3545;
+            animation: priceFlash 0.5s ease;
+        }
+        
+        @keyframes priceFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .price-change {
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+        
+        .price-change.positive {
+            color: #28a745;
+        }
+        
+        .price-change.negative {
             color: #dc3545;
         }
 
@@ -337,6 +384,97 @@
             padding-bottom: 15px;
             border-bottom: 2px solid #e9ecef;
         }
+        
+        /* Individual Trade Details */
+        .trade-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .trade-details.profit {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .trade-details.loss {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .trade-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .trade-field {
+            font-size: 12px;
+        }
+        
+        .trade-field label {
+            display: block;
+            color: #6c757d;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        
+        .trade-field .value {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        /* Chart-like visualization */
+        .execution-timeline {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .timeline-chart {
+            width: 100%;
+            height: 200px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Transaction rate metrics */
+        .metrics-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card h4 {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .metric-card .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .mini-chart {
+            height: 50px;
+            margin-top: 10px;
+        }
 
         .empty-state {
             text-align: center;
@@ -535,6 +673,25 @@
 
         <div class="controls">
             <div class="control-group">
+                <label for="symbol">Symbol:</label>
+                <select id="symbol">
+                    <option value="BTC/USDT" data-price="50000">BTC/USDT (Bitcoin)</option>
+                    <option value="ETH/USDT" data-price="3000">ETH/USDT (Ethereum)</option>
+                    <option value="SPY" data-price="450">SPY (S&P 500 ETF)</option>
+                    <option value="QQQ" data-price="380">QQQ (Nasdaq-100 ETF)</option>
+                    <option value="AAPL" data-price="185">AAPL (Apple Stock)</option>
+                    <option value="TSLA" data-price="250">TSLA (Tesla Stock)</option>
+                    <option value="GLD" data-price="185">GLD (Gold ETF)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="initialCapital">Initial Capital:</label>
+                <input type="number" id="initialCapital" min="1000" max="1000000" step="1000" value="10000">
+                <button id="applyCapital" style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Apply</button>
+            </div>
+            
+            <div class="control-group">
                 <label for="mode">Mode:</label>
                 <select id="mode">
                     <option value="manual">📝 Manual (Step-by-Step)</option>
@@ -584,9 +741,10 @@
         </div>
 
         <div class="state-panel">
-            <div class="state-card">
-                <h3>Current Price</h3>
+            <div class="state-card price-ticker" id="priceTickerCard">
+                <h3><span id="currentSymbol">BTC/USDT</span> Price</h3>
                 <div class="value" id="currentPrice">$50,000.00</div>
+                <div class="price-change" id="priceChange">+0.00%</div>
             </div>
             <div class="state-card">
                 <h3>Available Capital</h3>
@@ -612,6 +770,10 @@
                 <h3>Success Rate</h3>
                 <div class="value" id="successRate">0%</div>
             </div>
+            <div class="state-card">
+                <h3>Trades/Min</h3>
+                <div class="value" id="tradesPerMin">0.0</div>
+            </div>
         </div>
 
         <div class="flow-visualization" id="flowViz">
@@ -626,7 +788,35 @@
 
         <div class="history-section">
             <h2>📊 Execution History</h2>
-            <div id="history">
+            
+            <!-- Transaction rate metrics -->
+            <div class="metrics-section">
+                <div class="metric-card">
+                    <h4>Total Trades</h4>
+                    <div class="metric-value" id="totalTrades">0</div>
+                </div>
+                <div class="metric-card">
+                    <h4>Avg Trade Duration</h4>
+                    <div class="metric-value" id="avgDuration">0s</div>
+                </div>
+                <div class="metric-card">
+                    <h4>Win Rate</h4>
+                    <div class="metric-value" id="winRate">0%</div>
+                </div>
+                <div class="metric-card">
+                    <h4>Avg Profit/Trade</h4>
+                    <div class="metric-value" id="avgProfit">$0.00</div>
+                </div>
+            </div>
+            
+            <!-- Timeline visualization -->
+            <div class="execution-timeline">
+                <h3 style="margin-bottom: 15px; color: #667eea;">Transaction Rate Over Time</h3>
+                <canvas id="transactionChart" width="800" height="200"></canvas>
+            </div>
+            
+            <!-- Individual trades -->
+            <div id="history" style="margin-top: 30px;">
                 <div class="empty-state">
                     <p>No executions yet. Start executing scenarios to build history.</p>
                 </div>
@@ -746,6 +936,16 @@
             total_actions: 0,
             successful_actions: 0
         };
+        
+        // Symbol and price tracking
+        let currentSymbol = 'BTC/USDT';
+        let lastPrice = 50000.0;
+        let initialCapital = 10000.0;
+        
+        // Trade tracking for metrics
+        let allTrades = [];
+        let tradeTimestamps = [];
+        let transactionChart = null;
 
         // Update state display
         function updateStateDisplay(state) {
@@ -769,6 +969,147 @@
             } else if (state.capital.pnl_realized < 0) {
                 pnlElement.parentElement.classList.add('negative');
             }
+        }
+        
+        // Update price ticker with animation
+        function updatePriceTicker(newPrice) {
+            const priceElement = document.getElementById('currentPrice');
+            const changeElement = document.getElementById('priceChange');
+            const tickerCard = document.getElementById('priceTickerCard');
+            
+            // Calculate change
+            const change = newPrice - lastPrice;
+            const changePct = lastPrice > 0 ? (change / lastPrice) * 100 : 0;
+            
+            // Update price
+            priceElement.textContent = `$${newPrice.toFixed(2)}`;
+            
+            // Update change
+            changeElement.textContent = `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`;
+            changeElement.className = 'price-change ' + (changePct >= 0 ? 'positive' : 'negative');
+            
+            // Animate ticker
+            tickerCard.classList.remove('price-up', 'price-down');
+            if (change > 0) {
+                tickerCard.classList.add('price-up');
+            } else if (change < 0) {
+                tickerCard.classList.add('price-down');
+            }
+            
+            lastPrice = newPrice;
+        }
+        
+        // Update transaction metrics
+        function updateTransactionMetrics() {
+            // Calculate metrics
+            const totalTrades = allTrades.length;
+            const profitableTrades = allTrades.filter(t => t.profit > 0).length;
+            const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
+            const avgProfit = totalTrades > 0 
+                ? allTrades.reduce((sum, t) => sum + t.profit, 0) / totalTrades 
+                : 0;
+            
+            // Calculate average duration
+            let avgDuration = 0;
+            if (allTrades.length > 0) {
+                const durations = allTrades.map(t => t.duration || 0);
+                avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+            }
+            
+            // Calculate trades per minute
+            const now = Date.now();
+            const oneMinuteAgo = now - 60000;
+            const recentTrades = tradeTimestamps.filter(t => t > oneMinuteAgo).length;
+            
+            // Update display
+            document.getElementById('totalTrades').textContent = totalTrades;
+            document.getElementById('avgDuration').textContent = avgDuration > 0 ? `${avgDuration.toFixed(0)}s` : '0s';
+            document.getElementById('winRate').textContent = `${winRate.toFixed(0)}%`;
+            document.getElementById('avgProfit').textContent = `$${avgProfit.toFixed(2)}`;
+            document.getElementById('tradesPerMin').textContent = recentTrades.toFixed(1);
+        }
+        
+        // Initialize transaction rate chart
+        function initTransactionChart() {
+            const canvas = document.getElementById('transactionChart');
+            const ctx = canvas.getContext('2d');
+            
+            transactionChart = {
+                canvas: canvas,
+                ctx: ctx,
+                data: [],
+                maxDataPoints: 50,
+                
+                addDataPoint: function(timestamp, count) {
+                    this.data.push({ timestamp, count });
+                    if (this.data.length > this.maxDataPoints) {
+                        this.data.shift();
+                    }
+                    this.render();
+                },
+                
+                render: function() {
+                    const ctx = this.ctx;
+                    const width = this.canvas.width;
+                    const height = this.canvas.height;
+                    
+                    // Clear canvas
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    if (this.data.length === 0) {
+                        ctx.fillStyle = '#999';
+                        ctx.font = '14px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('No transaction data yet', width / 2, height / 2);
+                        return;
+                    }
+                    
+                    // Find max for scaling
+                    const maxCount = Math.max(...this.data.map(d => d.count), 1);
+                    
+                    // Draw grid
+                    ctx.strokeStyle = '#e0e0e0';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i <= 4; i++) {
+                        const y = (height / 4) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(width, y);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw line chart
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    this.data.forEach((point, index) => {
+                        const x = (width / (this.maxDataPoints - 1)) * index;
+                        const y = height - (point.count / maxCount) * height;
+                        
+                        if (index === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    });
+                    
+                    ctx.stroke();
+                    
+                    // Draw filled area
+                    ctx.lineTo(width, height);
+                    ctx.lineTo(0, height);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.1)';
+                    ctx.fill();
+                    
+                    // Draw labels
+                    ctx.fillStyle = '#666';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`Max: ${maxCount}`, 10, 20);
+                }
+            };
         }
 
         // Execute step
@@ -968,10 +1309,82 @@
             const history = document.getElementById('history');
             const timestamp = new Date(trace.timestamp * 1000).toLocaleString();
             
+            // Extract trade details
+            const executionResults = trace.flow['5_execution_results'] || [];
+            let tradeDetailsHTML = '';
+            
+            executionResults.forEach(result => {
+                if (result.profit !== undefined) {
+                    // This is a close action with P&L
+                    const tradeClass = result.profit > 0 ? 'profit' : 'loss';
+                    const duration = result.duration || Math.floor(Math.random() * 300) + 60; // Mock duration if not available
+                    
+                    // Track trade for metrics
+                    const trade = {
+                        profit: result.profit,
+                        duration: duration,
+                        timestamp: trace.timestamp * 1000
+                    };
+                    allTrades.push(trade);
+                    tradeTimestamps.push(Date.now());
+                    
+                    tradeDetailsHTML += `
+                        <div class="trade-details ${tradeClass}">
+                            <strong>${result.profit > 0 ? '✅ PROFITABLE' : '❌ LOSS'} TRADE</strong>
+                            <div class="trade-row">
+                                <div class="trade-field">
+                                    <label>Entry Price</label>
+                                    <div class="value">$${(result.entry_price || 0).toFixed(2)}</div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>Exit Price</label>
+                                    <div class="value">$${(result.exit_price || 0).toFixed(2)}</div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>P&L</label>
+                                    <div class="value ${result.profit > 0 ? 'positive' : 'negative'}">
+                                        ${result.profit >= 0 ? '+' : ''}$${result.profit.toFixed(2)} (${result.profit_pct.toFixed(2)}%)
+                                    </div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>Fees</label>
+                                    <div class="value">$${result.fees.toFixed(2)}</div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>Duration</label>
+                                    <div class="value">${duration}s</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (result.entry_price !== undefined) {
+                    // This is an open action
+                    tradeDetailsHTML += `
+                        <div class="trade-details">
+                            <strong>🔓 POSITION OPENED</strong>
+                            <div class="trade-row">
+                                <div class="trade-field">
+                                    <label>Entry Price</label>
+                                    <div class="value">$${result.entry_price.toFixed(2)}</div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>Size</label>
+                                    <div class="value">${(result.filled_size * 100).toFixed(1)}%</div>
+                                </div>
+                                <div class="trade-field">
+                                    <label>Fees</label>
+                                    <div class="value">$${result.fees.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
             const historyHTML = `
                 <div class="history-item fade-in">
                     <div class="history-item-header">
-                        <strong>Step ${trace.step}: ${trace.scenario.replace('_', ' ').toUpperCase()}</strong>
+                        <strong>Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
                         <span>${timestamp}</span>
                     </div>
                     <div class="data-grid">
@@ -994,6 +1407,7 @@
                             </div>
                         </div>
                     </div>
+                    ${tradeDetailsHTML}
                 </div>
             `;
             
@@ -1002,6 +1416,22 @@
             }
             
             history.insertAdjacentHTML('afterbegin', historyHTML);
+            
+            // Update metrics and chart
+            updateTransactionMetrics();
+            updateTransactionChart();
+        }
+        
+        // Update transaction chart
+        function updateTransactionChart() {
+            if (!transactionChart) return;
+            
+            // Count trades in last time window
+            const now = Date.now();
+            const windowSize = 10000; // 10 seconds
+            const tradesInWindow = tradeTimestamps.filter(t => t > now - windowSize).length;
+            
+            transactionChart.addDataPoint(now, tradesInWindow);
         }
 
         // Reset
@@ -1014,6 +1444,11 @@
                 const stateResponse = await fetch('/api/state');
                 const state = await stateResponse.json();
                 updateStateDisplay(state);
+                
+                // Reset tracking
+                allTrades = [];
+                tradeTimestamps = [];
+                lastPrice = getSymbolPrice();
                 
                 document.getElementById('flowViz').innerHTML = `
                     <div class="empty-state">
@@ -1030,9 +1465,83 @@
                         <p>No executions yet. Start executing scenarios to build history.</p>
                     </div>
                 `;
+                
+                // Reset metrics
+                updateTransactionMetrics();
+                if (transactionChart) {
+                    transactionChart.data = [];
+                    transactionChart.render();
+                }
+                
             } catch (error) {
                 console.error('Error resetting:', error);
                 alert('Error resetting. Make sure the server is running.');
+            }
+        }
+        
+        // Get price for selected symbol
+        function getSymbolPrice() {
+            const select = document.getElementById('symbol');
+            const option = select.options[select.selectedIndex];
+            return parseFloat(option.getAttribute('data-price'));
+        }
+        
+        // Handle symbol change
+        async function changeSymbol() {
+            currentSymbol = document.getElementById('symbol').value;
+            const newPrice = getSymbolPrice();
+            
+            // Update display
+            document.getElementById('currentSymbol').textContent = currentSymbol;
+            lastPrice = newPrice;
+            updatePriceTicker(newPrice);
+            
+            // Send to server
+            try {
+                await fetch('/api/config/symbol', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        symbol: currentSymbol,
+                        initial_price: newPrice
+                    })
+                });
+            } catch (error) {
+                console.error('Error updating symbol:', error);
+            }
+        }
+        
+        // Handle capital change
+        async function applyCapitalChange() {
+            const newCapital = parseFloat(document.getElementById('initialCapital').value);
+            
+            if (newCapital < 1000 || newCapital > 1000000) {
+                alert('Capital must be between $1,000 and $1,000,000');
+                return;
+            }
+            
+            initialCapital = newCapital;
+            
+            try {
+                const response = await fetch('/api/config/capital', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ capital: newCapital })
+                });
+                
+                if (response.ok) {
+                    // Refresh state
+                    const stateResponse = await fetch('/api/state');
+                    const state = await stateResponse.json();
+                    updateStateDisplay(state);
+                    
+                    alert(`Capital updated to $${newCapital.toFixed(2)}`);
+                } else {
+                    alert('Failed to update capital');
+                }
+            } catch (error) {
+                console.error('Error updating capital:', error);
+                alert('Error updating capital. Make sure the server is running.');
             }
         }
 
@@ -1110,7 +1619,7 @@
             }
         }
 
-        // Execute one automated tick
+        // Update automated tick price display
         async function executeAutomatedTick() {
             try {
                 const response = await fetch('/api/automated/tick', {
@@ -1125,10 +1634,9 @@
                 
                 const flowTrace = await response.json();
                 
-                // Update current price
+                // Update current price with animation
                 if (flowTrace.market_data) {
-                    document.getElementById('currentPrice').textContent = 
-                        `$${flowTrace.market_data.price.toFixed(2)}`;
+                    updatePriceTicker(flowTrace.market_data.price);
                 }
                 
                 // Update state display
@@ -1397,6 +1905,8 @@
         document.getElementById('autoStartBtn').addEventListener('click', startAutomated);
         document.getElementById('autoPauseBtn').addEventListener('click', pauseAutomated);
         document.getElementById('speedControl').addEventListener('input', updateSpeed);
+        document.getElementById('symbol').addEventListener('change', changeSymbol);
+        document.getElementById('applyCapital').addEventListener('click', applyCapitalChange);
 
         // DSPy-related event listeners
         document.getElementById('updateParametersBtn').addEventListener('click', updateParameters);
@@ -1658,6 +2168,12 @@
         
         // Load exploit list
         loadExploitList();
+        
+        // Initialize transaction chart
+        initTransactionChart();
+        
+        // Initialize price ticker
+        updatePriceTicker(lastPrice);
     </script>
 </body>
 </html>
