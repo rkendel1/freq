@@ -110,6 +110,8 @@ class TestDemoEndToEnd:
             max_position_size=0.2,  # 20% max
             max_total_exposure=0.8,
             max_open_positions=3,
+            max_loss_per_trade=0.1,
+            max_daily_loss=0.2,
             position_cooldown=0,
         )
         risk_manager = RiskManager(risk_limits)

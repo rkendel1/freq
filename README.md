@@ -38,6 +38,8 @@ but contains **no trading logic** or signal generation.
 # http://127.0.0.1:5000
 ```
 
+![Demo UI Screenshot](https://github.com/user-attachments/assets/d01df924-4108-478d-a0fd-9cc0a5108209)
+
 The demo UI shows step-by-step how data flows through the system:
 - **State** → **Exploit** → **Action** → **Risk** → **Execution** → **Result**
 
@@ -47,7 +49,9 @@ Try different scenarios to see how:
 - Capital moves through the system
 - One component's output becomes another's input
 
-📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)**
+📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)** | 📝 **[Quick Start Guide](DEMO_UI_QUICKSTART.md)**
+
+---
 
 ## Architecture
 

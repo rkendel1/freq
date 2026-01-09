@@ -44,6 +44,8 @@ class DemoServer:
             max_position_size=0.2,  # 20% max per position
             max_total_exposure=0.8,  # 80% max total
             max_open_positions=3,
+            max_loss_per_trade=0.1,  # 10% max loss per trade
+            max_daily_loss=0.2,  # 20% max daily loss
             position_cooldown=0,
         )
         self.risk_manager = RiskManager(self.risk_limits)
