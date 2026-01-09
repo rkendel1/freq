@@ -20,7 +20,7 @@ Example usage in an exploit:
 ```python
 def evaluate(self, state: ExecutionState) -> list[Action]:
     # Check available capital (read-only)
-    if state.available < 100:
+    if state.available_capital < 100:
         return []  # Not enough capital
 
     # Exploit decides to trade
@@ -74,8 +74,8 @@ class CapitalState:
     """
 
     # Capital pools
-    available: float  # Capital available for new positions
-    deployed: float  # Capital currently in positions
+    available_capital: float  # Capital available for new positions
+    deployed_capital: float  # Capital currently in positions
 
     # PnL tracking
     pnl_realized: float = 0.0  # Realized profit/loss
@@ -97,16 +97,16 @@ class CapitalState:
         Returns:
             True if allocation successful, False if rejected (insufficient capital)
         """
-        if amount > self.available:
+        if amount > self.available_capital:
             logger.warning(
-                f"Capital allocation rejected: requested={amount}, available={self.available}"
+                f"Capital allocation rejected: requested={amount}, available={self.available_capital}"
             )
             return False
 
-        self.available -= amount
-        self.deployed += amount
+        self.available_capital -= amount
+        self.deployed_capital += amount
         logger.debug(
-            f"Capital allocated: {amount} (available={self.available}, deployed={self.deployed})"
+            f"Capital allocated: {amount} (available={self.available_capital}, deployed={self.deployed_capital})"
         )
         return True
 
@@ -118,12 +118,12 @@ class CapitalState:
             amount: Amount of original capital to release
             profit: Profit/loss on this capital (negative for loss)
         """
-        self.deployed -= amount
-        self.available += amount + profit
+        self.deployed_capital -= amount
+        self.available_capital += amount + profit
         self.pnl_realized += profit
         logger.debug(
             f"Capital released: {amount} with profit={profit} "
-            f"(available={self.available}, deployed={self.deployed}, pnl_realized={self.pnl_realized})"
+            f"(available={self.available_capital}, deployed={self.deployed_capital}, pnl_realized={self.pnl_realized})"
         )
 
     def update_unrealized_pnl(self, pnl: float) -> None:
@@ -223,8 +223,8 @@ def create_initial_state(total_capital: float) -> ExecutionEngineState:
         Initial state with all capital available
     """
     capital = CapitalState(
-        available=total_capital,
-        deployed=0.0,
+        available_capital=total_capital,
+        deployed_capital=0.0,
         pnl_realized=0.0,
         pnl_unrealized=0.0,
     )
