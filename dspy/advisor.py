@@ -23,6 +23,38 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Constants for Sharpe ratio calculation
+SHARPE_PERFECT_CONSISTENCY_PROFITABLE = 100.0  # Very high Sharpe for perfect consistency with profit
+SHARPE_PERFECT_CONSISTENCY_LOSS = -100.0  # Very low Sharpe for consistent losses
+
+# Constants for suggestion rules
+DEFAULT_POSITION_SIZE = 1.0
+POSITION_SIZE_REDUCTION = 0.2  # 20% reduction
+POSITION_SIZE_INCREASE = 0.15  # 15% increase
+DEFAULT_STOP_LOSS = 0.05  # 5% stop loss
+STOP_LOSS_TIGHTENING = 0.01  # 1% tightening
+DEFAULT_HOLD_HOURS = 24.0  # 24 hours
+HOLD_TIME_REDUCTION = 6.0  # 6 hours reduction
+
+# Thresholds for suggestion rules
+SHARPE_LOW_THRESHOLD = 0.5
+SHARPE_HIGH_THRESHOLD = 1.5
+DRAWDOWN_HIGH_THRESHOLD = 0.3
+CAPITAL_EFF_LOW_THRESHOLD = 0.1
+CAPITAL_EFF_HIGH_THRESHOLD = 0.3
+MIN_TRADES_FOR_CAPITAL_EFF = 30
+
+# Confidence calculation constants
+CONFIDENCE_BASE_LOW_SHARPE = 0.9
+CONFIDENCE_MULTIPLIER_LOW_SHARPE = 2.0
+CONFIDENCE_CAP_DRAWDOWN = 0.95
+CONFIDENCE_MULTIPLIER_DRAWDOWN = 1.5
+CONFIDENCE_CAPITAL_EFF = 0.7
+CONFIDENCE_BASE_HIGH_PERF = 0.6
+CONFIDENCE_MULTIPLIER_HIGH_PERF = 0.5
+CONFIDENCE_CAP_HIGH_PERF = 0.85
+
+
 @dataclass
 class MetricsSnapshot:
     """
@@ -183,9 +215,9 @@ class DSPyAdvisor:
             # Perfect consistency - return a high Sharpe if profitable, low if not
             # This happens when all trades have exactly the same return
             if mean_return > 0:
-                return 100.0  # Very high Sharpe for perfect consistency with profit
+                return SHARPE_PERFECT_CONSISTENCY_PROFITABLE
             else:
-                return -100.0  # Very low Sharpe for consistent losses
+                return SHARPE_PERFECT_CONSISTENCY_LOSS
         
         # Annualized Sharpe ratio (assuming ~252 trading days)
         sharpe = (mean_return / std_dev) * (252 ** 0.5)
@@ -348,20 +380,21 @@ class DSPyAdvisor:
         suggestions = []
         
         # Rule 1: Low Sharpe ratio → Suggest reducing position size
-        if metrics.sharpe_ratio < 0.5:
-            confidence = min(0.9, (0.5 - metrics.sharpe_ratio) * 2)
-            current_size = 1.0  # Normalized position size
-            reduction = 0.2  # Reduce by 20%
-            suggested_size = current_size * (1 - reduction)
+        if metrics.sharpe_ratio < SHARPE_LOW_THRESHOLD:
+            confidence = min(
+                CONFIDENCE_BASE_LOW_SHARPE,
+                (SHARPE_LOW_THRESHOLD - metrics.sharpe_ratio) * CONFIDENCE_MULTIPLIER_LOW_SHARPE,
+            )
+            suggested_size = DEFAULT_POSITION_SIZE * (1 - POSITION_SIZE_REDUCTION)
             
             suggestions.append(
                 ParameterSuggestion(
                     timestamp=datetime.now(),
                     exploit_id=exploit_id,
                     parameter_name="position_size_multiplier",
-                    current_value=current_size,
+                    current_value=DEFAULT_POSITION_SIZE,
                     suggested_value=suggested_size,
-                    delta=-reduction,
+                    delta=-POSITION_SIZE_REDUCTION,
                     rationale=f"Low Sharpe ratio ({metrics.sharpe_ratio:.2f}) suggests reducing exposure",
                     confidence=confidence,
                     metrics_snapshot=metrics,
@@ -369,20 +402,20 @@ class DSPyAdvisor:
             )
         
         # Rule 2: High drawdown contribution → Suggest tighter stop loss
-        if metrics.drawdown_contribution > 0.3:
-            confidence = min(0.95, metrics.drawdown_contribution * 1.5)
-            current_stop = 0.05  # 5% stop loss
-            reduction = 0.01  # Tighten by 1%
-            suggested_stop = current_stop - reduction
+        if metrics.drawdown_contribution > DRAWDOWN_HIGH_THRESHOLD:
+            confidence = min(
+                CONFIDENCE_CAP_DRAWDOWN, metrics.drawdown_contribution * CONFIDENCE_MULTIPLIER_DRAWDOWN
+            )
+            suggested_stop = DEFAULT_STOP_LOSS - STOP_LOSS_TIGHTENING
             
             suggestions.append(
                 ParameterSuggestion(
                     timestamp=datetime.now(),
                     exploit_id=exploit_id,
                     parameter_name="stop_loss_percent",
-                    current_value=current_stop,
+                    current_value=DEFAULT_STOP_LOSS,
                     suggested_value=suggested_stop,
-                    delta=-reduction,
+                    delta=-STOP_LOSS_TIGHTENING,
                     rationale=f"High drawdown contribution ({metrics.drawdown_contribution:.2%}) "
                     f"suggests tighter risk management",
                     confidence=confidence,
@@ -391,20 +424,21 @@ class DSPyAdvisor:
             )
         
         # Rule 3: Low capital efficiency → Suggest reducing holding time
-        if metrics.capital_efficiency < 0.1 and metrics.total_trades > 30:
-            confidence = 0.7
-            current_hold_hours = 24.0  # Example current holding time
-            reduction = 6.0  # Reduce by 6 hours
-            suggested_hold = current_hold_hours - reduction
+        if (
+            metrics.capital_efficiency < CAPITAL_EFF_LOW_THRESHOLD
+            and metrics.total_trades > MIN_TRADES_FOR_CAPITAL_EFF
+        ):
+            confidence = CONFIDENCE_CAPITAL_EFF
+            suggested_hold = DEFAULT_HOLD_HOURS - HOLD_TIME_REDUCTION
             
             suggestions.append(
                 ParameterSuggestion(
                     timestamp=datetime.now(),
                     exploit_id=exploit_id,
                     parameter_name="max_holding_hours",
-                    current_value=current_hold_hours,
+                    current_value=DEFAULT_HOLD_HOURS,
                     suggested_value=suggested_hold,
-                    delta=-reduction,
+                    delta=-HOLD_TIME_REDUCTION,
                     rationale=f"Low capital efficiency ({metrics.capital_efficiency:.2%}) "
                     f"suggests reducing holding time",
                     confidence=confidence,
@@ -413,20 +447,25 @@ class DSPyAdvisor:
             )
         
         # Rule 4: High Sharpe + High capital efficiency → Suggest increasing size
-        if metrics.sharpe_ratio > 1.5 and metrics.capital_efficiency > 0.3:
-            confidence = min(0.85, (metrics.sharpe_ratio - 1.5) * 0.5 + 0.6)
-            current_size = 1.0
-            increase = 0.15  # Increase by 15%
-            suggested_size = current_size * (1 + increase)
+        if (
+            metrics.sharpe_ratio > SHARPE_HIGH_THRESHOLD
+            and metrics.capital_efficiency > CAPITAL_EFF_HIGH_THRESHOLD
+        ):
+            confidence = min(
+                CONFIDENCE_CAP_HIGH_PERF,
+                (metrics.sharpe_ratio - SHARPE_HIGH_THRESHOLD) * CONFIDENCE_MULTIPLIER_HIGH_PERF
+                + CONFIDENCE_BASE_HIGH_PERF,
+            )
+            suggested_size = DEFAULT_POSITION_SIZE * (1 + POSITION_SIZE_INCREASE)
             
             suggestions.append(
                 ParameterSuggestion(
                     timestamp=datetime.now(),
                     exploit_id=exploit_id,
                     parameter_name="position_size_multiplier",
-                    current_value=current_size,
+                    current_value=DEFAULT_POSITION_SIZE,
                     suggested_value=suggested_size,
-                    delta=increase,
+                    delta=POSITION_SIZE_INCREASE,
                     rationale=f"Strong Sharpe ratio ({metrics.sharpe_ratio:.2f}) and "
                     f"capital efficiency ({metrics.capital_efficiency:.2%}) "
                     f"suggest increasing exposure",

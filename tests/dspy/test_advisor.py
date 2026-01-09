@@ -45,7 +45,7 @@ def create_test_trade(
         fee_close=0.001,
         fee_open_cost=entry_stake * 0.001,
         fee_close_cost=entry_stake * (1 + profit_ratio) * 0.001,
-        total_fees=entry_stake * 0.002,
+        total_fees=entry_stake * 0.001 + entry_stake * (1 + profit_ratio) * 0.001,
         funding_fees=0.0,
         holding_duration_seconds=hours_held * 3600,
         holding_duration_hours=hours_held,
