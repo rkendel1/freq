@@ -897,9 +897,15 @@ class DemoServer:
 
 def main():
     """Run the demo server."""
+    import os
     logging.basicConfig(level=logging.INFO)
+    
+    # Debug mode can cause 403 errors in Flask 3.1.0 due to debugger PIN protection
+    # Default to False for production-like usage, can be enabled via environment variable
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
+    
     server = DemoServer()
-    server.run()
+    server.run(debug=debug_mode)
 
 
 if __name__ == "__main__":
