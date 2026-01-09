@@ -63,7 +63,11 @@ if TYPE_CHECKING:
     from freqtrade.persistence import Trade
 else:
     # For runtime when persistence is not available (e.g., Vercel deployment)
-    Trade = Any
+    # Try to import, but fall back to Any if SQLAlchemy is not available
+    try:
+        from freqtrade.persistence import Trade
+    except (ImportError, ModuleNotFoundError):
+        Trade = Any
 
 
 logger = logging.getLogger(__name__)
