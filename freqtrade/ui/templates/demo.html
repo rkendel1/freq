@@ -1328,7 +1328,7 @@
                 if (result.profit !== undefined) {
                     // This is a close action with P&L
                     const tradeClass = result.profit > 0 ? 'profit' : 'loss';
-                    const duration = result.duration || Math.floor(Math.random() * 300) + 60; // Mock duration if not available
+                    const duration = result.duration || 120; // Default to 120s if not available
                     
                     // Track trade for metrics
                     const trade = {
@@ -1339,22 +1339,26 @@
                     allTrades.push(trade);
                     tradeTimestamps.push(Date.now());
                     
+                    const entryPrice = result.entry_price || 0;
+                    const exitPrice = result.exit_price || 0;
+                    const profitPct = result.profit_pct !== undefined ? result.profit_pct : 0;
+                    
                     tradeDetailsHTML += `
                         <div class="trade-details ${tradeClass}">
                             <strong>${result.profit > 0 ? '✅ PROFITABLE' : '❌ LOSS'} TRADE</strong>
                             <div class="trade-row">
                                 <div class="trade-field">
                                     <label>Entry Price</label>
-                                    <div class="value">$${(result.entry_price || 0).toFixed(2)}</div>
+                                    <div class="value">${entryPrice > 0 ? '$' + entryPrice.toFixed(2) : 'N/A'}</div>
                                 </div>
                                 <div class="trade-field">
                                     <label>Exit Price</label>
-                                    <div class="value">$${(result.exit_price || 0).toFixed(2)}</div>
+                                    <div class="value">${exitPrice > 0 ? '$' + exitPrice.toFixed(2) : 'N/A'}</div>
                                 </div>
                                 <div class="trade-field">
                                     <label>P&L</label>
                                     <div class="value ${result.profit > 0 ? 'positive' : 'negative'}">
-                                        ${result.profit >= 0 ? '+' : ''}$${result.profit.toFixed(2)} (${result.profit_pct.toFixed(2)}%)
+                                        ${result.profit >= 0 ? '+' : ''}$${result.profit.toFixed(2)} (${profitPct.toFixed(2)}%)
                                     </div>
                                 </div>
                                 <div class="trade-field">
@@ -2123,6 +2127,8 @@
         }
 
         // Poll for DSPy updates - always poll, not just in automated mode
+        // Note: 3-second interval is suitable for demo purposes. 
+        // Production systems should use WebSocket connections for real-time updates.
         setInterval(() => {
             fetchDspySuggestions();
             fetchDspyMetrics();

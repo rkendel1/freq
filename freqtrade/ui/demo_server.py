@@ -30,7 +30,6 @@ from freqtrade.ui.market_simulator import MarketSimulator, MarketCondition
 from freqtrade.exploits.parameter_manager import ExploitParameterManager
 from dspy.advisor import DSPyAdvisor
 from freqtrade.metrics.attribution import TradeAttribution
-from datetime import datetime, timezone
 
 
 logger = logging.getLogger(__name__)
@@ -232,8 +231,7 @@ class DemoServer:
         def get_dspy_suggestions():
             """Get DSPy parameter suggestions."""
             suggestions = self.dspy_advisor.generate_suggestions()
-            logger.info(f"DSPy suggestions requested: {len(suggestions)} suggestions generated")
-            logger.debug(f"Trade counter: {self.trade_counter}, Total trades observed by DSPy")
+            logger.info(f"DSPy suggestions requested: {len(suggestions)} suggestions generated, {self.trade_counter} trades observed")
             return jsonify({
                 "suggestions": [
                     {
