@@ -1,11 +1,23 @@
 # Quick Start Script for Demo UI (Windows)
 #
 # This script checks dependencies and starts the demo server.
+# It works with or without a virtual environment.
 #
 
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  Execution Engine Demo - Quick Start" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if in virtual environment
+if ($env:VIRTUAL_ENV) {
+    Write-Host "✓ Running in virtual environment: $env:VIRTUAL_ENV" -ForegroundColor Green
+} else {
+    Write-Host "ℹ️  Not in a virtual environment (this is fine for demo)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "   Tip: For cleaner setup, consider using a virtual environment:" -ForegroundColor Gray
+    Write-Host "   python -m venv .venv && .venv\Scripts\activate" -ForegroundColor Gray
+}
 Write-Host ""
 
 # Check Python version

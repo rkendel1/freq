@@ -2,7 +2,21 @@
 
 ## Starting the Demo
 
-### Option 1: Quick Start Script (Recommended)
+### Ultra-Quick Start (No Setup Needed)
+
+```bash
+# Install Flask (if not already installed)
+pip install flask
+
+# Run the demo
+python -m freqtrade.ui.demo_server
+
+# Open http://127.0.0.1:5000
+```
+
+**That's it!** No virtual environment, Docker, or complex setup required for the demo.
+
+### Using the Startup Scripts (Recommended)
 
 **Linux/Mac:**
 ```bash
@@ -14,19 +28,28 @@
 ./start_demo.ps1
 ```
 
+The scripts automatically:
+- ✅ Check if you're in a virtual environment (optional, not required)
+- ✅ Check Python version
+- ✅ Install Flask if needed
+- ✅ Start the server
+
 Then open: **http://127.0.0.1:5000**
 
-### Option 2: Manual Start
+## Do I Need a Virtual Environment?
 
-```bash
-# Install Flask (if not already installed)
-pip install flask
+**Short answer:** ❌ **No, not for the demo UI**
 
-# Start the server
-python -m freqtrade.ui.demo_server
+**Longer answer:**
+- For **demo only**: Direct install is fine
+- For **development**: Virtual environment recommended
+- For **production**: Use Docker or virtual environment
 
-# Open browser to http://127.0.0.1:5000
-```
+See **[SETUP.md](SETUP.md)** for complete setup guide covering:
+- Virtual environment setup (when and why)
+- Docker setup
+- Different installation methods
+- Troubleshooting
 
 ## What You'll See
 
