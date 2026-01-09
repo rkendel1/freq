@@ -125,7 +125,7 @@ To run the trading bot in dry-run mode (no real trading):
 python -m freqtrade create-userdir --userdir user_data
 
 # Step 2: Copy example config
-cp config.example.json user_data/config.json
+cp config_examples/config_quickstart.example.json user_data/config.json
 
 # Step 3: Edit the config (optional)
 # Open user_data/config.json and customize as needed
@@ -147,7 +147,7 @@ To test the engine without any trading logic:
 python -m freqtrade create-userdir --userdir user_data
 
 # Copy example config
-cp config.example.json user_data/config.json
+cp config_examples/config_quickstart.example.json user_data/config.json
 
 # Edit config to use NullExploitModule (does nothing, just runs)
 # Add to config.json:
@@ -173,7 +173,7 @@ Run both the backend and demo UI simultaneously:
 
 # Terminal 1: Start backend (if you have exchange API keys)
 python -m freqtrade create-userdir --userdir user_data
-cp config.example.json user_data/config.json
+cp config_examples/config_quickstart.example.json user_data/config.json
 # Edit user_data/config.json with your exchange keys
 python -m freqtrade trade --config user_data/config.json
 

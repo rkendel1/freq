@@ -39,7 +39,7 @@ python -m freqtrade create-userdir --userdir user_data
 
 ```bash
 # Copy example config
-cp config.example.json user_data/config.json
+cp config_examples/config_quickstart.example.json user_data/config.json
 
 # Or create interactively
 python -m freqtrade new-config --config user_data/config.json
