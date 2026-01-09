@@ -671,6 +671,15 @@
                             <div class="suggestion-value" id="stopLossSuggestion">—</div>
                             <button class="apply-btn" id="applyStopLoss" style="display: none;">Apply</button>
                         </div>
+                        <div class="parameter-row">
+                            <div class="parameter-label">Cooldown (Ticks)</div>
+                            <div class="parameter-value">
+                                <input type="number" id="cooldownInput" min="1" max="20" step="1" value="5">
+                            </div>
+                            <div class="parameter-arrow">→</div>
+                            <div class="suggestion-value" id="cooldownSuggestion">—</div>
+                            <button class="apply-btn" id="applyCooldown" style="display: none;">Apply</button>
+                        </div>
                         <div style="margin-top: 15px;">
                             <button id="updateParametersBtn" style="width: 100%;">💾 Update Parameters</button>
                         </div>
@@ -688,7 +697,7 @@
 
                 <div class="dspy-card">
                     <h3>📈 Performance Metrics</h3>
-                    <div id="dstyMetrics">
+                    <div id="dspyMetrics">
                         <div class="metrics-grid">
                             <div class="metric-box">
                                 <label>Sharpe Ratio</label>
@@ -1386,6 +1395,7 @@
         document.getElementById('applyPositionSize').addEventListener('click', () => applyDspySuggestion('position_size'));
         document.getElementById('applyProfitTarget').addEventListener('click', () => applyDspySuggestion('profit_target'));
         document.getElementById('applyStopLoss').addEventListener('click', () => applyDspySuggestion('stop_loss'));
+        document.getElementById('applyCooldown').addEventListener('click', () => applyDspySuggestion('min_ticks_between_actions'));
 
         // DSPy Functions
         let currentSuggestions = {};
@@ -1395,6 +1405,7 @@
                 position_size: parseFloat(document.getElementById('positionSizeInput').value),
                 profit_target: parseFloat(document.getElementById('profitTargetInput').value),
                 stop_loss: parseFloat(document.getElementById('stopLossInput').value),
+                min_ticks_between_actions: parseInt(document.getElementById('cooldownInput').value),
             };
 
             try {
@@ -1424,9 +1435,13 @@
 
             const inputId = paramName === 'position_size' ? 'positionSizeInput' :
                            paramName === 'profit_target' ? 'profitTargetInput' :
-                           'stopLossInput';
+                           paramName === 'stop_loss' ? 'stopLossInput' :
+                           paramName === 'min_ticks_between_actions' ? 'cooldownInput' :
+                           null;
 
-            document.getElementById(inputId).value = suggestion.suggested_value.toFixed(2);
+            if (!inputId) return;
+
+            document.getElementById(inputId).value = suggestion.suggested_value.toFixed(paramName === 'min_ticks_between_actions' ? 0 : 2);
             
             // Auto-update the parameters
             await updateParameters();

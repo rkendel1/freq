@@ -237,6 +237,7 @@ class DemoServer:
                     "position_size": self.automated_exploit.position_size,
                     "profit_target": self.automated_exploit.profit_target,
                     "stop_loss": self.automated_exploit.stop_loss,
+                    "min_ticks_between_actions": self.automated_exploit.min_ticks_between_actions,
                 }
             })
 
@@ -267,6 +268,13 @@ class DemoServer:
                 else:
                     return jsonify({"error": "stop_loss must be between 0.01 and 0.15"}), 400
             
+            if "min_ticks_between_actions" in data:
+                value = int(data["min_ticks_between_actions"])
+                if 1 <= value <= 20:  # 1 to 20 ticks range
+                    self.automated_exploit.min_ticks_between_actions = value
+                else:
+                    return jsonify({"error": "min_ticks_between_actions must be between 1 and 20"}), 400
+            
             logger.info(f"Parameters updated: {data}")
             return jsonify({
                 "status": "updated",
@@ -274,6 +282,7 @@ class DemoServer:
                     "position_size": self.automated_exploit.position_size,
                     "profit_target": self.automated_exploit.profit_target,
                     "stop_loss": self.automated_exploit.stop_loss,
+                    "min_ticks_between_actions": self.automated_exploit.min_ticks_between_actions,
                 }
             })
 
