@@ -11,7 +11,7 @@ authors = [
   {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
 ]
 
-description = "Freqtrade - Crypto Trading Bot"
+description = "Minimal Trading Execution Engine - Infrastructure Core"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "GPLv3"}
@@ -29,75 +29,40 @@ classifiers = [
 ]
 
 dependencies = [
-  # from requirements.txt
+  # Core data and exchange
   "ccxt>=4.5.4",
   "SQLAlchemy>=2.0.6",
-  "python-telegram-bot>=20.1",
+  "numpy>2.0,<3.0",
+  "pandas>=2.2.0,<3.0",
+  "bottleneck",
+  "numexpr",
+  
+  # Core utilities
   "humanize>=4.0.0",
   "cachetools",
   "requests",
-  "httpx>=0.24.1",
   "urllib3",
+  "certifi",
   "jsonschema",
-  "numpy>2.0,<3.0",
-  "pandas>=2.2.0,<3.0",
-  "TA-Lib<0.7",
-  "ft-pandas-ta",
-  "technical",
   "tabulate",
-  "pycoingecko>=3.2.0",
-  "python-rapidjson",
-  "orjson",
-  "jinja2",
-  "questionary",
-  "prompt-toolkit",
-  "joblib>=1.2.0",
   "rich",
   'pyarrow; platform_machine != "armv7l"',
-  "fastapi",
-  "pydantic>=2.2.0",
-  "pyjwt",
-  "websockets",
-  "uvicorn",
-  "psutil",
-  "schedule",
-  "janus",
-  "ast-comments",
-  "aiofiles",
+  "python-rapidjson",
+  "orjson",
+  
+  # Async and crypto
   "aiohttp",
   "cryptography",
-  "sdnotify",
+  
+  # Date/time
   "python-dateutil",
   "pytz",
+  "schedule",
   "packaging",
-  "freqtrade-client",
 ]
 
 [project.optional-dependencies]
-# Requirements used for submodules
-plot = ["plotly>=4.0"]
-hyperopt = [
-  "scipy",
-  "scikit-learn",
-  "optuna > 4.0.0",
-  "cmaes",
-  "filelock",
-]
-freqai = [
-  "scikit-learn",
-  "joblib",
-  "lightgbm",
-  "xgboost",
-  "tensorboard",
-  "datasieve>=0.1.5",
-]
-freqai_rl = [
-  "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "gymnasium",
-  "stable-baselines3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "sb3-contrib; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "tqdm",
-]
+# Development dependencies only
 develop = [
   "isort",
   "mypy",
@@ -110,25 +75,14 @@ develop = [
   "pytest-xdist",
   "pytest",
   "ruff",
-  "scipy-stubs",
   "time-machine",
   "types-cachetools",
-  "types-filelock",
   "types-python-dateutil",
   "types-requests",
   "types-tabulate",
 ]
-jupyter = [
-  "jupyter",
-  "nbstripout",
-  "ipykernel",
-  "nbconvert",
-]
-all = [
-  "freqtrade[plot,hyperopt,freqai,freqai_rl,jupyter]",
-]
 dev = [
-  "freqtrade[all,develop]",
+  "freqtrade[develop]",
 ]
 
 [project.urls]
