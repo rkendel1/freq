@@ -92,6 +92,7 @@ class DemoServer:
             self.flow_history = []
             self.current_step = 0
             self.demo_positions = []
+            self.exploit.clear_simulated_positions()
             return jsonify({"status": "reset"})
 
         @self.app.route("/api/execute-step", methods=["POST"])
@@ -199,6 +200,11 @@ class DemoServer:
                         "size": required_capital,
                         "timestamp": timestamp,
                     })
+                    
+                    # Also track in exploit for scenario logic
+                    self.exploit.add_simulated_position(
+                        action.symbol, action.side, exec_state.current_price, required_capital
+                    )
 
                     result = ExecutionResult(
                         success=True,
@@ -248,10 +254,16 @@ class DemoServer:
                     
                     # Return capital plus profit
                     self.engine_state.capital.release(entry_capital)
+                    # Add profit to available capital
+                    self.engine_state.capital.available_capital += net_profit
                     self.engine_state.capital.pnl_realized += net_profit
                     
                     # Remove position
                     self.demo_positions.pop(0)
+                    
+                    # Also remove from exploit tracking
+                    if self.exploit.simulated_positions:
+                        self.exploit.simulated_positions.pop(0)
                     
                     self.engine_state.total_actions += 1
                     self.engine_state.successful_actions += 1
