@@ -22,7 +22,7 @@ def evaluate(self, state: ExecutionState) -> list[Action]:
     # Check available capital (read-only)
     if state.available < 100:
         return []  # Not enough capital
-    
+
     # Exploit decides to trade
     # Engine will call capital.allocate() on behalf of exploit
     return [Action(
@@ -57,8 +57,6 @@ This pattern ensures:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
-from datetime import datetime
 
 from freqtrade.persistence import Trade
 
@@ -70,47 +68,52 @@ logger = logging.getLogger(__name__)
 class CapitalState:
     """
     Explicit capital state tracking.
-    
+
     All capital changes are tracked explicitly - no hidden mutations.
     Exploits must request capital and receive allocation or rejection.
     """
+
     # Capital pools
     available: float  # Capital available for new positions
     deployed: float  # Capital currently in positions
-    
+
     # PnL tracking
     pnl_realized: float = 0.0  # Realized profit/loss
     pnl_unrealized: float = 0.0  # Unrealized profit/loss (updated periodically)
-    
+
     # Cooldowns (symbol -> timestamp)
     cooldowns: dict = field(default_factory=dict)
-    
+
     def allocate(self, amount: float) -> bool:
         """
         Allocate capital from available to deployed.
-        
+
         Exploits must request capital through this method.
         Returns allocation or rejection - no direct balance access.
-        
+
         Args:
             amount: Amount to allocate
-            
+
         Returns:
             True if allocation successful, False if rejected (insufficient capital)
         """
         if amount > self.available:
-            logger.warning(f"Capital allocation rejected: requested={amount}, available={self.available}")
+            logger.warning(
+                f"Capital allocation rejected: requested={amount}, available={self.available}"
+            )
             return False
-        
+
         self.available -= amount
         self.deployed += amount
-        logger.debug(f"Capital allocated: {amount} (available={self.available}, deployed={self.deployed})")
+        logger.debug(
+            f"Capital allocated: {amount} (available={self.available}, deployed={self.deployed})"
+        )
         return True
-    
+
     def release(self, amount: float, profit: float = 0.0) -> None:
         """
         Release capital from deployed back to available.
-        
+
         Args:
             amount: Amount of original capital to release
             profit: Profit/loss on this capital (negative for loss)
@@ -122,35 +125,35 @@ class CapitalState:
             f"Capital released: {amount} with profit={profit} "
             f"(available={self.available}, deployed={self.deployed}, pnl_realized={self.pnl_realized})"
         )
-    
+
     def update_unrealized_pnl(self, pnl: float) -> None:
         """
         Update unrealized PnL (for open positions).
-        
+
         Args:
             pnl: Current unrealized profit/loss
         """
         self.pnl_unrealized = pnl
-    
+
     def update_cooldown(self, symbol: str, timestamp: int) -> None:
         """
         Update cooldown for a symbol.
-        
+
         Args:
             symbol: Trading pair symbol
             timestamp: Timestamp when cooldown started
         """
         self.cooldowns[symbol] = timestamp
-    
+
     def is_in_cooldown(self, symbol: str, current_time: int, cooldown_seconds: int) -> bool:
         """
         Check if a symbol is in cooldown.
-        
+
         Args:
             symbol: Trading pair symbol
             current_time: Current timestamp
             cooldown_seconds: Cooldown duration in seconds
-            
+
         Returns:
             True if symbol is in cooldown, False otherwise
         """
@@ -162,44 +165,45 @@ class CapitalState:
 class ExecutionEngineState:
     """
     Complete state of the execution engine.
-    
+
     This is the single source of truth for system state.
     No hidden state - everything is explicit.
     """
+
     # Capital management
     capital: CapitalState
-    
+
     # Position tracking
     open_trades: list[Trade] = field(default_factory=list)
     closed_trades: list[Trade] = field(default_factory=list)
-    
+
     # Execution history (for telemetry/debugging)
     last_action_timestamp: int = 0
     total_actions: int = 0
     successful_actions: int = 0
     failed_actions: int = 0
-    
+
     def add_open_trade(self, trade: Trade) -> None:
         """Add a new open trade."""
         self.open_trades.append(trade)
-    
+
     def close_trade(self, trade: Trade) -> None:
         """Move a trade from open to closed."""
         if trade in self.open_trades:
             self.open_trades.remove(trade)
         self.closed_trades.append(trade)
-    
+
     def get_open_trades_for_symbol(self, symbol: str) -> list[Trade]:
         """Get all open trades for a specific symbol."""
         return [t for t in self.open_trades if t.pair == symbol]
-    
+
     def update_cooldown(self, symbol: str, timestamp: int) -> None:
         """
         Update cooldown for a symbol.
         Delegates to CapitalState.
         """
         self.capital.update_cooldown(symbol, timestamp)
-    
+
     def is_in_cooldown(self, symbol: str, current_time: int, cooldown_seconds: int) -> bool:
         """
         Check if a symbol is in cooldown.
@@ -211,10 +215,10 @@ class ExecutionEngineState:
 def create_initial_state(total_capital: float) -> ExecutionEngineState:
     """
     Create initial execution engine state.
-    
+
     Args:
         total_capital: Starting capital
-        
+
     Returns:
         Initial state with all capital available
     """
@@ -224,5 +228,5 @@ def create_initial_state(total_capital: float) -> ExecutionEngineState:
         pnl_realized=0.0,
         pnl_unrealized=0.0,
     )
-    
+
     return ExecutionEngineState(capital=capital)
