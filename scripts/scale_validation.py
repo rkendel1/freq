@@ -51,6 +51,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def dataclass_to_dict(obj: Any) -> Any:
+    """
+    Convert dataclass objects to dictionaries recursively.
+    
+    This is a general-purpose utility for serializing dataclasses to JSON.
+    
+    Args:
+        obj: Object to convert (can be dataclass, list, dict, or primitive)
+        
+    Returns:
+        Dictionary representation suitable for JSON serialization
+    """
+    if hasattr(obj, "__dataclass_fields__"):
+        return {
+            k: dataclass_to_dict(v)
+            for k, v in obj.__dict__.items()
+        }
+    elif isinstance(obj, list):
+        return [dataclass_to_dict(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: dataclass_to_dict(v) for k, v in obj.items()}
+    else:
+        return obj
+
+
 @dataclass
 class FailureMode:
     """Record of a failure mode observed during validation."""
@@ -267,6 +292,31 @@ class ScaleValidator:
         # Check emergency conditions
         self._check_emergency_conditions(current_capital, hour)
 
+    def _create_rejection_result(
+        self, action: Action, error_message: str, timestamp: int
+    ) -> ExecutionResult:
+        """
+        Create an ExecutionResult for a rejected action.
+        
+        Helper method to reduce duplication when creating rejection results.
+        
+        Args:
+            action: The action that was rejected
+            error_message: Reason for rejection
+            timestamp: Current timestamp
+            
+        Returns:
+            ExecutionResult indicating rejection
+        """
+        return ExecutionResult(
+            success=False,
+            order_ids=[],
+            filled_size=0.0,
+            fees=0.0,
+            timestamp=timestamp,
+            error_message=error_message,
+        )
+
     def _process_action(
         self, action: Action, timestamp: int, exploit_module: ExploitModule
     ) -> None:
@@ -301,14 +351,7 @@ class ScaleValidator:
             )
             
             # Notify exploit of rejection
-            result = ExecutionResult(
-                success=False,
-                order_ids=[],
-                filled_size=0.0,
-                fees=0.0,
-                timestamp=timestamp,
-                error_message=reason,
-            )
+            result = self._create_rejection_result(action, reason, timestamp)
             exploit_module.on_execution_result(action, result)
             return
         
@@ -331,14 +374,7 @@ class ScaleValidator:
                 )
                 
                 # Notify exploit
-                result = ExecutionResult(
-                    success=False,
-                    order_ids=[],
-                    filled_size=0.0,
-                    fees=0.0,
-                    timestamp=timestamp,
-                    error_message="Insufficient capital",
-                )
+                result = self._create_rejection_result(action, "Insufficient capital", timestamp)
                 exploit_module.on_execution_result(action, result)
                 return
         
@@ -655,21 +691,7 @@ def save_report_json(report: StabilityReport, output_path: Path) -> None:
         report: StabilityReport to save
         output_path: Path to save JSON file
     """
-    # Convert to dict (recursively handle dataclasses)
-    def to_dict(obj: Any) -> Any:
-        if hasattr(obj, "__dataclass_fields__"):
-            return {
-                k: to_dict(v)
-                for k, v in obj.__dict__.items()
-            }
-        elif isinstance(obj, list):
-            return [to_dict(item) for item in obj]
-        elif isinstance(obj, dict):
-            return {k: to_dict(v) for k, v in obj.items()}
-        else:
-            return obj
-    
-    report_dict = to_dict(report)
+    report_dict = dataclass_to_dict(report)
     
     with open(output_path, "w") as f:
         json.dump(report_dict, f, indent=2)
