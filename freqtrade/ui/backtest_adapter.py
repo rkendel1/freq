@@ -116,7 +116,13 @@ class BacktestAdapter:
             
         Returns:
             Dictionary with simulation results and statistics
+            
+        Raises:
+            ValueError: If num_ticks is invalid
         """
+        if num_ticks <= 0:
+            raise ValueError("num_ticks must be positive")
+        
         if verbose:
             logger.setLevel(logging.INFO)
         

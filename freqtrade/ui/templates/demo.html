@@ -803,6 +803,12 @@
         async function startAutomated() {
             const condition = document.getElementById('marketCondition').value;
             
+            // Clear any existing interval to prevent memory leak
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = null;
+            }
+            
             try {
                 // Start automated mode on server
                 await fetch('/api/automated/start', {

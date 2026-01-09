@@ -113,6 +113,11 @@ class DemoServer:
             data = request.json or {}
             condition = data.get("condition", "mixed")
             
+            # Validate market condition
+            valid_conditions = ["mixed", "trending_up", "trending_down", "volatile", "ranging"]
+            if condition not in valid_conditions:
+                return jsonify({"error": f"Invalid condition. Must be one of: {valid_conditions}"}), 400
+            
             # Reset and configure
             self.automated_mode = True
             self.market_simulator.reset(condition=condition)
