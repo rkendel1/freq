@@ -12,9 +12,6 @@
       "dest": "api/app.py"
     }
   ],
-  "env": {
-    "FLASK_DEBUG": "false"
-  },
   "build": {
     "env": {
       "PYTHON_VERSION": "3.11"
