@@ -22,7 +22,6 @@ from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
     MarginMode,
-    RPCMessageType,
     SignalDirection,
     State,
     TradingMode,
@@ -50,16 +49,6 @@ from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.rpc import RPCManager
-from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from freqtrade.rpc.rpc_types import (
-    ProfitLossStr,
-    RPCCancelMsg,
-    RPCEntryMsg,
-    RPCExitCancelMsg,
-    RPCExitMsg,
-    RPCProtectionMsg,
-)
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise, MeasureTime, PeriodicCache, dt_from_ts, dt_now
@@ -114,14 +103,8 @@ class FreqtradeBot(LoggingMixin):
         self.margin_mode: MarginMode = self.config.get("margin_mode", MarginMode.NONE)
         self.last_process: datetime | None = None
 
-        # RPC runs in separate threads, can start handling external commands just after
-        # initialization, even before Freqtradebot has a chance to start its throttling,
-        # so anything in the Freqtradebot instance should be ready (initialized), including
-        # the initial state of the bot.
-        # Keep this at the end of this initialization method.
-        self.rpc: RPCManager = RPCManager(self)
-
-        self.dataprovider = DataProvider(self.config, self.exchange, rpc=self.rpc)
+        # Initialize DataProvider without RPC
+        self.dataprovider = DataProvider(self.config, self.exchange)
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
 
         self.dataprovider.add_pairlisthandler(self.pairlists)
@@ -130,13 +113,6 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
-
-        # Init ExternalMessageConsumer if enabled
-        self.emc = (
-            ExternalMessageConsumer(self.config, self.dataprovider)
-            if self.config.get("external_message_consumer", {}).get("enabled", False)
-            else None
-        )
 
         logger.info("Starting initial pairlist refresh")
         with MeasureTime(
@@ -187,12 +163,14 @@ class FreqtradeBot(LoggingMixin):
 
         self._measure_execution = MeasureTime(log_took_too_long, timeframe_secs * 0.25)
 
-    def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
+    def notify_status(self, msg: str, msg_type=None) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
-        via RPC about changes in the bot status.
+        via logging about changes in the bot status.
+        
+        RPC has been removed - this now logs instead.
         """
-        self.rpc.send_msg({"type": msg_type, "status": msg})
+        logger.info(f"Status: {msg}")
 
     def cleanup(self) -> None:
         """
@@ -213,9 +191,7 @@ class FreqtradeBot(LoggingMixin):
         finally:
             self.strategy.ft_bot_cleanup()
 
-        self.rpc.cleanup()
-        if self.emc:
-            self.emc.shutdown()
+        # RPC cleanup removed
         self.exchange.close()
         try:
             Trade.commit()
@@ -232,7 +208,11 @@ class FreqtradeBot(LoggingMixin):
         migrate_live_content(self.config, self.exchange)
         set_startup_time()
 
-        self.rpc.startup_messages(self.config, self.pairlists, self.protections)
+        # Log startup information instead of RPC notifications
+        logger.info("Bot startup complete")
+        logger.info(f"Pairlists: {[p.name for p in self.pairlists._pairlist_handlers]}")
+        logger.info(f"Protections: {[p.name for p in self.protections._protection_handlers]}")
+        
         # Update older trades with precision and precision mode
         self.startup_backpopulate_precision()
         # Adjust stoploss if it was changed
@@ -297,7 +277,7 @@ class FreqtradeBot(LoggingMixin):
             self.enter_positions()
         self._schedule.run_pending()
         Trade.commit()
-        self.rpc.process_msg_queue(self.dataprovider._msg_queue)
+        # RPC message queue processing removed
         self.last_process = datetime.now(UTC)
 
     def process_stopped(self) -> None:
@@ -315,15 +295,14 @@ class FreqtradeBot(LoggingMixin):
         open_trades = Trade.get_open_trades()
 
         if len(open_trades) != 0 and self.state != State.RELOAD_CONFIG:
-            msg = {
-                "type": RPCMessageType.WARNING,
-                "status": f"{len(open_trades)} open trades active.\n\n"
+            msg = (
+                f"{len(open_trades)} open trades active.\n\n"
                 f"Handle these trades manually on {self.exchange.name}, "
                 f"or '/start' the bot again and use '/stopentry' "
                 f"to handle open trades gracefully. \n"
-                f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}",
-            }
-            self.rpc.send_msg(msg)
+                f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}"
+            )
+            logger.warning(msg)
 
     def _refresh_active_whitelist(self, trades: list[Trade] | None = None) -> list[str]:
         """
@@ -342,7 +321,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Called last to include the included pairs
         if _prev_whitelist != _whitelist:
-            self.rpc.send_msg({"type": RPCMessageType.WHITELIST, "data": _whitelist})
+            logger.info(f"Whitelist updated: {len(_whitelist)} pairs")
 
         return _whitelist
 
@@ -1198,7 +1177,7 @@ class FreqtradeBot(LoggingMixin):
         sub_trade: bool = False,
     ) -> None:
         """
-        Sends rpc notification when a entry order occurred.
+        Logs notification when a entry order occurred.
         """
         open_rate = order.safe_price
 
@@ -1216,70 +1195,31 @@ class FreqtradeBot(LoggingMixin):
                 o.stake_amount for o in trade.open_orders if o.ft_order_side == trade.entry_side
             )
 
-        msg: RPCEntryMsg = {
-            "trade_id": trade.id,
-            "type": RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage if trade.leverage else None,
-            "direction": "Short" if trade.is_short else "Long",
-            "limit": open_rate,  # Deprecated (?)
-            "order_rate": open_rate,
-            "open_rate": open_rate,
-            "order_type": order_type or "unknown",
-            "stake_amount": stake_amount,
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency", None),
-            "amount": order.safe_amount_after_fee if fill else (order.safe_amount or trade.amount),
-            "open_date": trade.open_date_utc or datetime.now(UTC),
-            "current_rate": current_rate,
-            "sub_trade": sub_trade,
-        }
+        # Log the entry instead of RPC notification
+        entry_type = "ENTRY_FILL" if fill else "ENTRY"
+        direction = "Short" if trade.is_short else "Long"
+        logger.info(
+            f"{entry_type}: {trade.pair} ({direction}) - "
+            f"Order: {order_type or 'unknown'}, "
+            f"Rate: {open_rate}, "
+            f"Amount: {order.safe_amount_after_fee if fill else (order.safe_amount or trade.amount)}, "
+            f"Stake: {stake_amount} {self.config['stake_currency']}"
+        )
 
-        # Send the message
-        self.rpc.send_msg(msg)
 
     def _notify_enter_cancel(
         self, trade: Trade, order_type: str, reason: str, sub_trade: bool = False
     ) -> None:
         """
-        Sends rpc notification when a entry order cancel occurred.
+        Logs notification when a entry order cancel occurred.
         """
-        current_rate = self.exchange.get_rate(
-            trade.pair, side="entry", is_short=trade.is_short, refresh=False
+        direction = "Short" if trade.is_short else "Long"
+        logger.info(
+            f"ENTRY_CANCEL: {trade.pair} ({direction}) - "
+            f"Order: {order_type}, "
+            f"Rate: {trade.open_rate}, "
+            f"Reason: {reason}"
         )
-
-        msg: RPCCancelMsg = {
-            "trade_id": trade.id,
-            "type": RPCMessageType.ENTRY_CANCEL,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "limit": trade.open_rate,
-            "order_rate": trade.open_rate,
-            "order_type": order_type,
-            "stake_amount": trade.stake_amount,
-            "open_rate": trade.open_rate,
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency", None),
-            "amount": trade.amount,
-            "open_date": trade.open_date,
-            "current_rate": current_rate,
-            "reason": reason,
-            "sub_trade": sub_trade,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
 
     #
     # SELL / exit positions / close trades logic and methods
@@ -2180,7 +2120,7 @@ class FreqtradeBot(LoggingMixin):
         order: Order | None = None,
     ) -> None:
         """
-        Sends rpc notification when a sell occurred.
+        Logs notification when a sell occurred.
         """
         # Use cached rates here - it was updated seconds ago.
         current_rate = (
@@ -2199,49 +2139,25 @@ class FreqtradeBot(LoggingMixin):
             order_rate = trade.safe_close_rate
             profit = trade.calculate_profit(rate=order_rate)
             amount = trade.amount
-        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
+        gain = "profit" if profit.profit_ratio > 0 else "loss"
 
-        msg: RPCExitMsg = {
-            "type": (RPCMessageType.EXIT_FILL if fill else RPCMessageType.EXIT),
-            "trade_id": trade.id,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "gain": gain,
-            "limit": order_rate,  # Deprecated
-            "order_rate": order_rate,
-            "order_type": order_type or "unknown",
-            "amount": amount,
-            "open_rate": trade.open_rate,
-            "close_rate": order_rate,
-            "current_rate": current_rate,
-            "profit_amount": profit.profit_abs,
-            "profit_ratio": profit.profit_ratio,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exit_reason": trade.exit_reason,
-            "open_date": trade.open_date_utc,
-            "close_date": trade.close_date_utc or datetime.now(UTC),
-            "stake_amount": trade.stake_amount,
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency"),
-            "sub_trade": sub_trade,
-            "cumulative_profit": trade.realized_profit,
-            "final_profit_ratio": trade.close_profit if not trade.is_open else None,
-            "is_final_exit": trade.is_open is False,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
+        # Log the exit instead of RPC notification
+        exit_type = "EXIT_FILL" if fill else "EXIT"
+        direction = "Short" if trade.is_short else "Long"
+        logger.info(
+            f"{exit_type}: {trade.pair} ({direction}) - "
+            f"Order: {order_type or 'unknown'}, "
+            f"Rate: {order_rate}, "
+            f"Amount: {amount}, "
+            f"Profit: {profit.profit_ratio:.2%} ({gain}), "
+            f"Reason: {trade.exit_reason}"
+        )
 
     def _notify_exit_cancel(
         self, trade: Trade, order_type: str, reason: str, order_id: str, sub_trade: bool = False
     ) -> None:
         """
-        Sends rpc notification when a sell cancel occurred.
+        Logs notification when a sell cancel occurred.
         """
         if trade.exit_order_status == reason:
             return
@@ -2253,43 +2169,17 @@ class FreqtradeBot(LoggingMixin):
 
         profit_rate: float = trade.safe_close_rate
         profit = trade.calculate_profit(rate=profit_rate)
-        current_rate = self.exchange.get_rate(
-            trade.pair, side="exit", is_short=trade.is_short, refresh=False
+        gain = "profit" if profit.profit_ratio > 0 else "loss"
+
+        # Log the exit cancel instead of RPC notification
+        direction = "Short" if trade.is_short else "Long"
+        logger.info(
+            f"EXIT_CANCEL: {trade.pair} ({direction}) - "
+            f"Order: {order_type}, "
+            f"Rate: {profit_rate}, "
+            f"Reason: {reason}, "
+            f"Potential Profit: {profit.profit_ratio:.2%} ({gain})"
         )
-        gain: ProfitLossStr = "profit" if profit.profit_ratio > 0 else "loss"
-
-        msg: RPCExitCancelMsg = {
-            "type": RPCMessageType.EXIT_CANCEL,
-            "trade_id": trade.id,
-            "exchange": trade.exchange.capitalize(),
-            "pair": trade.pair,
-            "leverage": trade.leverage,
-            "direction": "Short" if trade.is_short else "Long",
-            "gain": gain,
-            "limit": profit_rate or 0,
-            "order_rate": profit_rate or 0,
-            "order_type": order_type,
-            "amount": order.safe_amount_after_fee,
-            "open_rate": trade.open_rate,
-            "current_rate": current_rate,
-            "profit_amount": profit.profit_abs,
-            "profit_ratio": profit.profit_ratio,
-            "buy_tag": trade.enter_tag,
-            "enter_tag": trade.enter_tag,
-            "exit_reason": trade.exit_reason,
-            "open_date": trade.open_date,
-            "close_date": trade.close_date or datetime.now(UTC),
-            "stake_currency": self.config["stake_currency"],
-            "base_currency": self.exchange.get_pair_base_currency(trade.pair),
-            "quote_currency": self.exchange.get_pair_quote_currency(trade.pair),
-            "fiat_currency": self.config.get("fiat_display_currency", None),
-            "reason": reason,
-            "sub_trade": sub_trade,
-            "stake_amount": trade.stake_amount,
-        }
-
-        # Send the message
-        self.rpc.send_msg(msg)
 
     def order_obj_or_raise(self, order_id: str, order_obj: Order | None) -> Order:
         if not order_obj:
@@ -2423,21 +2313,21 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(pair, datetime.now(UTC), reason="Auto lock", side=side)
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
-            msg: RPCProtectionMsg = {
-                "type": RPCMessageType.PROTECTION_TRIGGER,
-                "base_currency": self.exchange.get_pair_base_currency(prot_trig.pair),
-                **prot_trig.to_json(),  # type: ignore
-            }
-            self.rpc.send_msg(msg)
+            # Log protection trigger instead of RPC notification
+            logger.info(
+                f"PROTECTION_TRIGGER: {pair} - "
+                f"Lock until: {prot_trig.until}, "
+                f"Reason: {prot_trig.lock_reason}"
+            )
 
         prot_trig_glb = self.protections.global_stop(side=side)
         if prot_trig_glb:
-            msg = {
-                "type": RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
-                "base_currency": self.exchange.get_pair_base_currency(prot_trig_glb.pair),
-                **prot_trig_glb.to_json(),  # type: ignore
-            }
-            self.rpc.send_msg(msg)
+            # Log global protection trigger instead of RPC notification
+            logger.info(
+                f"PROTECTION_TRIGGER_GLOBAL: "
+                f"Lock until: {prot_trig_glb.until}, "
+                f"Reason: {prot_trig_glb.lock_reason}"
+            )
 
     def apply_fee_conditional(
         self,
