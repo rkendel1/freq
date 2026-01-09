@@ -365,6 +365,164 @@
         .fade-in {
             animation: fadeIn 0.5s ease-out;
         }
+
+        /* DSPy Advisor Styles */
+        .dspy-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .dspy-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .dspy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .dspy-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dspy-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .parameter-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .parameter-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        .parameter-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 5px 10px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .parameter-value input {
+            width: 80px;
+            border: none;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .parameter-arrow {
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .suggestion-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 5px 10px;
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 4px;
+            text-align: center;
+            color: #155724;
+        }
+
+        .suggestion-value.improve {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .apply-btn {
+            padding: 5px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .apply-btn:hover {
+            background: #218838;
+        }
+
+        .confidence-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffc107 0%, #28a745 100%);
+            transition: width 0.3s;
+        }
+
+        .rationale {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .metric-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .metric-box label {
+            display: block;
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .metric-box .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .no-suggestions {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -471,6 +629,88 @@
             <div id="history">
                 <div class="empty-state">
                     <p>No executions yet. Start executing scenarios to build history.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dspy-section">
+            <h2>🤖 DSPy Advisor - Parameter Optimization</h2>
+            <p style="color: #6c757d; margin-bottom: 20px;">
+                DSPy observes trading performance and suggests parameter optimizations.
+                Adjust parameters manually or apply DSPy suggestions to optimize performance.
+            </p>
+            
+            <div class="dspy-grid">
+                <div class="dspy-card">
+                    <h3>⚙️ Current Parameters</h3>
+                    <div id="currentParameters">
+                        <div class="parameter-row">
+                            <div class="parameter-label">Position Size</div>
+                            <div class="parameter-value">
+                                <input type="number" id="positionSizeInput" min="0.01" max="0.50" step="0.01" value="0.15">
+                            </div>
+                            <div class="parameter-arrow">→</div>
+                            <div class="suggestion-value" id="positionSizeSuggestion">—</div>
+                            <button class="apply-btn" id="applyPositionSize" style="display: none;">Apply</button>
+                        </div>
+                        <div class="parameter-row">
+                            <div class="parameter-label">Profit Target</div>
+                            <div class="parameter-value">
+                                <input type="number" id="profitTargetInput" min="0.01" max="0.20" step="0.01" value="0.05">
+                            </div>
+                            <div class="parameter-arrow">→</div>
+                            <div class="suggestion-value" id="profitTargetSuggestion">—</div>
+                            <button class="apply-btn" id="applyProfitTarget" style="display: none;">Apply</button>
+                        </div>
+                        <div class="parameter-row">
+                            <div class="parameter-label">Stop Loss</div>
+                            <div class="parameter-value">
+                                <input type="number" id="stopLossInput" min="0.01" max="0.15" step="0.01" value="0.03">
+                            </div>
+                            <div class="parameter-arrow">→</div>
+                            <div class="suggestion-value" id="stopLossSuggestion">—</div>
+                            <button class="apply-btn" id="applyStopLoss" style="display: none;">Apply</button>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button id="updateParametersBtn" style="width: 100%;">💾 Update Parameters</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dspy-card">
+                    <h3>💡 DSPy Suggestions</h3>
+                    <div id="dspySuggestions">
+                        <div class="no-suggestions">
+                            Run automated mode with at least 5 trades to get DSPy suggestions.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dspy-card">
+                    <h3>📈 Performance Metrics</h3>
+                    <div id="dstyMetrics">
+                        <div class="metrics-grid">
+                            <div class="metric-box">
+                                <label>Sharpe Ratio</label>
+                                <div class="value" id="metricSharpe">—</div>
+                            </div>
+                            <div class="metric-box">
+                                <label>Win Rate</label>
+                                <div class="value" id="metricWinRate">—</div>
+                            </div>
+                            <div class="metric-box">
+                                <label>Capital Efficiency</label>
+                                <div class="value" id="metricCapEff">—</div>
+                            </div>
+                            <div class="metric-box">
+                                <label>Total Trades</label>
+                                <div class="value" id="metricTrades">0</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 12px; color: #6c757d;">
+                            <em>💡 Metrics update after each completed trade. DSPy uses these to generate suggestions.</em>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1140,6 +1380,178 @@
         document.getElementById('autoStartBtn').addEventListener('click', startAutomated);
         document.getElementById('autoPauseBtn').addEventListener('click', pauseAutomated);
         document.getElementById('speedControl').addEventListener('input', updateSpeed);
+
+        // DSPy-related event listeners
+        document.getElementById('updateParametersBtn').addEventListener('click', updateParameters);
+        document.getElementById('applyPositionSize').addEventListener('click', () => applyDspySuggestion('position_size'));
+        document.getElementById('applyProfitTarget').addEventListener('click', () => applyDspySuggestion('profit_target'));
+        document.getElementById('applyStopLoss').addEventListener('click', () => applyDspySuggestion('stop_loss'));
+
+        // DSPy Functions
+        let currentSuggestions = {};
+
+        async function updateParameters() {
+            const params = {
+                position_size: parseFloat(document.getElementById('positionSizeInput').value),
+                profit_target: parseFloat(document.getElementById('profitTargetInput').value),
+                stop_loss: parseFloat(document.getElementById('stopLossInput').value),
+            };
+
+            try {
+                const response = await fetch('/api/dspy/update-parameters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Parameters updated:', data);
+                    alert('Parameters updated successfully!');
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Error updating parameters:', error);
+                alert('Error updating parameters. Make sure the server is running.');
+            }
+        }
+
+        async function applyDspySuggestion(paramName) {
+            const suggestion = currentSuggestions[paramName];
+            if (!suggestion) return;
+
+            const inputId = paramName === 'position_size' ? 'positionSizeInput' :
+                           paramName === 'profit_target' ? 'profitTargetInput' :
+                           'stopLossInput';
+
+            document.getElementById(inputId).value = suggestion.suggested_value.toFixed(2);
+            
+            // Auto-update the parameters
+            await updateParameters();
+        }
+
+        async function fetchDspySuggestions() {
+            try {
+                const response = await fetch('/api/dspy/suggestions');
+                const data = await response.json();
+
+                if (data.suggestions && data.suggestions.length > 0) {
+                    displayDspySuggestions(data.suggestions);
+                }
+            } catch (error) {
+                console.error('Error fetching DSPy suggestions:', error);
+            }
+        }
+
+        async function fetchDspyMetrics() {
+            try {
+                const response = await fetch('/api/dspy/metrics');
+                const data = await response.json();
+
+                if (data.metrics && Object.keys(data.metrics).length > 0) {
+                    displayDspyMetrics(data.metrics);
+                }
+            } catch (error) {
+                console.error('Error fetching DSPy metrics:', error);
+            }
+        }
+
+        function displayDspySuggestions(suggestions) {
+            const container = document.getElementById('dspySuggestions');
+            currentSuggestions = {};
+
+            if (suggestions.length === 0) {
+                container.innerHTML = '<div class="no-suggestions">No suggestions yet. Keep trading to accumulate data.</div>';
+                return;
+            }
+
+            let html = '';
+            suggestions.forEach(s => {
+                currentSuggestions[s.parameter_name] = s;
+                
+                const delta = s.delta;
+                const deltaPercent = ((delta / s.current_value) * 100).toFixed(1);
+                const deltaSign = delta > 0 ? '+' : '';
+
+                html += `
+                    <div style="margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #667eea;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #333;">
+                            ${formatParameterName(s.parameter_name)}
+                        </div>
+                        <div style="font-size: 13px; margin-bottom: 8px;">
+                            <span style="color: #6c757d;">Current:</span> <strong>${s.current_value.toFixed(3)}</strong>
+                            <span style="margin: 0 8px;">→</span>
+                            <span style="color: #28a745; font-weight: 600;">${s.suggested_value.toFixed(3)}</span>
+                            <span style="color: ${delta > 0 ? '#28a745' : '#dc3545'}; font-size: 11px;">
+                                (${deltaSign}${deltaPercent}%)
+                            </span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${s.confidence * 100}%"></div>
+                        </div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 5px;">
+                            Confidence: ${(s.confidence * 100).toFixed(0)}%
+                        </div>
+                        <div class="rationale">${s.rationale}</div>
+                    </div>
+                `;
+
+                // Update suggestion display in parameters section
+                const suggestionId = s.parameter_name === 'position_size_multiplier' ? 'positionSizeSuggestion' :
+                                    s.parameter_name === 'stop_loss_percent' ? 'stopLossSuggestion' :
+                                    s.parameter_name === 'max_holding_hours' ? 'profitTargetSuggestion' : null;
+
+                if (suggestionId) {
+                    const elem = document.getElementById(suggestionId);
+                    if (elem) {
+                        elem.textContent = s.suggested_value.toFixed(3);
+                        elem.classList.remove('improve');
+                        if (Math.abs(delta) / s.current_value > 0.1) {
+                            elem.classList.add('improve');
+                        }
+                    }
+
+                    const btnId = suggestionId.replace('Suggestion', '');
+                    const applyBtn = document.getElementById('apply' + btnId.charAt(0).toUpperCase() + btnId.slice(1));
+                    if (applyBtn) {
+                        applyBtn.style.display = 'inline-block';
+                    }
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayDspyMetrics(metrics) {
+            // Display metrics for the first (and typically only) exploit
+            const exploitMetrics = Object.values(metrics)[0];
+            if (!exploitMetrics) return;
+
+            document.getElementById('metricSharpe').textContent = exploitMetrics.sharpe_ratio.toFixed(2);
+            document.getElementById('metricWinRate').textContent = (exploitMetrics.win_rate * 100).toFixed(1) + '%';
+            document.getElementById('metricCapEff').textContent = (exploitMetrics.capital_efficiency * 100).toFixed(1) + '%';
+            document.getElementById('metricTrades').textContent = exploitMetrics.total_trades;
+        }
+
+        function formatParameterName(name) {
+            const names = {
+                'position_size_multiplier': 'Position Size',
+                'stop_loss_percent': 'Stop Loss',
+                'max_holding_hours': 'Max Hold Time',
+                'profit_target': 'Profit Target',
+            };
+            return names[name] || name;
+        }
+
+        // Poll for DSPy updates when in automated mode
+        setInterval(() => {
+            if (automatedInterval) {
+                fetchDspySuggestions();
+                fetchDspyMetrics();
+            }
+        }, 5000); // Every 5 seconds
 
         // Load initial state
         fetch('/api/state')

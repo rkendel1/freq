@@ -27,6 +27,9 @@ from freqtrade.exploits.exploit_module import ExecutionState, ExecutionResult
 from freqtrade.ui.demo_exploit import DemoExploit
 from freqtrade.ui.automated_exploit import AutomatedExploit
 from freqtrade.ui.market_simulator import MarketSimulator, MarketCondition
+from dspy.advisor import DSPyAdvisor
+from freqtrade.metrics.attribution import TradeAttribution
+from datetime import datetime, timezone
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +68,10 @@ class DemoServer:
         self.automated_exploit = AutomatedExploit({})
         self.market_simulator = MarketSimulator(initial_price=50000.0, condition="mixed")
         self.price_history: list[dict[str, Any]] = []  # For charting
+        
+        # DSPy Advisor integration
+        self.dspy_advisor = DSPyAdvisor(min_trades_for_suggestion=5, suggestion_confidence_threshold=0.5)
+        self.trade_counter = 0  # Track trades for attribution
 
     def setup_routes(self):
         """Setup Flask routes."""
@@ -72,7 +79,16 @@ class DemoServer:
         @self.app.route("/")
         def index():
             """Render the main demo page."""
-            return render_template("demo.html")
+            try:
+                return render_template("demo.html")
+            except Exception as e:
+                logger.error(f"Error rendering demo.html: {e}", exc_info=True)
+                return f"Error rendering page: {e}", 500
+        
+        @self.app.route("/health")
+        def health():
+            """Health check endpoint."""
+            return jsonify({"status": "ok", "message": "Demo server is running"})
 
         @self.app.route("/api/state")
         def get_state():
@@ -171,6 +187,95 @@ class DemoServer:
         def price_history():
             """Get price history for charting."""
             return jsonify({"prices": self.price_history[-100:]})  # Last 100 ticks
+
+        @self.app.route("/api/dspy/suggestions")
+        def get_dspy_suggestions():
+            """Get DSPy parameter suggestions."""
+            suggestions = self.dspy_advisor.generate_suggestions()
+            return jsonify({
+                "suggestions": [
+                    {
+                        "timestamp": s.timestamp.isoformat(),
+                        "exploit_id": s.exploit_id,
+                        "parameter_name": s.parameter_name,
+                        "current_value": s.current_value,
+                        "suggested_value": s.suggested_value,
+                        "delta": s.delta,
+                        "rationale": s.rationale,
+                        "confidence": s.confidence,
+                    }
+                    for s in suggestions
+                ]
+            })
+
+        @self.app.route("/api/dspy/metrics")
+        def get_dspy_metrics():
+            """Get current DSPy metrics for all exploits."""
+            all_metrics = self.dspy_advisor.get_all_metrics()
+            return jsonify({
+                "metrics": {
+                    exploit_id: {
+                        "timestamp": m.timestamp.isoformat(),
+                        "sharpe_ratio": m.sharpe_ratio,
+                        "drawdown_contribution": m.drawdown_contribution,
+                        "capital_efficiency": m.capital_efficiency,
+                        "total_trades": m.total_trades,
+                        "win_rate": m.win_rate,
+                        "avg_profit_per_trade": m.avg_profit_per_trade,
+                        "max_drawdown": m.max_drawdown,
+                        "deployed_capital_avg": m.deployed_capital_avg,
+                    }
+                    for exploit_id, m in all_metrics.items()
+                }
+            })
+
+        @self.app.route("/api/dspy/parameters")
+        def get_current_parameters():
+            """Get current exploit parameters."""
+            return jsonify({
+                "parameters": {
+                    "position_size": self.automated_exploit.position_size,
+                    "profit_target": self.automated_exploit.profit_target,
+                    "stop_loss": self.automated_exploit.stop_loss,
+                }
+            })
+
+        @self.app.route("/api/dspy/update-parameters", methods=["POST"])
+        def update_parameters():
+            """Update exploit parameters based on user input or DSPy suggestions."""
+            data = request.json or {}
+            
+            # Validate and update parameters
+            if "position_size" in data:
+                value = float(data["position_size"])
+                if 0.01 <= value <= 0.50:  # 1% to 50% range
+                    self.automated_exploit.position_size = value
+                else:
+                    return jsonify({"error": "position_size must be between 0.01 and 0.50"}), 400
+            
+            if "profit_target" in data:
+                value = float(data["profit_target"])
+                if 0.01 <= value <= 0.20:  # 1% to 20% range
+                    self.automated_exploit.profit_target = value
+                else:
+                    return jsonify({"error": "profit_target must be between 0.01 and 0.20"}), 400
+            
+            if "stop_loss" in data:
+                value = float(data["stop_loss"])
+                if 0.01 <= value <= 0.15:  # 1% to 15% range
+                    self.automated_exploit.stop_loss = value
+                else:
+                    return jsonify({"error": "stop_loss must be between 0.01 and 0.15"}), 400
+            
+            logger.info(f"Parameters updated: {data}")
+            return jsonify({
+                "status": "updated",
+                "parameters": {
+                    "position_size": self.automated_exploit.position_size,
+                    "profit_target": self.automated_exploit.profit_target,
+                    "stop_loss": self.automated_exploit.stop_loss,
+                }
+            })
 
         @self.app.route("/api/execute-step", methods=["POST"])
         def execute_step():
@@ -557,6 +662,9 @@ class DemoServer:
                         "entry_price": position.entry_price,
                     })
                     
+                    # Feed trade to DSPy advisor
+                    self._record_trade_for_dspy(position, tick.price, net_profit, pnl_pct)
+                    
                     self.automated_exploit.on_execution_result(action, result)
         
         # Step 6: Final State
@@ -611,6 +719,50 @@ class DemoServer:
                 "price_change": tick.price - initial_state["current_price"] if self.price_history else 0,
             },
         }
+
+    def _record_trade_for_dspy(self, position, exit_price: float, realized_profit: float, profit_ratio: float):
+        """
+        Record a completed trade to DSPy advisor for analysis.
+        
+        Args:
+            position: Position that was closed
+            exit_price: Exit price
+            realized_profit: Realized profit in currency
+            profit_ratio: Profit ratio (percentage)
+        """
+        self.trade_counter += 1
+        
+        # Create a TradeAttribution for DSPy
+        trade_attr = TradeAttribution(
+            trade_id=self.trade_counter,
+            exploit_id="automated_demo_exploit",
+            capital_source="initial",
+            pair=position.symbol,
+            is_short=(position.side == Side.SHORT),
+            entry_price=position.entry_price,
+            entry_amount=position.size / position.entry_price,
+            entry_stake=position.size,
+            entry_date=datetime.fromtimestamp(position.timestamp, tz=timezone.utc),
+            exit_price=exit_price,
+            exit_date=datetime.now(timezone.utc),
+            fee_open=position.size * 0.001,
+            fee_close=(position.size + realized_profit) * 0.001,
+            fee_open_cost=position.size * 0.001,
+            fee_close_cost=(position.size + realized_profit) * 0.001,
+            total_fees=position.size * 0.002,
+            funding_fees=0.0,
+            holding_duration_seconds=int((datetime.now(timezone.utc).timestamp() - position.timestamp)),
+            holding_duration_hours=(datetime.now(timezone.utc).timestamp() - position.timestamp) / 3600,
+            realized_profit=realized_profit,
+            profit_ratio=profit_ratio,
+            is_open=False,
+            exit_reason="automated_exit",
+        )
+        
+        # Feed to DSPy advisor
+        self.dspy_advisor.observe_trade(trade_attr)
+        logger.info(f"Recorded trade #{self.trade_counter} to DSPy advisor: P&L={realized_profit:.2f}")
+
 
     def run(self, host: str = "127.0.0.1", port: int = 5000, debug: bool = True):
         """
