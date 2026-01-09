@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
+from dspy.guardrails import DSPyGuardrails
+
 if TYPE_CHECKING:
     from freqtrade.metrics.attribution import TradeAttribution
 
@@ -145,6 +147,7 @@ class DSPyAdvisor:
         self,
         min_trades_for_suggestion: int = 20,
         suggestion_confidence_threshold: float = 0.6,
+        enable_guardrails: bool = True,
     ):
         """
         Initialize the DSPy advisor.
@@ -152,6 +155,7 @@ class DSPyAdvisor:
         Args:
             min_trades_for_suggestion: Minimum number of trades before generating suggestions
             suggestion_confidence_threshold: Minimum confidence for a suggestion to be logged
+            enable_guardrails: Whether to enable guardrail enforcement (default: True)
         """
         self.min_trades_for_suggestion = min_trades_for_suggestion
         self.suggestion_confidence_threshold = suggestion_confidence_threshold
@@ -162,7 +166,11 @@ class DSPyAdvisor:
         # History of generated suggestions
         self.suggestion_history: list[ParameterSuggestion] = []
         
+        # Initialize guardrails for bounded control
+        self.guardrails = DSPyGuardrails(enforce_bounds=enable_guardrails)
+        
         logger.info("DSPy Advisory Layer initialized (READ-ONLY mode)")
+        logger.info(f"  - Guardrails: {'ENABLED' if enable_guardrails else 'DISABLED'}")
     
     def observe_trade(self, trade_attribution: "TradeAttribution") -> None:
         """
@@ -356,6 +364,72 @@ class DSPyAdvisor:
             deployed_capital_avg=avg_stake,
         )
     
+    def _create_bounded_suggestion(
+        self,
+        exploit_id: str,
+        parameter_name: str,
+        current_value: float,
+        suggested_value: float,
+        rationale: str,
+        confidence: float,
+        metrics: MetricsSnapshot,
+    ) -> Optional[ParameterSuggestion]:
+        """
+        Create a parameter suggestion with guardrail bounds applied.
+        
+        This method validates the suggestion against guardrails and applies
+        bounds if necessary. If the parameter is forbidden or the suggestion
+        violates guardrails, it may be rejected or adjusted.
+        
+        Args:
+            exploit_id: ID of the exploit
+            parameter_name: Name of the parameter to adjust
+            current_value: Current value of the parameter
+            suggested_value: Suggested new value (before bounds)
+            rationale: Reason for the suggestion
+            confidence: Confidence score (0.0 to 1.0)
+            metrics: Metrics snapshot that led to this suggestion
+            
+        Returns:
+            ParameterSuggestion with bounds applied, or None if rejected
+        """
+        # Validate against guardrails
+        is_valid, violation = self.guardrails.validate_suggestion(
+            parameter_name=parameter_name,
+            current_value=current_value,
+            suggested_value=suggested_value,
+        )
+        
+        # Apply bounds to the suggested value
+        bounded_value = self.guardrails.apply_bounds(
+            parameter_name=parameter_name,
+            current_value=current_value,
+            suggested_value=suggested_value,
+        )
+        
+        # Calculate actual delta after bounds
+        delta = bounded_value - current_value
+        
+        # If the bounded value is the same as current, no suggestion needed
+        if abs(delta) < 1e-10:
+            logger.debug(
+                f"Suggestion for '{parameter_name}' resulted in no change after bounds - skipping"
+            )
+            return None
+        
+        # Create the suggestion with bounded values
+        return ParameterSuggestion(
+            timestamp=datetime.now(),
+            exploit_id=exploit_id,
+            parameter_name=parameter_name,
+            current_value=current_value,
+            suggested_value=bounded_value,
+            delta=delta,
+            rationale=rationale,
+            confidence=confidence,
+            metrics_snapshot=metrics,
+        )
+    
     def _generate_suggestions_for_exploit(
         self, exploit_id: str, trades: list["TradeAttribution"]
     ) -> list[ParameterSuggestion]:
@@ -387,19 +461,17 @@ class DSPyAdvisor:
             )
             suggested_size = DEFAULT_POSITION_SIZE * (1 - POSITION_SIZE_REDUCTION)
             
-            suggestions.append(
-                ParameterSuggestion(
-                    timestamp=datetime.now(),
-                    exploit_id=exploit_id,
-                    parameter_name="position_size_multiplier",
-                    current_value=DEFAULT_POSITION_SIZE,
-                    suggested_value=suggested_size,
-                    delta=-POSITION_SIZE_REDUCTION,
-                    rationale=f"Low Sharpe ratio ({metrics.sharpe_ratio:.2f}) suggests reducing exposure",
-                    confidence=confidence,
-                    metrics_snapshot=metrics,
-                )
+            suggestion = self._create_bounded_suggestion(
+                exploit_id=exploit_id,
+                parameter_name="position_size_multiplier",
+                current_value=DEFAULT_POSITION_SIZE,
+                suggested_value=suggested_size,
+                rationale=f"Low Sharpe ratio ({metrics.sharpe_ratio:.2f}) suggests reducing exposure",
+                confidence=confidence,
+                metrics=metrics,
             )
+            if suggestion:
+                suggestions.append(suggestion)
         
         # Rule 2: High drawdown contribution → Suggest tighter stop loss
         if metrics.drawdown_contribution > DRAWDOWN_HIGH_THRESHOLD:
@@ -408,20 +480,18 @@ class DSPyAdvisor:
             )
             suggested_stop = DEFAULT_STOP_LOSS - STOP_LOSS_TIGHTENING
             
-            suggestions.append(
-                ParameterSuggestion(
-                    timestamp=datetime.now(),
-                    exploit_id=exploit_id,
-                    parameter_name="stop_loss_percent",
-                    current_value=DEFAULT_STOP_LOSS,
-                    suggested_value=suggested_stop,
-                    delta=-STOP_LOSS_TIGHTENING,
-                    rationale=f"High drawdown contribution ({metrics.drawdown_contribution:.2%}) "
-                    f"suggests tighter risk management",
-                    confidence=confidence,
-                    metrics_snapshot=metrics,
-                )
+            suggestion = self._create_bounded_suggestion(
+                exploit_id=exploit_id,
+                parameter_name="stop_loss_percent",
+                current_value=DEFAULT_STOP_LOSS,
+                suggested_value=suggested_stop,
+                rationale=f"High drawdown contribution ({metrics.drawdown_contribution:.2%}) "
+                         f"suggests tighter risk management",
+                confidence=confidence,
+                metrics=metrics,
             )
+            if suggestion:
+                suggestions.append(suggestion)
         
         # Rule 3: Low capital efficiency → Suggest reducing holding time
         if (
@@ -431,20 +501,18 @@ class DSPyAdvisor:
             confidence = CONFIDENCE_CAPITAL_EFF
             suggested_hold = DEFAULT_HOLD_HOURS - HOLD_TIME_REDUCTION
             
-            suggestions.append(
-                ParameterSuggestion(
-                    timestamp=datetime.now(),
-                    exploit_id=exploit_id,
-                    parameter_name="max_holding_hours",
-                    current_value=DEFAULT_HOLD_HOURS,
-                    suggested_value=suggested_hold,
-                    delta=-HOLD_TIME_REDUCTION,
-                    rationale=f"Low capital efficiency ({metrics.capital_efficiency:.2%}) "
-                    f"suggests reducing holding time",
-                    confidence=confidence,
-                    metrics_snapshot=metrics,
-                )
+            suggestion = self._create_bounded_suggestion(
+                exploit_id=exploit_id,
+                parameter_name="max_holding_hours",
+                current_value=DEFAULT_HOLD_HOURS,
+                suggested_value=suggested_hold,
+                rationale=f"Low capital efficiency ({metrics.capital_efficiency:.2%}) "
+                         f"suggests reducing holding time",
+                confidence=confidence,
+                metrics=metrics,
             )
+            if suggestion:
+                suggestions.append(suggestion)
         
         # Rule 4: High Sharpe + High capital efficiency → Suggest increasing size
         if (
@@ -458,21 +526,19 @@ class DSPyAdvisor:
             )
             suggested_size = DEFAULT_POSITION_SIZE * (1 + POSITION_SIZE_INCREASE)
             
-            suggestions.append(
-                ParameterSuggestion(
-                    timestamp=datetime.now(),
-                    exploit_id=exploit_id,
-                    parameter_name="position_size_multiplier",
-                    current_value=DEFAULT_POSITION_SIZE,
-                    suggested_value=suggested_size,
-                    delta=POSITION_SIZE_INCREASE,
-                    rationale=f"Strong Sharpe ratio ({metrics.sharpe_ratio:.2f}) and "
-                    f"capital efficiency ({metrics.capital_efficiency:.2%}) "
-                    f"suggest increasing exposure",
-                    confidence=confidence,
-                    metrics_snapshot=metrics,
-                )
+            suggestion = self._create_bounded_suggestion(
+                exploit_id=exploit_id,
+                parameter_name="position_size_multiplier",
+                current_value=DEFAULT_POSITION_SIZE,
+                suggested_value=suggested_size,
+                rationale=f"Strong Sharpe ratio ({metrics.sharpe_ratio:.2f}) and "
+                         f"capital efficiency ({metrics.capital_efficiency:.2%}) "
+                         f"suggest increasing exposure",
+                confidence=confidence,
+                metrics=metrics,
             )
+            if suggestion:
+                suggestions.append(suggestion)
         
         # Filter by confidence threshold
         filtered_suggestions = [
@@ -551,6 +617,15 @@ class DSPyAdvisor:
             if trades
         }
     
+    def get_guardrail_stats(self) -> dict:
+        """
+        Get statistics about guardrail violations.
+        
+        Returns:
+            Dictionary with violation statistics
+        """
+        return self.guardrails.get_violation_stats()
+    
     def reset(self) -> None:
         """
         Reset the advisor state.
@@ -560,4 +635,5 @@ class DSPyAdvisor:
         """
         self.trades_by_exploit.clear()
         self.suggestion_history.clear()
+        self.guardrails.reset()
         logger.info("DSPy Advisory Layer reset")
