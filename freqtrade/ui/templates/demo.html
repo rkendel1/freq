@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Engine Demo - Flow Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select {
+            background: white;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        button.reset {
+            background: #dc3545;
+        }
+
+        button.reset:hover {
+            background: #c82333;
+        }
+
+        .state-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .state-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .state-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .state-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .state-card.positive .value {
+            color: #28a745;
+        }
+
+        .state-card.negative .value {
+            color: #dc3545;
+        }
+
+        .flow-visualization {
+            padding: 30px;
+        }
+
+        .flow-step {
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .flow-step-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flow-step-header .step-number {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .flow-step-content {
+            padding: 20px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .data-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .data-item label {
+            display: block;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-item .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .action-card {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .action-card.approved {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .action-card.rejected {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .action-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .action-details {
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .result-card {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .result-card.failed {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 30px;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .history-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .history-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .history-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Execution Engine Demo</h1>
+            <p>Visualize how data flows through the system: State → Exploit → Action → Risk → Execution → Result</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="scenario">Scenario:</label>
+                <select id="scenario">
+                    <option value="open_long">Open Long Position</option>
+                    <option value="open_short">Open Short Position</option>
+                    <option value="multiple_positions">Multiple Positions</option>
+                    <option value="risk_rejection">Risk Rejection (Too Large)</option>
+                    <option value="close_position">Close Position</option>
+                    <option value="no_action">No Action</option>
+                </select>
+            </div>
+            <button id="executeBtn">▶️ Execute Step</button>
+            <button id="resetBtn" class="reset">🔄 Reset</button>
+        </div>
+
+        <div class="state-panel">
+            <div class="state-card">
+                <h3>Available Capital</h3>
+                <div class="value" id="availableCapital">$10,000.00</div>
+            </div>
+            <div class="state-card">
+                <h3>Deployed Capital</h3>
+                <div class="value" id="deployedCapital">$0.00</div>
+            </div>
+            <div class="state-card">
+                <h3>Realized PnL</h3>
+                <div class="value" id="realizedPnL">$0.00</div>
+            </div>
+            <div class="state-card">
+                <h3>Open Positions</h3>
+                <div class="value" id="openPositions">0</div>
+            </div>
+            <div class="state-card">
+                <h3>Total Actions</h3>
+                <div class="value" id="totalActions">0</div>
+            </div>
+            <div class="state-card">
+                <h3>Success Rate</h3>
+                <div class="value" id="successRate">0%</div>
+            </div>
+        </div>
+
+        <div class="flow-visualization" id="flowViz">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                <h2>Ready to Execute</h2>
+                <p>Select a scenario and click "Execute Step" to see the flow visualization</p>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h2>📊 Execution History</h2>
+            <div id="history">
+                <div class="empty-state">
+                    <p>No executions yet. Start executing scenarios to build history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentState = {
+            capital: {
+                available: 10000,
+                deployed: 0,
+                pnl_realized: 0,
+                pnl_unrealized: 0
+            },
+            open_trades: 0,
+            total_actions: 0,
+            successful_actions: 0
+        };
+
+        // Update state display
+        function updateStateDisplay(state) {
+            currentState = state;
+            document.getElementById('availableCapital').textContent = `$${state.capital.available.toFixed(2)}`;
+            document.getElementById('deployedCapital').textContent = `$${state.capital.deployed.toFixed(2)}`;
+            document.getElementById('realizedPnL').textContent = `$${state.capital.pnl_realized.toFixed(2)}`;
+            document.getElementById('openPositions').textContent = state.open_trades;
+            document.getElementById('totalActions').textContent = state.total_actions;
+            
+            const successRate = state.total_actions > 0 
+                ? ((state.successful_actions / state.total_actions) * 100).toFixed(0)
+                : 0;
+            document.getElementById('successRate').textContent = `${successRate}%`;
+
+            // Update PnL color
+            const pnlElement = document.getElementById('realizedPnL');
+            pnlElement.parentElement.className = 'state-card';
+            if (state.capital.pnl_realized > 0) {
+                pnlElement.parentElement.classList.add('positive');
+            } else if (state.capital.pnl_realized < 0) {
+                pnlElement.parentElement.classList.add('negative');
+            }
+        }
+
+        // Execute step
+        async function executeStep() {
+            const scenario = document.getElementById('scenario').value;
+            
+            try {
+                const response = await fetch('/api/execute-step', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scenario })
+                });
+                
+                const flowTrace = await response.json();
+                displayFlowTrace(flowTrace);
+                
+                // Update state
+                const stateResponse = await fetch('/api/state');
+                const state = await stateResponse.json();
+                updateStateDisplay(state);
+                
+                // Add to history
+                addToHistory(flowTrace);
+            } catch (error) {
+                console.error('Error executing step:', error);
+                alert('Error executing step. Make sure the server is running.');
+            }
+        }
+
+        // Display flow trace
+        function displayFlowTrace(trace) {
+            const flowViz = document.getElementById('flowViz');
+            const flow = trace.flow;
+            
+            let html = `
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Step ${trace.step}: ${trace.scenario.replace('_', ' ').toUpperCase()}</span>
+                        <span class="step-number">1/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>1️⃣ Initial State</h3>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <label>Available Capital</label>
+                                <div class="value">$${flow['1_initial_state'].available_capital.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Deployed Capital</label>
+                                <div class="value">$${flow['1_initial_state'].deployed_capital.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Open Positions</label>
+                                <div class="value">${flow['1_initial_state'].open_positions}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow fade-in">⬇️</div>
+
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Execution State Created</span>
+                        <span class="step-number">2/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>2️⃣ Execution State (Input to Exploit)</h3>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <label>Symbol</label>
+                                <div class="value">${flow['2_execution_state'].symbol}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Current Price</label>
+                                <div class="value">$${flow['2_execution_state'].current_price.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Available Capital</label>
+                                <div class="value">$${flow['2_execution_state'].available_capital.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow fade-in">⬇️</div>
+
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Exploit Module Evaluation</span>
+                        <span class="step-number">3/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>3️⃣ Actions Generated by Exploit</h3>
+                        ${flow['3_actions_generated'].length > 0 
+                            ? flow['3_actions_generated'].map(action => `
+                                <div class="action-card">
+                                    <div class="action-header">${action.type} ${action.symbol}</div>
+                                    <div class="action-details">
+                                        Size: ${(action.size * 100).toFixed(1)}% of capital<br>
+                                        Reason: ${action.reason}
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<p>No actions generated</p>'
+                        }
+                    </div>
+                </div>
+
+                <div class="arrow fade-in">⬇️</div>
+
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Risk Management</span>
+                        <span class="step-number">4/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>4️⃣ Risk Checks</h3>
+                        ${flow['4_risk_checks'].length > 0
+                            ? flow['4_risk_checks'].map(check => `
+                                <div class="action-card ${check.approved ? 'approved' : 'rejected'}">
+                                    <div class="action-header">
+                                        ${check.approved ? '✅' : '❌'} ${check.action}
+                                    </div>
+                                    <div class="action-details">
+                                        Required: $${check.required_capital.toFixed(2)}<br>
+                                        Available: $${check.available_capital.toFixed(2)}<br>
+                                        Status: ${check.reason}
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<p>No actions to check</p>'
+                        }
+                    </div>
+                </div>
+
+                <div class="arrow fade-in">⬇️</div>
+
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Execution</span>
+                        <span class="step-number">5/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>5️⃣ Execution Results</h3>
+                        ${flow['5_execution_results'].length > 0
+                            ? flow['5_execution_results'].map(result => `
+                                <div class="result-card ${result.success ? '' : 'failed'}">
+                                    <div class="action-header">
+                                        ${result.success ? '✅' : '❌'} ${result.action}
+                                    </div>
+                                    <div class="action-details">
+                                        ${result.success 
+                                            ? `Filled: ${(result.filled_size * 100).toFixed(1)}%<br>Fees: $${result.fees.toFixed(2)}`
+                                            : `Error: ${result.error}`
+                                        }
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<p>No executions</p>'
+                        }
+                    </div>
+                </div>
+
+                <div class="arrow fade-in">⬇️</div>
+
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>Final State</span>
+                        <span class="step-number">6/6</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>6️⃣ Updated State</h3>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <label>Available Capital</label>
+                                <div class="value">$${flow['6_final_state'].available_capital.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Deployed Capital</label>
+                                <div class="value">$${flow['6_final_state'].deployed_capital.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Capital Change</label>
+                                <div class="value ${trace.state_changes.capital_change < 0 ? 'negative' : 'positive'}">
+                                    ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="data-item">
+                                <label>Deployed Change</label>
+                                <div class="value">
+                                    ${trace.state_changes.deployed_change >= 0 ? '+' : ''}$${trace.state_changes.deployed_change.toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            flowViz.innerHTML = html;
+        }
+
+        // Add to history
+        function addToHistory(trace) {
+            const history = document.getElementById('history');
+            const timestamp = new Date(trace.timestamp * 1000).toLocaleString();
+            
+            const historyHTML = `
+                <div class="history-item fade-in">
+                    <div class="history-item-header">
+                        <strong>Step ${trace.step}: ${trace.scenario.replace('_', ' ').toUpperCase()}</strong>
+                        <span>${timestamp}</span>
+                    </div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <label>Actions Generated</label>
+                            <div class="value">${trace.flow['3_actions_generated'].length}</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Actions Approved</label>
+                            <div class="value">${trace.flow['4_risk_checks'].filter(c => c.approved).length}</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Executions</label>
+                            <div class="value">${trace.flow['5_execution_results'].length}</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Capital Change</label>
+                            <div class="value ${trace.state_changes.capital_change < 0 ? 'negative' : 'positive'}">
+                                ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (history.querySelector('.empty-state')) {
+                history.innerHTML = '';
+            }
+            
+            history.insertAdjacentHTML('afterbegin', historyHTML);
+        }
+
+        // Reset
+        async function reset() {
+            if (!confirm('Reset the demo to initial state?')) return;
+            
+            try {
+                await fetch('/api/reset', { method: 'POST' });
+                
+                const stateResponse = await fetch('/api/state');
+                const state = await stateResponse.json();
+                updateStateDisplay(state);
+                
+                document.getElementById('flowViz').innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <h2>Ready to Execute</h2>
+                        <p>Select a scenario and click "Execute Step" to see the flow visualization</p>
+                    </div>
+                `;
+                
+                document.getElementById('history').innerHTML = `
+                    <div class="empty-state">
+                        <p>No executions yet. Start executing scenarios to build history.</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error resetting:', error);
+                alert('Error resetting. Make sure the server is running.');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('executeBtn').addEventListener('click', executeStep);
+        document.getElementById('resetBtn').addEventListener('click', reset);
+
+        // Load initial state
+        fetch('/api/state')
+            .then(r => r.json())
+            .then(updateStateDisplay)
+            .catch(console.error);
+    </script>
+</body>
+</html>
