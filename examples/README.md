@@ -2,6 +2,26 @@
 
 This directory contains example code showing how to use the execution engine.
 
+## Automated Backtesting Example **NEW!**
+
+Shows how to use the BacktestAdapter for realistic automated simulations:
+
+```bash
+python examples/automated_backtest_example.py
+```
+
+This example demonstrates:
+- Running automated backtests with the BacktestAdapter
+- Testing different market conditions (trending, volatile, ranging, mixed)
+- Analyzing results with pandas DataFrames
+- Comparing performance across scenarios
+
+**Perfect for:** Integrating realistic simulations into your backtesting workflow.
+
+See [AUTOMATED_DEMO_GUIDE.md](../AUTOMATED_DEMO_GUIDE.md) for complete documentation.
+
+---
+
 ## Running Examples
 
 ### Attribution Example

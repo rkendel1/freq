@@ -139,101 +139,133 @@
 
         .flow-visualization {
             padding: 30px;
+            overflow-x: visible;
+        }
+
+        /* Horizontal Flow Container - Fits to screen */
+        .flow-container {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            width: 100%;
+            padding: 20px 0;
         }
 
         .flow-step {
-            margin-bottom: 30px;
+            flex: 1;
+            min-width: 0;
             border: 2px solid #e9ecef;
             border-radius: 8px;
             overflow: hidden;
             background: white;
+            display: flex;
+            flex-direction: column;
         }
 
         .flow-step-header {
             background: #667eea;
             color: white;
-            padding: 15px 20px;
+            padding: 10px 8px;
             font-weight: 600;
-            font-size: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.2;
         }
 
         .flow-step-header .step-number {
             background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            display: inline-block;
+            margin-top: 4px;
         }
 
         .flow-step-content {
-            padding: 20px;
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .flow-step-content h3 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #667eea;
+            font-weight: 600;
         }
 
         .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .data-item {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
         }
 
         .data-item label {
             display: block;
-            font-size: 12px;
+            font-size: 10px;
             color: #6c757d;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .data-item .value {
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
+            word-break: break-word;
         }
 
-        .action-card {
+        .action-card, .action-item {
             background: #e7f3ff;
             border: 2px solid #007bff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            font-size: 11px;
         }
 
-        .action-card.approved {
+        .action-card.approved, .action-item.approved {
             background: #d4edda;
             border-color: #28a745;
         }
 
-        .action-card.rejected {
+        .action-card.rejected, .action-item.rejected {
             background: #f8d7da;
             border-color: #dc3545;
         }
 
+        .action-card.pending, .action-item.pending {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
         .action-header {
             font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 16px;
+            margin-bottom: 4px;
+            font-size: 12px;
         }
 
         .action-details {
-            font-size: 14px;
+            font-size: 10px;
             color: #495057;
         }
 
         .result-card {
             background: #d4edda;
             border: 2px solid #28a745;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            font-size: 11px;
         }
 
         .result-card.failed {
@@ -241,11 +273,42 @@
             border-color: #dc3545;
         }
 
+        /* Horizontal Arrow - Compact */
         .arrow {
-            text-align: center;
-            font-size: 30px;
+            flex: 0 0 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
             color: #667eea;
-            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .arrow::before {
+            content: '→';
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1400px) {
+            .flow-step-header {
+                font-size: 11px;
+                padding: 8px 6px;
+            }
+            
+            .data-item .value {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .flow-container {
+                gap: 8px;
+            }
+            
+            .arrow {
+                flex: 0 0 20px;
+                font-size: 20px;
+            }
         }
 
         .history-section {
@@ -314,22 +377,59 @@
 
         <div class="controls">
             <div class="control-group">
-                <label for="scenario">Scenario:</label>
-                <select id="scenario">
-                    <option value="profitable_trade_cycle">💰 Profitable Trade Cycle (RECOMMENDED)</option>
-                    <option value="open_long">Open Long Position</option>
-                    <option value="open_short">Open Short Position</option>
-                    <option value="multiple_positions">Multiple Positions</option>
-                    <option value="risk_rejection">Risk Rejection (Too Large)</option>
-                    <option value="close_position">Close Position</option>
-                    <option value="no_action">No Action</option>
+                <label for="mode">Mode:</label>
+                <select id="mode">
+                    <option value="manual">📝 Manual (Step-by-Step)</option>
+                    <option value="automated">🤖 Automated (Realistic Bot)</option>
                 </select>
             </div>
-            <button id="executeBtn">▶️ Execute Step</button>
+            
+            <!-- Manual Mode Controls -->
+            <div id="manualControls">
+                <div class="control-group">
+                    <label for="scenario">Scenario:</label>
+                    <select id="scenario">
+                        <option value="profitable_trade_cycle">💰 Profitable Trade Cycle (RECOMMENDED)</option>
+                        <option value="open_long">Open Long Position</option>
+                        <option value="open_short">Open Short Position</option>
+                        <option value="multiple_positions">Multiple Positions</option>
+                        <option value="risk_rejection">Risk Rejection (Too Large)</option>
+                        <option value="close_position">Close Position</option>
+                        <option value="no_action">No Action</option>
+                    </select>
+                </div>
+                <button id="executeBtn">▶️ Execute Step</button>
+            </div>
+            
+            <!-- Automated Mode Controls -->
+            <div id="automatedControls" style="display: none;">
+                <div class="control-group">
+                    <label for="marketCondition">Market:</label>
+                    <select id="marketCondition">
+                        <option value="mixed">🔀 Mixed (Realistic)</option>
+                        <option value="trending_up">📈 Trending Up</option>
+                        <option value="trending_down">📉 Trending Down</option>
+                        <option value="volatile">⚡ Volatile</option>
+                        <option value="ranging">↔️ Range-Bound</option>
+                    </select>
+                </div>
+                <button id="autoStartBtn">▶️ Start Auto</button>
+                <button id="autoPauseBtn" style="display: none;">⏸️ Pause</button>
+                <div class="control-group" style="margin-left: 10px;">
+                    <label for="speedControl">Speed:</label>
+                    <input type="range" id="speedControl" min="100" max="2000" value="500" step="100" style="width: 120px;">
+                    <span id="speedDisplay">0.5s</span>
+                </div>
+            </div>
+            
             <button id="resetBtn" class="reset">🔄 Reset</button>
         </div>
 
         <div class="state-panel">
+            <div class="state-card">
+                <h3>Current Price</h3>
+                <div class="value" id="currentPrice">$50,000.00</div>
+            </div>
             <div class="state-card">
                 <h3>Available Capital</h3>
                 <div class="value" id="availableCapital">$10,000.00</div>
@@ -447,169 +547,155 @@
             const flow = trace.flow;
             
             let html = `
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Step ${trace.step}: ${trace.scenario.replace('_', ' ').toUpperCase()}</span>
-                        <span class="step-number">1/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>1️⃣ Initial State</h3>
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <label>Available Capital</label>
-                                <div class="value">$${flow['1_initial_state'].available_capital.toFixed(2)}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Deployed Capital</label>
-                                <div class="value">$${flow['1_initial_state'].deployed_capital.toFixed(2)}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Open Positions</label>
-                                <div class="value">${flow['1_initial_state'].open_positions}</div>
+                <div class="flow-container">
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>1️⃣ Initial State</div>
+                            <span class="step-number">Step 1</span>
+                        </div>
+                        <div class="flow-step-content">
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <label>Available Capital</label>
+                                    <div class="value">$${flow['1_initial_state'].available_capital.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Deployed Capital</label>
+                                    <div class="value">$${flow['1_initial_state'].deployed_capital.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Open Positions</label>
+                                    <div class="value">${flow['1_initial_state'].open_positions}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="arrow fade-in">⬇️</div>
+                    <div class="arrow fade-in"></div>
 
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Execution State Created</span>
-                        <span class="step-number">2/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>2️⃣ Execution State (Input to Exploit)</h3>
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <label>Symbol</label>
-                                <div class="value">${flow['2_execution_state'].symbol}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Current Price</label>
-                                <div class="value">$${flow['2_execution_state'].current_price.toFixed(2)}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Available Capital</label>
-                                <div class="value">$${flow['2_execution_state'].available_capital.toFixed(2)}</div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>2️⃣ Execution State</div>
+                            <span class="step-number">Step 2</span>
+                        </div>
+                        <div class="flow-step-content">
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <label>Symbol</label>
+                                    <div class="value">${flow['2_execution_state'].symbol}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Current Price</label>
+                                    <div class="value">$${flow['2_execution_state'].current_price.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Available</label>
+                                    <div class="value">$${flow['2_execution_state'].available_capital.toFixed(2)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="arrow fade-in">⬇️</div>
+                    <div class="arrow fade-in"></div>
 
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Exploit Module Evaluation</span>
-                        <span class="step-number">3/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>3️⃣ Actions Generated by Exploit</h3>
-                        ${flow['3_actions_generated'].length > 0 
-                            ? flow['3_actions_generated'].map(action => `
-                                <div class="action-card">
-                                    <div class="action-header">${action.type} ${action.symbol}</div>
-                                    <div class="action-details">
-                                        Size: ${(action.size * 100).toFixed(1)}% of capital<br>
-                                        Reason: ${action.reason}
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>3️⃣ Actions</div>
+                            <span class="step-number">Step 3</span>
+                        </div>
+                        <div class="flow-step-content">
+                            ${flow['3_actions_generated'].length > 0 
+                                ? flow['3_actions_generated'].map(action => `
+                                    <div class="action-card">
+                                        <div class="action-header">${action.type} ${action.symbol}</div>
+                                        <div class="action-details">
+                                            Size: ${(action.size * 100).toFixed(1)}%<br>
+                                            ${action.reason.substring(0, 40)}...
+                                        </div>
                                     </div>
+                                `).join('')
+                                : '<p style="font-size:11px;color:#999;">No actions</p>'
+                            }
+                        </div>
+                    </div>
+
+                    <div class="arrow fade-in"></div>
+
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>4️⃣ Risk Checks</div>
+                            <span class="step-number">Step 4</span>
+                        </div>
+                        <div class="flow-step-content">
+                            ${flow['4_risk_checks'].length > 0
+                                ? flow['4_risk_checks'].map(check => `
+                                    <div class="action-card ${check.approved ? 'approved' : 'rejected'}">
+                                        <div class="action-header">
+                                            ${check.approved ? '✅' : '❌'} ${check.approved ? 'Approved' : 'Rejected'}
+                                        </div>
+                                        <div class="action-details">
+                                            Required: $${check.required_capital.toFixed(0)}<br>
+                                            ${check.reason}
+                                        </div>
+                                    </div>
+                                `).join('')
+                                : '<p style="font-size:11px;color:#999;">No checks</p>'
+                            }
+                        </div>
+                    </div>
+
+                    <div class="arrow fade-in"></div>
+
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>5️⃣ Execution</div>
+                            <span class="step-number">Step 5</span>
+                        </div>
+                        <div class="flow-step-content">
+                            ${flow['5_execution_results'].length > 0
+                                ? flow['5_execution_results'].map(result => {
+                                    const profitClass = result.profit && result.profit > 0 ? 'approved' : 
+                                                       result.profit && result.profit < 0 ? 'rejected' : 'approved';
+                                    return `
+                                        <div class="result-card ${result.success ? profitClass : 'failed'}">
+                                            <div class="action-header">
+                                                ${result.success ? '✓' : '✗'} ${result.action}
+                                            </div>
+                                            <div class="action-details">
+                                                ${result.profit !== undefined 
+                                                    ? `P&L: $${result.profit.toFixed(2)} (${result.profit_pct.toFixed(1)}%)`
+                                                    : `Size: ${(result.filled_size * 100).toFixed(1)}%`
+                                                }<br>
+                                                Fees: $${result.fees.toFixed(2)}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')
+                                : '<p style="font-size:11px;color:#999;">No executions</p>'
+                            }
+                        </div>
+                    </div>
+
+                    <div class="arrow fade-in"></div>
+
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>6️⃣ Final State</div>
+                            <span class="step-number">Step 6</span>
+                        </div>
+                        <div class="flow-step-content">
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <label>Available Capital</label>
+                                    <div class="value">$${flow['6_final_state'].available_capital.toFixed(2)}</div>
                                 </div>
-                            `).join('')
-                            : '<p>No actions generated</p>'
-                        }
-                    </div>
-                </div>
-
-                <div class="arrow fade-in">⬇️</div>
-
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Risk Management</span>
-                        <span class="step-number">4/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>4️⃣ Risk Checks</h3>
-                        ${flow['4_risk_checks'].length > 0
-                            ? flow['4_risk_checks'].map(check => `
-                                <div class="action-card ${check.approved ? 'approved' : 'rejected'}">
-                                    <div class="action-header">
-                                        ${check.approved ? '✅' : '❌'} ${check.action}
-                                    </div>
-                                    <div class="action-details">
-                                        Required: $${check.required_capital.toFixed(2)}<br>
-                                        Available: $${check.available_capital.toFixed(2)}<br>
-                                        Status: ${check.reason}
-                                    </div>
+                                <div class="data-item">
+                                    <label>Deployed Capital</label>
+                                    <div class="value">$${flow['6_final_state'].deployed_capital.toFixed(2)}</div>
                                 </div>
-                            `).join('')
-                            : '<p>No actions to check</p>'
-                        }
-                    </div>
-                </div>
-
-                <div class="arrow fade-in">⬇️</div>
-
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Execution</span>
-                        <span class="step-number">5/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>5️⃣ Execution Results</h3>
-                        ${flow['5_execution_results'].length > 0
-                            ? flow['5_execution_results'].map(result => `
-                                <div class="result-card ${result.success ? '' : 'failed'}">
-                                    <div class="action-header">
-                                        ${result.success ? '✅' : '❌'} ${result.action}
-                                    </div>
-                                    <div class="action-details">
-                                        ${result.success 
-                                            ? `Filled: ${(result.filled_size * 100).toFixed(1)}%<br>Fees: $${result.fees.toFixed(2)}${
-                                                result.profit ? `<br><strong style="color: #28a745;">💰 PROFIT: $${result.profit.toFixed(2)} (${result.profit_pct.toFixed(1)}%)</strong>` : ''
-                                            }`
-                                            : `Error: ${result.error}`
-                                        }
-                                    </div>
-                                </div>
-                            `).join('')
-                            : '<p>No executions</p>'
-                        }
-                    </div>
-                </div>
-
-                <div class="arrow fade-in">⬇️</div>
-
-                <div class="flow-step fade-in">
-                    <div class="flow-step-header">
-                        <span>Final State</span>
-                        <span class="step-number">6/6</span>
-                    </div>
-                    <div class="flow-step-content">
-                        <h3>6️⃣ Updated State</h3>
-                        ${trace.state_changes.capital_change > 0 
-                            ? '<div style="background: #d4edda; border: 2px solid #28a745; padding: 15px; border-radius: 8px; margin-bottom: 15px;"><strong style="color: #28a745; font-size: 18px;">🎉 SUCCESS! We made money! Capital increased by $' + trace.state_changes.capital_change.toFixed(2) + '</strong></div>' 
-                            : ''
-                        }
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <label>Available Capital</label>
-                                <div class="value">$${flow['6_final_state'].available_capital.toFixed(2)}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Deployed Capital</label>
-                                <div class="value">$${flow['6_final_state'].deployed_capital.toFixed(2)}</div>
-                            </div>
-                            <div class="data-item">
-                                <label>Capital Change</label>
-                                <div class="value ${trace.state_changes.capital_change < 0 ? 'negative' : 'positive'}">
-                                    ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
-                                </div>
-                            </div>
-                            <div class="data-item">
-                                <label>Deployed Change</label>
-                                <div class="value">
-                                    ${trace.state_changes.deployed_change >= 0 ? '+' : ''}$${trace.state_changes.deployed_change.toFixed(2)}
+                                <div class="data-item">
+                                    <label>Open Positions</label>
+                                    <div class="value">${flow['6_final_state'].open_positions}</div>
                                 </div>
                             </div>
                         </div>
@@ -693,9 +779,231 @@
             }
         }
 
+        // Automated mode variables
+        let automatedInterval = null;
+        let automatedSpeed = 500; // milliseconds
+
+        // Toggle between manual and automated mode
+        function toggleMode() {
+            const mode = document.getElementById('mode').value;
+            const manualControls = document.getElementById('manualControls');
+            const automatedControls = document.getElementById('automatedControls');
+            
+            if (mode === 'automated') {
+                manualControls.style.display = 'none';
+                automatedControls.style.display = 'flex';
+            } else {
+                manualControls.style.display = 'flex';
+                automatedControls.style.display = 'none';
+                stopAutomated();
+            }
+        }
+
+        // Start automated mode
+        async function startAutomated() {
+            const condition = document.getElementById('marketCondition').value;
+            
+            // Clear any existing interval to prevent memory leak
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = null;
+            }
+            
+            try {
+                // Start automated mode on server
+                await fetch('/api/automated/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ condition })
+                });
+                
+                // Update UI
+                document.getElementById('autoStartBtn').style.display = 'none';
+                document.getElementById('autoPauseBtn').style.display = 'inline-block';
+                document.getElementById('marketCondition').disabled = true;
+                
+                // Start tick interval
+                automatedInterval = setInterval(executeAutomatedTick, automatedSpeed);
+            } catch (error) {
+                console.error('Error starting automated mode:', error);
+                alert('Error starting automated mode. Make sure the server is running.');
+            }
+        }
+
+        // Pause automated mode
+        function pauseAutomated() {
+            stopAutomated();
+            document.getElementById('autoStartBtn').style.display = 'inline-block';
+            document.getElementById('autoPauseBtn').style.display = 'none';
+        }
+
+        // Stop automated mode
+        async function stopAutomated() {
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = null;
+            }
+            
+            document.getElementById('marketCondition').disabled = false;
+            
+            try {
+                await fetch('/api/automated/stop', { method: 'POST' });
+            } catch (error) {
+                console.error('Error stopping automated mode:', error);
+            }
+        }
+
+        // Execute one automated tick
+        async function executeAutomatedTick() {
+            try {
+                const response = await fetch('/api/automated/tick', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    console.error('Automated tick failed');
+                    return;
+                }
+                
+                const flowTrace = await response.json();
+                
+                // Update current price
+                if (flowTrace.market_data) {
+                    document.getElementById('currentPrice').textContent = 
+                        `$${flowTrace.market_data.price.toFixed(2)}`;
+                }
+                
+                // Update state display
+                if (flowTrace.flow && flowTrace.flow['6_final_state']) {
+                    const finalState = flowTrace.flow['6_final_state'];
+                    const state = {
+                        capital: {
+                            available: finalState.available_capital,
+                            deployed: finalState.deployed_capital,
+                            pnl_realized: finalState.pnl_realized,
+                            pnl_unrealized: 0
+                        },
+                        open_trades: finalState.open_positions,
+                        total_actions: currentState.total_actions + (flowTrace.flow['3_actions_generated'].length > 0 ? 1 : 0),
+                        successful_actions: currentState.successful_actions + flowTrace.flow['5_execution_results'].length
+                    };
+                    updateStateDisplay(state);
+                }
+                
+                // Display flow trace if actions were taken
+                if (flowTrace.flow['3_actions_generated'].length > 0) {
+                    displayAutomatedFlowTrace(flowTrace);
+                    addToHistory(flowTrace);
+                }
+            } catch (error) {
+                console.error('Error in automated tick:', error);
+            }
+        }
+
+        // Display automated flow trace (simplified version)
+        function displayAutomatedFlowTrace(trace) {
+            const flowViz = document.getElementById('flowViz');
+            const flow = trace.flow;
+            const marketData = trace.market_data;
+            
+            let html = `<div class="flow-container">
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <div>📊 Market</div>
+                        <span class="step-number">${marketData.condition}</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <label>Price</label>
+                                <div class="value">$${marketData.price.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add actions if any
+            if (flow['3_actions_generated'].length > 0) {
+                html += `
+                    <div class="arrow fade-in"></div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>🎯 Decision</div>
+                        </div>
+                        <div class="flow-step-content">
+                `;
+                
+                flow['3_actions_generated'].forEach(action => {
+                    html += `
+                        <div class="action-item ${action.type.toLowerCase() === 'open' ? 'approved' : 'pending'}">
+                            <strong>${action.type} ${action.side || ''}</strong><br>
+                            <small>${action.reason.substring(0, 50)}...</small>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            // Add execution results if any
+            if (flow['5_execution_results'].length > 0) {
+                html += `
+                    <div class="arrow fade-in"></div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>✅ Result</div>
+                        </div>
+                        <div class="flow-step-content">
+                `;
+                
+                flow['5_execution_results'].forEach(result => {
+                    if (result.profit !== undefined) {
+                        const profitClass = result.profit > 0 ? 'approved' : 'rejected';
+                        html += `
+                            <div class="action-item ${profitClass}">
+                                <strong>${result.action.substring(0, 20)}</strong><br>
+                                <span>P&L: ${result.profit > 0 ? '+' : ''}$${result.profit.toFixed(2)}</span>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="action-item approved">
+                                <strong>${result.action.substring(0, 20)}</strong><br>
+                                <small>Size: ${(result.filled_size * 100).toFixed(1)}%</small>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            html += `</div>`;
+            flowViz.innerHTML = html;
+        }
+
+        // Update speed control
+        function updateSpeed() {
+            const speed = parseInt(document.getElementById('speedControl').value);
+            automatedSpeed = speed;
+            document.getElementById('speedDisplay').textContent = `${(speed / 1000).toFixed(1)}s`;
+            
+            // Restart interval if running
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = setInterval(executeAutomatedTick, automatedSpeed);
+            }
+        }
+
         // Event listeners
         document.getElementById('executeBtn').addEventListener('click', executeStep);
         document.getElementById('resetBtn').addEventListener('click', reset);
+        document.getElementById('mode').addEventListener('change', toggleMode);
+        document.getElementById('autoStartBtn').addEventListener('click', startAutomated);
+        document.getElementById('autoPauseBtn').addEventListener('click', pauseAutomated);
+        document.getElementById('speedControl').addEventListener('input', updateSpeed);
 
         // Load initial state
         fetch('/api/state')
