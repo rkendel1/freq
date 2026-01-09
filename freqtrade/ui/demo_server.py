@@ -54,6 +54,9 @@ class DemoServer:
         # Flow tracking
         self.flow_history: list[dict[str, Any]] = []
         self.current_step = 0
+        
+        # Track simulated open positions for profit calculation
+        self.demo_positions: list[dict[str, Any]] = []
 
     def setup_routes(self):
         """Setup Flask routes."""
@@ -88,6 +91,8 @@ class DemoServer:
             self.engine_state = create_initial_state(10000.0)
             self.flow_history = []
             self.current_step = 0
+            self.demo_positions = []
+            self.exploit.clear_simulated_positions()
             return jsonify({"status": "reset"})
 
         @self.app.route("/api/execute-step", methods=["POST"])
@@ -186,6 +191,20 @@ class DemoServer:
                 if success:
                     self.engine_state.total_actions += 1
                     self.engine_state.successful_actions += 1
+                    
+                    # Track position for later closing with profit
+                    self.demo_positions.append({
+                        "symbol": action.symbol,
+                        "side": action.side,
+                        "entry_price": exec_state.current_price,
+                        "size": required_capital,
+                        "timestamp": timestamp,
+                    })
+                    
+                    # Also track in exploit for scenario logic
+                    self.exploit.add_simulated_position(
+                        action.symbol, action.side, exec_state.current_price, required_capital
+                    )
 
                     result = ExecutionResult(
                         success=True,
@@ -219,6 +238,58 @@ class DemoServer:
 
                 # Callback to exploit
                 self.exploit.on_execution_result(action, result)
+                
+            elif action.type == ActionType.CLOSE:
+                # Simulate closing position with profit
+                if self.demo_positions:
+                    # Retrieve and remove the first position atomically
+                    position = self.demo_positions.pop(0)
+                    entry_capital = position["size"]
+                    
+                    # Simulate 8% profit on the position
+                    # This is a demo value chosen to clearly show profitable outcomes
+                    # In real trading, profit depends on market movement
+                    profit_pct = 0.08
+                    profit_amount = entry_capital * profit_pct
+                    exit_capital = entry_capital + profit_amount
+                    close_fee = exit_capital * 0.001  # 0.1% fee
+                    net_profit = profit_amount - close_fee
+                    
+                    # Return capital plus profit
+                    self.engine_state.capital.release(entry_capital)
+                    # Add profit to available capital
+                    self.engine_state.capital.available_capital += net_profit
+                    self.engine_state.capital.pnl_realized += net_profit
+                    
+                    # Also remove from exploit tracking (maintains sync with demo_positions)
+                    if self.exploit.simulated_positions:
+                        self.exploit.simulated_positions.pop(0)
+                    
+                    self.engine_state.total_actions += 1
+                    self.engine_state.successful_actions += 1
+                    
+                    result = ExecutionResult(
+                        success=True,
+                        order_ids=["demo_order_456"],
+                        filled_size=1.0,
+                        fees=close_fee,
+                        timestamp=timestamp,
+                    )
+                    
+                    execution_results.append(
+                        {
+                            "action": f"{action.type.name} {action.symbol}",
+                            "success": result.success,
+                            "filled_size": result.filled_size,
+                            "fees": result.fees,
+                            "profit": net_profit,
+                            "profit_pct": profit_pct * 100,
+                            "error": result.error_message,
+                        }
+                    )
+                    
+                    # Callback to exploit
+                    self.exploit.on_execution_result(action, result)
 
         # Step 6: Final State
         final_state = {

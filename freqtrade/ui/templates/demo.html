@@ -308,13 +308,15 @@
     <div class="container">
         <header>
             <h1>🚀 Execution Engine Demo</h1>
-            <p>Visualize how data flows through the system: State → Exploit → Action → Risk → Execution → Result</p>
+            <p>See how to MAKE MONEY: Open Position → Market Moves → Close with Profit</p>
+            <p style="font-size: 0.9em; margin-top: 5px;">💡 Try "Profitable Trade Cycle" to see the complete money-making flow!</p>
         </header>
 
         <div class="controls">
             <div class="control-group">
                 <label for="scenario">Scenario:</label>
                 <select id="scenario">
+                    <option value="profitable_trade_cycle">💰 Profitable Trade Cycle (RECOMMENDED)</option>
                     <option value="open_long">Open Long Position</option>
                     <option value="open_short">Open Short Position</option>
                     <option value="multiple_positions">Multiple Positions</option>
@@ -563,7 +565,9 @@
                                     </div>
                                     <div class="action-details">
                                         ${result.success 
-                                            ? `Filled: ${(result.filled_size * 100).toFixed(1)}%<br>Fees: $${result.fees.toFixed(2)}`
+                                            ? `Filled: ${(result.filled_size * 100).toFixed(1)}%<br>Fees: $${result.fees.toFixed(2)}${
+                                                result.profit ? `<br><strong style="color: #28a745;">💰 PROFIT: $${result.profit.toFixed(2)} (${result.profit_pct.toFixed(1)}%)</strong>` : ''
+                                            }`
                                             : `Error: ${result.error}`
                                         }
                                     </div>
@@ -583,6 +587,10 @@
                     </div>
                     <div class="flow-step-content">
                         <h3>6️⃣ Updated State</h3>
+                        ${trace.state_changes.capital_change > 0 
+                            ? '<div style="background: #d4edda; border: 2px solid #28a745; padding: 15px; border-radius: 8px; margin-bottom: 15px;"><strong style="color: #28a745; font-size: 18px;">🎉 SUCCESS! We made money! Capital increased by $' + trace.state_changes.capital_change.toFixed(2) + '</strong></div>' 
+                            : ''
+                        }
                         <div class="data-grid">
                             <div class="data-item">
                                 <label>Available Capital</label>

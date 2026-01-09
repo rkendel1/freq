@@ -91,12 +91,18 @@ The demo includes several pre-configured scenarios:
 
 | Scenario | Description | Expected Result |
 |----------|-------------|-----------------|
+| **💰 Profitable Trade Cycle** | **RECOMMENDED** - Complete money-making cycle: opens position, then closes with 8% profit | ✅ Shows how money is made! |
 | **Open Long Position** | Opens a 10% long position | ✅ Approved and executed |
 | **Open Short Position** | Opens a 15% short position | ✅ Approved and executed |
 | **Multiple Positions** | Opens two positions (BTC & ETH) | ✅ Both executed |
 | **Risk Rejection** | Tries to open 95% position | ❌ Rejected (exceeds limits) |
-| **Close Position** | Closes an open position | ✅ If positions exist |
+| **Close Position** | Closes an open position | ✅ If positions exist (8% profit) |
 | **No Action** | Generates no actions | ℹ️ No changes to state |
+
+**💡 To see how the system makes money:** Select "Profitable Trade Cycle" and click Execute twice:
+1. First click opens a position (deploys $1,500)
+2. Second click closes it with profit (returns $1,500 + ~$120)
+3. Watch your capital grow from $10,000 to $10,120!
 
 ### Step-by-Step Execution
 
@@ -151,9 +157,125 @@ Click **🔄 Reset** to return to initial state:
 
 ## Example Walkthrough
 
-Let's walk through a complete example:
+Let's walk through a complete example showing **how money is made**:
 
-### Scenario: Open Long Position
+### Scenario: Profitable Trade Cycle (RECOMMENDED)
+
+This scenario demonstrates the complete money-making flow from start to finish.
+
+#### Part 1: Opening the Position
+
+1. **Start**: You have $10,000 available capital
+2. **Select**: "💰 Profitable Trade Cycle" scenario
+3. **Execute**: Click "▶️ Execute Step" (first time)
+
+**What happens:**
+
+```
+Initial State:
+  Available: $10,000
+  Deployed: $0
+  Realized PnL: $0
+
+↓ Exploit Evaluation
+
+Action Generated:
+  OPEN LONG BTC/USDT
+  Size: 15% ($1,500)
+  Reason: "Demo: Opening position for profitable trade cycle"
+
+↓ Risk Check
+
+Risk Validation:
+  Required: $1,500
+  Available: $10,000
+  Result: ✅ APPROVED
+
+↓ Execution
+
+Execution Result:
+  ✅ SUCCESS
+  Filled: 15%
+  Fees: $1.50
+
+↓ Final State
+
+State After Opening:
+  Available: $8,500
+  Deployed: $1,500
+  Realized PnL: $0
+  Capital Change: -$1,500 (moved to deployed)
+```
+
+**At this point:** Capital is deployed but no profit yet. This is normal!
+
+---
+
+#### Part 2: Closing with Profit (THIS IS WHERE WE MAKE MONEY!)
+
+4. **Execute Again**: Click "▶️ Execute Step" (second time)
+
+**What happens:**
+
+```
+Current State:
+  Available: $8,500
+  Deployed: $1,500
+  Realized PnL: $0
+
+↓ Exploit Evaluation
+
+Action Generated:
+  CLOSE LONG BTC/USDT
+  Size: 100%
+  Reason: "Demo: Closing position with profit - THIS IS WHERE WE MAKE MONEY!"
+
+↓ Risk Check
+
+Risk Validation:
+  N/A (closing positions are always allowed)
+
+↓ Execution (with simulated 8% profit)
+
+Execution Result:
+  ✅ SUCCESS
+  Filled: 100%
+  Fees: $1.62
+  💰 PROFIT: $118.50 (8.0%)  ← THIS IS THE KEY LINE!
+
+↓ Final State
+
+State After Closing:
+  Available: $10,118.50  ← Capital returned WITH profit!
+  Deployed: $0
+  Realized PnL: $118.50  ← PROFIT MADE!
+  Capital Change: +$118.50 (MONEY MADE!)
+```
+
+**🎉 SUCCESS MESSAGE DISPLAYED:**
+```
+SUCCESS! We made money! Capital increased by $118.50
+```
+
+---
+
+### Result Summary
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Total Capital | $10,000.00 | $10,118.50 | **+$118.50** |
+| Realized PnL | $0.00 | $118.50 | **+$118.50** |
+| Status | No trades | Completed 1 profitable trade | ✅ **Money Made!** |
+
+**This is how the system makes money!** The complete cycle of:
+1. Deploy capital (open position)
+2. Market moves in your favor (simulated 8% gain)
+3. Close position and realize profit
+4. Capital returns with gains added
+
+---
+
+### Other Example: Open Long Position Only
 
 1. **Start**: You have $10,000 available capital
 2. **Select**: "Open Long Position" scenario

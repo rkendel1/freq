@@ -53,19 +53,25 @@ See **[SETUP.md](SETUP.md)** for complete setup guide covering:
 
 ## What You'll See
 
-The demo shows a **6-step flow visualization**:
+The demo shows a **6-step flow visualization** that demonstrates **how the system makes money**:
 
 1. **Initial State** - Starting capital and positions
 2. **Execution State** - Data sent to exploit module
 3. **Actions Generated** - Trading actions proposed by exploit
 4. **Risk Checks** - Actions validated against limits (✅ or ❌)
-5. **Execution Results** - Results from executing approved actions
-6. **Final State** - Updated capital and positions
+5. **Execution Results** - Results from executing approved actions **with profit shown**
+6. **Final State** - Updated capital and positions **showing gains**
+
+**💡 Key Feature:** The "Profitable Trade Cycle" scenario shows the complete money-making flow:
+- **Step 1:** Opens a position (deploys capital)
+- **Step 2:** Closes position with 8% profit (capital returns with gains)
+- **Result:** You can clearly see capital increase and profit being realized!
 
 ## Available Scenarios
 
 | Scenario | What It Does |
 |----------|--------------|
+| **💰 Profitable Trade Cycle** | **RECOMMENDED - Shows complete money-making flow!** Opens position, then closes it with 8% profit to demonstrate how the system makes money |
 | Open Long Position | Opens 10% long position (✅ approved) |
 | Open Short Position | Opens 15% short position (✅ approved) |
 | Multiple Positions | Opens 2 positions simultaneously |
@@ -79,6 +85,22 @@ The demo shows a **6-step flow visualization**:
 - **Step-by-Step Flow** - Watch data transform through each component
 - **Execution History** - Complete timeline of all actions
 - **Interactive** - Select scenarios and execute step-by-step
+- **Profit Visualization** - See exactly how money is made when positions close with gains
+
+## How to See Money Being Made
+
+**Follow these steps to see a complete profitable trade:**
+
+1. **Reset** - Click "🔄 Reset" to start fresh with $10,000
+2. **Select "Profitable Trade Cycle"** from the dropdown (the top option)
+3. **Execute Step 1** - Click "▶️ Execute Step" to open a position
+   - You'll see $1,500 move from Available to Deployed capital
+4. **Execute Step 2** - Click "▶️ Execute Step" again to close with profit
+   - 🎉 You'll see the position close with **8% profit (~$120)**
+   - Capital returns to Available **plus the profit**
+   - Realized PnL shows your gains!
+
+**Result:** Your capital is now $10,120 instead of $10,000. You made money! 💰
 
 ## Running Tests
 

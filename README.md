@@ -48,7 +48,7 @@ This single command will:
 
 ## 🎯 Demo UI - See It In Action
 
-**Interactive demo UI for visualizing the execution flow:**
+**Interactive demo UI showing HOW THE SYSTEM MAKES MONEY:**
 
 ```bash
 # Quick start - just run this script
@@ -61,14 +61,20 @@ This single command will:
 
 ![Demo UI Screenshot](https://github.com/user-attachments/assets/d01df924-4108-478d-a0fd-9cc0a5108209)
 
-The demo UI shows step-by-step how data flows through the system:
-- **State** → **Exploit** → **Action** → **Risk** → **Execution** → **Result**
+The demo UI shows the complete money-making cycle:
+- **Open Position** → Deploy capital into a trade
+- **Market Movement** → Price moves in your favor  
+- **Close Position** → Realize profit and get capital back **with gains**
 
-Try different scenarios to see how:
-- Actions are generated from state
-- Risk limits approve or reject actions
-- Capital moves through the system
-- One component's output becomes another's input
+**💡 Try the "Profitable Trade Cycle" scenario** to see a complete example:
+1. Opens a 15% position (deploys $1,500)
+2. Closes with 8% profit (returns $1,500 + $120 profit)
+3. Your capital grows from $10,000 → $10,120
+
+This clearly demonstrates:
+- How capital moves through the system
+- Where profit is generated
+- How money is made through trading
 
 📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)** | 📝 **[Quick Start Guide](DEMO_UI_QUICKSTART.md)**
 
