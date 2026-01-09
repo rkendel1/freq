@@ -93,6 +93,7 @@ Documentation = "https://freqtrade.io"
 
 [project.scripts]
 freqtrade = "freqtrade.main:main"
+app = "api.app:app"
 
 [tool.setuptools]
 include-package-data = true
