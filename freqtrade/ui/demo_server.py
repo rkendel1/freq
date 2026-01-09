@@ -27,6 +27,7 @@ from freqtrade.exploits.exploit_module import ExecutionState, ExecutionResult
 from freqtrade.ui.demo_exploit import DemoExploit
 from freqtrade.ui.automated_exploit import AutomatedExploit
 from freqtrade.ui.market_simulator import MarketSimulator, MarketCondition
+from freqtrade.exploits.parameter_manager import ExploitParameterManager
 from dspy.advisor import DSPyAdvisor
 from freqtrade.metrics.attribution import TradeAttribution
 from datetime import datetime, timezone
@@ -72,6 +73,9 @@ class DemoServer:
         # DSPy Advisor integration
         self.dspy_advisor = DSPyAdvisor(min_trades_for_suggestion=5, suggestion_confidence_threshold=0.5)
         self.trade_counter = 0  # Track trades for attribution
+        
+        # Exploit Parameter Manager for all exploits
+        self.exploit_manager = ExploitParameterManager({})
 
     def setup_routes(self):
         """Setup Flask routes."""
@@ -284,6 +288,74 @@ class DemoServer:
                     "stop_loss": self.automated_exploit.stop_loss,
                     "min_ticks_between_actions": self.automated_exploit.min_ticks_between_actions,
                 }
+            })
+
+        @self.app.route("/api/exploits/list")
+        def list_exploits():
+            """List all available exploits with their info."""
+            exploits = self.exploit_manager.list_exploits()
+            # Add the demo exploit to the list
+            exploits.insert(0, {
+                "name": "automated_demo",
+                "display_name": "Automated Demo",
+                "description": "Demo exploit for UI testing (currently active)",
+            })
+            return jsonify({"exploits": exploits})
+
+        @self.app.route("/api/exploits/<exploit_name>/parameters")
+        def get_exploit_parameters(exploit_name):
+            """Get parameters for a specific exploit."""
+            if exploit_name == "automated_demo":
+                # Return demo exploit parameters
+                return jsonify({
+                    "parameters": {
+                        "position_size": self.automated_exploit.position_size,
+                        "profit_target": self.automated_exploit.profit_target,
+                        "stop_loss": self.automated_exploit.stop_loss,
+                        "min_ticks_between_actions": self.automated_exploit.min_ticks_between_actions,
+                    },
+                    "schema": {
+                        "position_size": {"type": "float", "min": 0.01, "max": 0.50, "description": "Position size as fraction of capital"},
+                        "profit_target": {"type": "float", "min": 0.01, "max": 0.20, "description": "Profit target percentage"},
+                        "stop_loss": {"type": "float", "min": 0.01, "max": 0.15, "description": "Stop loss percentage"},
+                        "min_ticks_between_actions": {"type": "int", "min": 1, "max": 20, "description": "Cooldown period in ticks"},
+                    }
+                })
+            
+            # Get parameters for production exploits
+            parameters = self.exploit_manager.get_parameters(exploit_name)
+            schema = self.exploit_manager.get_parameter_schema(exploit_name)
+            
+            if parameters is None:
+                return jsonify({"error": f"Exploit '{exploit_name}' not found"}), 404
+            
+            return jsonify({
+                "parameters": parameters,
+                "schema": schema or {}
+            })
+
+        @self.app.route("/api/exploits/<exploit_name>/parameters", methods=["POST"])
+        def update_exploit_parameters(exploit_name):
+            """Update parameters for a specific exploit."""
+            data = request.json or {}
+            
+            if exploit_name == "automated_demo":
+                # Update demo exploit (same as existing endpoint)
+                return update_parameters()
+            
+            # Update production exploit
+            success = self.exploit_manager.update_parameters(exploit_name, data)
+            
+            if not success:
+                return jsonify({"error": f"Failed to update exploit '{exploit_name}'"}), 400
+            
+            # Get updated parameters
+            updated_params = self.exploit_manager.get_parameters(exploit_name)
+            
+            return jsonify({
+                "status": "updated",
+                "exploit": exploit_name,
+                "parameters": updated_params
             })
 
         @self.app.route("/api/execute-step", methods=["POST"])

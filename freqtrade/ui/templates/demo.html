@@ -640,6 +640,14 @@
                 Adjust parameters manually or apply DSPy suggestions to optimize performance.
             </p>
             
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 600; margin-right: 10px;">Select Exploit:</label>
+                <select id="exploitSelector" style="padding: 8px 15px; border: 2px solid #dee2e6; border-radius: 5px; font-size: 14px; cursor: pointer;">
+                    <option value="automated_demo" selected>Automated Demo (Active)</option>
+                </select>
+                <button id="refreshParameters" style="margin-left: 10px; padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">🔄 Refresh</button>
+            </div>
+            
             <div class="dspy-grid">
                 <div class="dspy-card">
                     <h3>⚙️ Current Parameters</h3>
@@ -1396,6 +1404,8 @@
         document.getElementById('applyProfitTarget').addEventListener('click', () => applyDspySuggestion('profit_target'));
         document.getElementById('applyStopLoss').addEventListener('click', () => applyDspySuggestion('stop_loss'));
         document.getElementById('applyCooldown').addEventListener('click', () => applyDspySuggestion('min_ticks_between_actions'));
+        document.getElementById('exploitSelector').addEventListener('change', loadExploitParameters);
+        document.getElementById('refreshParameters').addEventListener('click', loadExploitParameters);
 
         // DSPy Functions
         let currentSuggestions = {};
@@ -1568,11 +1578,86 @@
             }
         }, 5000); // Every 5 seconds
 
+        // Load exploit list on page load
+        async function loadExploitList() {
+            try {
+                const response = await fetch('/api/exploits/list');
+                const data = await response.json();
+                
+                const selector = document.getElementById('exploitSelector');
+                selector.innerHTML = '';
+                
+                data.exploits.forEach(exploit => {
+                    const option = document.createElement('option');
+                    option.value = exploit.name;
+                    option.textContent = `${exploit.display_name}${exploit.name === 'automated_demo' ? ' (Active)' : ''}`;
+                    option.title = exploit.description;
+                    selector.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading exploit list:', error);
+            }
+        }
+
+        // Load parameters for selected exploit
+        async function loadExploitParameters() {
+            const exploitName = document.getElementById('exploitSelector').value;
+            
+            try {
+                const response = await fetch(`/api/exploits/${exploitName}/parameters`);
+                const data = await response.json();
+                
+                // Update parameter inputs dynamically
+                const paramsContainer = document.getElementById('currentParameters');
+                paramsContainer.innerHTML = '';
+                
+                const params = data.parameters;
+                const schema = data.schema;
+                
+                Object.keys(params).forEach(paramName => {
+                    const value = params[paramName];
+                    const paramSchema = schema[paramName] || {};
+                    const type = paramSchema.type || 'float';
+                    const min = paramSchema.min || 0;
+                    const max = paramSchema.max || 1;
+                    const step = type === 'int' ? 1 : 0.01;
+                    
+                    const row = document.createElement('div');
+                    row.className = 'parameter-row';
+                    row.innerHTML = `
+                        <div class="parameter-label">${formatParameterName(paramName)}</div>
+                        <div class="parameter-value">
+                            <input type="number" id="param_${paramName}" 
+                                   min="${min}" max="${max}" step="${step}" value="${value}">
+                        </div>
+                        <div class="parameter-arrow">→</div>
+                        <div class="suggestion-value" id="suggest_${paramName}">—</div>
+                    `;
+                    paramsContainer.appendChild(row);
+                });
+                
+                // Add update button
+                const updateBtn = document.createElement('div');
+                updateBtn.style.marginTop = '15px';
+                updateBtn.innerHTML = '<button id="updateParametersBtn" style="width: 100%;">💾 Update Parameters</button>';
+                paramsContainer.appendChild(updateBtn);
+                
+                // Re-attach event listener
+                document.getElementById('updateParametersBtn').addEventListener('click', updateParameters);
+                
+            } catch (error) {
+                console.error('Error loading exploit parameters:', error);
+            }
+        }
+
         // Load initial state
         fetch('/api/state')
             .then(r => r.json())
             .then(updateStateDisplay)
             .catch(console.error);
+        
+        // Load exploit list
+        loadExploitList();
     </script>
 </body>
 </html>
