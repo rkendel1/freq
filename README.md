@@ -25,9 +25,30 @@ but contains **no trading logic** or signal generation.
 - ✅ Risk management primitives
 - ✅ Capital and state isolation
 
+## 🚀 Quick Start - Run Locally
+
+**Pushbutton startup - get the platform running in seconds:**
+
+```bash
+# Linux/Mac
+./start.sh
+
+# Windows
+./start.ps1
+```
+
+This single command will:
+- ✅ Check dependencies and install if needed
+- ✅ Start the demo UI server
+- ✅ Open the platform at http://127.0.0.1:5000
+
+📖 **[Complete Local Development Guide](LOCAL_DEVELOPMENT.md)** - Full setup instructions, troubleshooting, and development workflow
+
+---
+
 ## 🎯 Demo UI - See It In Action
 
-**NEW:** Interactive demo UI for visualizing the execution flow!
+**Interactive demo UI for visualizing the execution flow:**
 
 ```bash
 # Quick start - just run this script
