@@ -23,8 +23,8 @@ from freqtrade.exploits.exploit_module import (
 
 def test_null_exploit_module_exists():
     """Test that NullExploitModule exists and can be instantiated."""
-    exploit = NullExploitModule()
-    assert isinstance(exploit, ExploitModule)
+    null_module = NullExploitModule()
+    assert isinstance(null_module, ExploitModule)
 
 
 def test_null_exploit_never_proposes_actions():
@@ -34,7 +34,7 @@ def test_null_exploit_never_proposes_actions():
     This is the key test: with a NullExploitModule, the engine should
     do nothing because no actions are ever proposed.
     """
-    exploit = NullExploitModule()
+    null_module = NullExploitModule()
     
     state = ExecutionState(
         symbol="BTC/USDT",
@@ -46,7 +46,7 @@ def test_null_exploit_never_proposes_actions():
         timestamp=1000,
     )
     
-    actions = exploit.evaluate(state)
+    actions = null_module.evaluate(state)
     
     assert isinstance(actions, list)
     assert len(actions) == 0, "NullExploitModule should never propose actions"
@@ -59,7 +59,7 @@ def test_engine_with_no_exploits_does_nothing():
     This is the core requirement: the engine cannot trade by itself.
     It only executes Actions proposed by ExploitModules.
     """
-    exploit = NullExploitModule()
+    null_module = NullExploitModule()
     
     # Simulate multiple evaluation cycles
     state1 = ExecutionState(
@@ -83,8 +83,8 @@ def test_engine_with_no_exploits_does_nothing():
     )
     
     # Evaluate multiple times - should always return no actions
-    actions1 = exploit.evaluate(state1)
-    actions2 = exploit.evaluate(state2)
+    actions1 = null_module.evaluate(state1)
+    actions2 = null_module.evaluate(state2)
     
     # The "engine" (whatever evaluates these actions) would execute them
     # Since there are no actions, no trades would be opened

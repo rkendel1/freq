@@ -30,7 +30,7 @@ def check_no_strategy_imports():
     failed = False
     
     for py_file in core_path.glob("*.py"):
-        with open(py_file, 'r') as f:
+        with open(py_file, 'r', encoding='utf-8') as f:
             content = f.read()
             if 'IStrategy' in content or 'from freqtrade.strategy' in content:
                 print(f"{RED}✗ FAIL: {py_file} contains IStrategy reference{RESET}")
@@ -65,7 +65,8 @@ def check_no_signal_functions():
     failed = False
     
     for py_file in core_path.glob("*.py"):
-        with open(py_file, 'r') as f:
+        file_has_signals = False
+        with open(py_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
             for i, line in enumerate(lines, 1):
                 # Skip comments
@@ -75,8 +76,9 @@ def check_no_signal_functions():
                     if func in line and 'def ' + func in line:
                         print(f"{RED}✗ FAIL: {py_file}:{i} contains {func}{RESET}")
                         failed = True
+                        file_has_signals = True
         
-        if not failed:
+        if not file_has_signals:
             print(f"{GREEN}✓ PASS: {py_file} has no signal functions{RESET}")
     
     if not failed:
