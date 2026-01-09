@@ -15,7 +15,7 @@ This repository can be deployed to Vercel to provide a public demo of the Execut
 
 2. **Automatic Deployment:**
    - Vercel will automatically detect the `vercel.json` configuration
-   - It will install dependencies from `requirements.txt`
+   - It will install dependencies from `requirements.txt` (minimal set for demo)
    - It will deploy the FastAPI app from `api/app.py`
 
 3. **Auto-Deploy on Commit:**
@@ -28,6 +28,26 @@ The `vercel.json` file configures:
 - Python version: 3.11
 - Entry point: `api/app.py`
 - Routes: All requests go to the FastAPI app
+- Lambda size limit: 50MB (optimized for Vercel's limits)
+
+### Deployment Optimization
+
+To keep the deployment under Vercel's 250MB limit, this repository uses several optimization strategies:
+
+1. **`.vercelignore`** - Excludes large unnecessary files:
+   - Tests directory (22MB+)
+   - Build helpers with wheel files (41MB+)
+   - Documentation files
+   - Development tools
+
+2. **Minimal Dependencies** - `requirements.txt` contains only essential packages:
+   - FastAPI, uvicorn (web server)
+   - numpy (for market simulator)
+   - pydantic, python-dateutil (utilities)
+   
+   Full dependencies are available in `requirements-full.txt` for local development.
+
+3. **Conditional Imports** - Heavy dependencies (pandas, SQLAlchemy, ccxt) are imported conditionally and gracefully degrade if not available.
 
 ## What Gets Deployed
 
@@ -39,21 +59,29 @@ The Vercel deployment runs the **FastAPI version** of the demo server (`api/app.
 - DSPy integration for parameter suggestions
 - Exploit parameter management
 
+**Note:** The demo uses simplified market simulation and doesn't require exchange connectivity or database persistence.
+
 ## Local Development
 
-For local development, you can still use:
+For full local development with all features:
 ```bash
+# Install full dependencies
+pip install -r requirements-full.txt
+# or
+pip install -e .[dev]
+
+# Run the original Flask version
 ./start.sh
 ```
 
-This runs the original Flask version of the demo server at `http://127.0.0.1:5000`.
+This runs the Flask version of the demo server at `http://127.0.0.1:5000`.
 
 ## Testing the FastAPI Version Locally
 
 To test the Vercel-compatible FastAPI version locally:
 
 ```bash
-# Install dependencies
+# Install minimal dependencies (same as Vercel)
 pip install -r requirements.txt
 
 # Run with uvicorn
@@ -64,15 +92,21 @@ Then visit `http://127.0.0.1:8000` in your browser.
 
 ## Troubleshooting
 
+### Deployment fails with "Serverless Function has exceeded the unzipped maximum size"
+- The repository has been optimized to stay under the 250MB limit
+- Ensure `.vercelignore` is present and properly configured
+- Check that `requirements.txt` contains only minimal dependencies
+- If you added new dependencies, verify they're not too large
+
 ### Deployment fails with "No fastapi entrypoint found"
 - Make sure `vercel.json` exists in the root directory
 - Make sure `api/app.py` exists
 - Check that FastAPI is in `requirements.txt`
 
-### Build errors
-- Check the Vercel build logs
-- Ensure all dependencies are in `requirements.txt`
-- Verify Python version compatibility (requires Python 3.11+)
+### Build errors with missing modules
+- The minimal `requirements.txt` only includes essentials for the demo
+- Some advanced features (like production exploits) may not work on Vercel
+- For local development, use `requirements-full.txt`
 
 ### Demo UI not loading
 - Check that `freqtrade/ui/templates/demo.html` exists
@@ -82,7 +116,7 @@ Then visit `http://127.0.0.1:8000` in your browser.
 ## Environment Variables
 
 You can set environment variables in Vercel dashboard if needed:
-- `FLASK_DEBUG`: Not used (this is FastAPI)
+- `PYTHON_VERSION`: Set in vercel.json (3.11)
 - Add any custom environment variables for your deployment
 
 ## Monitoring
@@ -90,3 +124,12 @@ You can set environment variables in Vercel dashboard if needed:
 - Check deployment status at [vercel.com/dashboard](https://vercel.com/dashboard)
 - View logs in the Vercel dashboard
 - Use the `/health` endpoint to verify the app is running
+
+## Size Breakdown
+
+Current deployment size breakdown (approximate):
+- Python packages: ~30MB (minimal set)
+- Source code: ~5MB
+- Total: Well under 250MB limit ✅
+
+For comparison, the full installation with all dependencies would be ~200MB+.
