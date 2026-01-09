@@ -456,10 +456,22 @@
         }
         
         .history-item.expanded .history-item-details {
-            max-height: 1000px;
+            max-height: none;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 2px solid #e9ecef;
+        }
+        
+        .history-item.border-profit {
+            border-left-color: #28a745;
+        }
+        
+        .history-item.border-loss {
+            border-left-color: #dc3545;
+        }
+        
+        .history-item.border-neutral {
+            border-left-color: #667eea;
         }
         
         /* Individual Trade Details */
@@ -1478,14 +1490,14 @@
                 }
             });
             
-            // Determine border color based on profit
-            let borderColor = '#667eea';
+            // Determine border class based on profit
+            let borderClass = 'border-neutral';
             if (hasProfit) {
-                borderColor = profit > 0 ? '#28a745' : '#dc3545';
+                borderClass = profit > 0 ? 'border-profit' : 'border-loss';
             }
             
             const historyHTML = `
-                <div class="history-item fade-in" style="border-left-color: ${borderColor}" onclick="toggleHistoryItem(this)">
+                <div class="history-item fade-in ${borderClass}" data-step="${trace.step}">
                     <div class="history-item-header">
                         <div class="history-item-title">
                             <strong style="font-size: 14px;">Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
@@ -1525,14 +1537,17 @@
             
             history.insertAdjacentHTML('afterbegin', historyHTML);
             
+            // Add event listener to the new history item using event delegation
+            const newItem = history.firstElementChild;
+            if (newItem && newItem.classList.contains('history-item')) {
+                newItem.addEventListener('click', function() {
+                    this.classList.toggle('expanded');
+                });
+            }
+            
             // Update metrics and chart
             updateTransactionMetrics();
             updateTransactionChart();
-        }
-        
-        // Toggle history item expansion
-        function toggleHistoryItem(element) {
-            element.classList.toggle('expanded');
         }
         
         // Update transaction chart
