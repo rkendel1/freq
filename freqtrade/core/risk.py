@@ -64,8 +64,8 @@ class RiskManager:
     def check_action(
         self,
         action: Action,
-        available_capital: float,
-        deployed_capital: float,
+        available: float,
+        deployed: float,
         open_positions: int,
         current_timestamp: int,
     ) -> tuple[bool, Optional[str]]:
@@ -74,8 +74,8 @@ class RiskManager:
         
         Args:
             action: The proposed action
-            available_capital: Available capital
-            deployed_capital: Currently deployed capital
+            available: Available capital
+            deployed: Currently deployed capital
             open_positions: Number of open positions
             current_timestamp: Current timestamp
             
@@ -90,11 +90,11 @@ class RiskManager:
         
         # Check exposure limit
         if action.type in (ActionType.OPEN_LONG, ActionType.OPEN_SHORT):
-            total_capital = available_capital + deployed_capital
+            total_capital = available + deployed
             if total_capital == 0:
                 return False, "No capital available"
             
-            exposure = deployed_capital / total_capital
+            exposure = deployed / total_capital
             if exposure >= self.limits.max_total_exposure:
                 return False, f"Max exposure reached: {exposure:.2%}"
         
