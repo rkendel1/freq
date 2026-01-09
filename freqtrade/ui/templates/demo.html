@@ -314,22 +314,59 @@
 
         <div class="controls">
             <div class="control-group">
-                <label for="scenario">Scenario:</label>
-                <select id="scenario">
-                    <option value="profitable_trade_cycle">💰 Profitable Trade Cycle (RECOMMENDED)</option>
-                    <option value="open_long">Open Long Position</option>
-                    <option value="open_short">Open Short Position</option>
-                    <option value="multiple_positions">Multiple Positions</option>
-                    <option value="risk_rejection">Risk Rejection (Too Large)</option>
-                    <option value="close_position">Close Position</option>
-                    <option value="no_action">No Action</option>
+                <label for="mode">Mode:</label>
+                <select id="mode">
+                    <option value="manual">📝 Manual (Step-by-Step)</option>
+                    <option value="automated">🤖 Automated (Realistic Bot)</option>
                 </select>
             </div>
-            <button id="executeBtn">▶️ Execute Step</button>
+            
+            <!-- Manual Mode Controls -->
+            <div id="manualControls">
+                <div class="control-group">
+                    <label for="scenario">Scenario:</label>
+                    <select id="scenario">
+                        <option value="profitable_trade_cycle">💰 Profitable Trade Cycle (RECOMMENDED)</option>
+                        <option value="open_long">Open Long Position</option>
+                        <option value="open_short">Open Short Position</option>
+                        <option value="multiple_positions">Multiple Positions</option>
+                        <option value="risk_rejection">Risk Rejection (Too Large)</option>
+                        <option value="close_position">Close Position</option>
+                        <option value="no_action">No Action</option>
+                    </select>
+                </div>
+                <button id="executeBtn">▶️ Execute Step</button>
+            </div>
+            
+            <!-- Automated Mode Controls -->
+            <div id="automatedControls" style="display: none;">
+                <div class="control-group">
+                    <label for="marketCondition">Market:</label>
+                    <select id="marketCondition">
+                        <option value="mixed">🔀 Mixed (Realistic)</option>
+                        <option value="trending_up">📈 Trending Up</option>
+                        <option value="trending_down">📉 Trending Down</option>
+                        <option value="volatile">⚡ Volatile</option>
+                        <option value="ranging">↔️ Range-Bound</option>
+                    </select>
+                </div>
+                <button id="autoStartBtn">▶️ Start Auto</button>
+                <button id="autoPauseBtn" style="display: none;">⏸️ Pause</button>
+                <div class="control-group" style="margin-left: 10px;">
+                    <label for="speedControl">Speed:</label>
+                    <input type="range" id="speedControl" min="100" max="2000" value="500" step="100" style="width: 120px;">
+                    <span id="speedDisplay">0.5s</span>
+                </div>
+            </div>
+            
             <button id="resetBtn" class="reset">🔄 Reset</button>
         </div>
 
         <div class="state-panel">
+            <div class="state-card">
+                <h3>Current Price</h3>
+                <div class="value" id="currentPrice">$50,000.00</div>
+            </div>
             <div class="state-card">
                 <h3>Available Capital</h3>
                 <div class="value" id="availableCapital">$10,000.00</div>
@@ -693,9 +730,231 @@
             }
         }
 
+        // Automated mode variables
+        let automatedInterval = null;
+        let automatedSpeed = 500; // milliseconds
+
+        // Toggle between manual and automated mode
+        function toggleMode() {
+            const mode = document.getElementById('mode').value;
+            const manualControls = document.getElementById('manualControls');
+            const automatedControls = document.getElementById('automatedControls');
+            
+            if (mode === 'automated') {
+                manualControls.style.display = 'none';
+                automatedControls.style.display = 'flex';
+            } else {
+                manualControls.style.display = 'flex';
+                automatedControls.style.display = 'none';
+                stopAutomated();
+            }
+        }
+
+        // Start automated mode
+        async function startAutomated() {
+            const condition = document.getElementById('marketCondition').value;
+            
+            try {
+                // Start automated mode on server
+                await fetch('/api/automated/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ condition })
+                });
+                
+                // Update UI
+                document.getElementById('autoStartBtn').style.display = 'none';
+                document.getElementById('autoPauseBtn').style.display = 'inline-block';
+                document.getElementById('marketCondition').disabled = true;
+                
+                // Start tick interval
+                automatedInterval = setInterval(executeAutomatedTick, automatedSpeed);
+            } catch (error) {
+                console.error('Error starting automated mode:', error);
+                alert('Error starting automated mode. Make sure the server is running.');
+            }
+        }
+
+        // Pause automated mode
+        function pauseAutomated() {
+            stopAutomated();
+            document.getElementById('autoStartBtn').style.display = 'inline-block';
+            document.getElementById('autoPauseBtn').style.display = 'none';
+        }
+
+        // Stop automated mode
+        async function stopAutomated() {
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = null;
+            }
+            
+            document.getElementById('marketCondition').disabled = false;
+            
+            try {
+                await fetch('/api/automated/stop', { method: 'POST' });
+            } catch (error) {
+                console.error('Error stopping automated mode:', error);
+            }
+        }
+
+        // Execute one automated tick
+        async function executeAutomatedTick() {
+            try {
+                const response = await fetch('/api/automated/tick', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    console.error('Automated tick failed');
+                    return;
+                }
+                
+                const flowTrace = await response.json();
+                
+                // Update current price
+                if (flowTrace.market_data) {
+                    document.getElementById('currentPrice').textContent = 
+                        `$${flowTrace.market_data.price.toFixed(2)}`;
+                }
+                
+                // Update state display
+                if (flowTrace.flow && flowTrace.flow['6_final_state']) {
+                    const finalState = flowTrace.flow['6_final_state'];
+                    const state = {
+                        capital: {
+                            available: finalState.available_capital,
+                            deployed: finalState.deployed_capital,
+                            pnl_realized: finalState.pnl_realized,
+                            pnl_unrealized: 0
+                        },
+                        open_trades: finalState.open_positions,
+                        total_actions: currentState.total_actions + (flowTrace.flow['3_actions_generated'].length > 0 ? 1 : 0),
+                        successful_actions: currentState.successful_actions + flowTrace.flow['5_execution_results'].length
+                    };
+                    updateStateDisplay(state);
+                }
+                
+                // Display flow trace if actions were taken
+                if (flowTrace.flow['3_actions_generated'].length > 0) {
+                    displayAutomatedFlowTrace(flowTrace);
+                    addToHistory(flowTrace);
+                }
+            } catch (error) {
+                console.error('Error in automated tick:', error);
+            }
+        }
+
+        // Display automated flow trace (simplified version)
+        function displayAutomatedFlowTrace(trace) {
+            const flowViz = document.getElementById('flowViz');
+            const flow = trace.flow;
+            const marketData = trace.market_data;
+            
+            let html = `
+                <div class="flow-step fade-in">
+                    <div class="flow-step-header">
+                        <span>🤖 Automated Tick ${trace.step}: ${marketData.condition.toUpperCase()}</span>
+                        <span class="step-number">Auto</span>
+                    </div>
+                    <div class="flow-step-content">
+                        <h3>📊 Market Data</h3>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <label>Price</label>
+                                <div class="value">$${marketData.price.toFixed(2)}</div>
+                            </div>
+                            <div class="data-item">
+                                <label>Condition</label>
+                                <div class="value">${marketData.condition}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add actions if any
+            if (flow['3_actions_generated'].length > 0) {
+                html += `
+                    <div class="arrow fade-in">⬇️</div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <span>Actions Generated</span>
+                        </div>
+                        <div class="flow-step-content">
+                            <h3>🎯 Strategy Decision</h3>
+                `;
+                
+                flow['3_actions_generated'].forEach(action => {
+                    html += `
+                        <div class="action-item ${action.type.toLowerCase() === 'open' ? 'approved' : 'pending'}">
+                            <strong>${action.type} ${action.side || ''} ${action.symbol}</strong><br>
+                            <small>${action.reason}</small>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            // Add execution results if any
+            if (flow['5_execution_results'].length > 0) {
+                html += `
+                    <div class="arrow fade-in">⬇️</div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <span>Execution Results</span>
+                        </div>
+                        <div class="flow-step-content">
+                            <h3>✅ Executed</h3>
+                `;
+                
+                flow['5_execution_results'].forEach(result => {
+                    if (result.profit !== undefined) {
+                        const profitClass = result.profit > 0 ? 'positive' : 'negative';
+                        html += `
+                            <div class="action-item approved">
+                                <strong>${result.action}</strong><br>
+                                <span class="${profitClass}">P&L: ${result.profit > 0 ? '+' : ''}$${result.profit.toFixed(2)} (${result.profit_pct.toFixed(2)}%)</span>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="action-item approved">
+                                <strong>${result.action}</strong><br>
+                                <small>Size: ${(result.filled_size * 100).toFixed(1)}%, Fees: $${result.fees.toFixed(2)}</small>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            flowViz.innerHTML = html;
+        }
+
+        // Update speed control
+        function updateSpeed() {
+            const speed = parseInt(document.getElementById('speedControl').value);
+            automatedSpeed = speed;
+            document.getElementById('speedDisplay').textContent = `${(speed / 1000).toFixed(1)}s`;
+            
+            // Restart interval if running
+            if (automatedInterval) {
+                clearInterval(automatedInterval);
+                automatedInterval = setInterval(executeAutomatedTick, automatedSpeed);
+            }
+        }
+
         // Event listeners
         document.getElementById('executeBtn').addEventListener('click', executeStep);
         document.getElementById('resetBtn').addEventListener('click', reset);
+        document.getElementById('mode').addEventListener('change', toggleMode);
+        document.getElementById('autoStartBtn').addEventListener('click', startAutomated);
+        document.getElementById('autoPauseBtn').addEventListener('click', pauseAutomated);
+        document.getElementById('speedControl').addEventListener('input', updateSpeed);
 
         // Load initial state
         fetch('/api/state')
