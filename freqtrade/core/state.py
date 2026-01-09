@@ -6,6 +6,53 @@ No global mutable capital - all state is explicit and trackable.
 
 This enables MYCELIUM's micro-exploits to feed each other safely
 without implicit state coupling.
+
+## Capital Request/Allocation Pattern
+
+The CapitalState class enforces a strict request/allocation pattern:
+
+1. **Exploits request capital** via `allocate(amount)` method
+2. **Receive allocation or rejection** - returns True/False
+3. **No direct balance access** - fields are public but should only be read
+
+Example usage in an exploit:
+
+```python
+def evaluate(self, state: ExecutionState) -> list[Action]:
+    # Check available capital (read-only)
+    if state.available < 100:
+        return []  # Not enough capital
+    
+    # Exploit decides to trade
+    # Engine will call capital.allocate() on behalf of exploit
+    return [Action(
+        type=ActionType.OPEN_LONG,
+        symbol="BTC/USDT",
+        size=0.1,  # Request 10% of capital
+        reason="signal detected"
+    )]
+```
+
+In the execution engine:
+
+```python
+# Engine receives action from exploit
+action = exploit.evaluate(state)
+
+# Engine requests capital allocation
+if capital_state.allocate(capital_amount):
+    # Allocation granted - execute trade
+    execute_trade(action)
+else:
+    # Allocation rejected - insufficient capital
+    logger.warning("Capital allocation rejected")
+```
+
+This pattern ensures:
+- Capital flows are explicit and inspectable
+- No exploit can overdraw capital
+- All allocations are logged and traceable
+- Rejections prevent invalid trades
 """
 
 import logging

@@ -165,3 +165,45 @@ def test_capital_accounting_consistency():
     # total with profit: 820 + 200 = 1020
     assert abs(state.available - 820.0) < 0.01
     assert abs(state.deployed - 200.0) < 0.01
+
+
+def test_exploit_must_request_capital():
+    """
+    Test that exploits must request capital and receive allocation or rejection.
+    
+    This is the key requirement: exploits cannot touch balances directly,
+    they must request capital through allocate() and handle rejection.
+    """
+    state = CapitalState(
+        available=1000.0,
+        deployed=0.0,
+    )
+    
+    # Simulate exploit requesting capital
+    # Request 1: Should succeed
+    requested_amount = 300.0
+    allocated = state.allocate(requested_amount)
+    assert allocated is True, "Allocation should succeed when capital is available"
+    assert state.available == 700.0
+    assert state.deployed == 300.0
+    
+    # Request 2: Should succeed
+    requested_amount = 400.0
+    allocated = state.allocate(requested_amount)
+    assert allocated is True, "Allocation should succeed when capital is available"
+    assert state.available == 300.0
+    assert state.deployed == 700.0
+    
+    # Request 3: Should be rejected (insufficient capital)
+    requested_amount = 500.0
+    allocated = state.allocate(requested_amount)
+    assert allocated is False, "Allocation should be rejected when insufficient capital"
+    assert state.available == 300.0, "Available capital should not change on rejected allocation"
+    assert state.deployed == 700.0, "Deployed capital should not change on rejected allocation"
+    
+    # Request 4: Should succeed (exactly available amount)
+    requested_amount = 300.0
+    allocated = state.allocate(requested_amount)
+    assert allocated is True, "Allocation should succeed for exact available amount"
+    assert state.available == 0.0
+    assert state.deployed == 1000.0
