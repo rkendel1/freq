@@ -57,8 +57,13 @@ This pattern ensures:
 
 import logging
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
-from freqtrade.persistence import Trade
+if TYPE_CHECKING:
+    from freqtrade.persistence import Trade
+else:
+    # For runtime when persistence is not available (e.g., Vercel deployment)
+    Trade = Any
 
 
 logger = logging.getLogger(__name__)

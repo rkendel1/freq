@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/app.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -15,6 +18,12 @@
   "build": {
     "env": {
       "PYTHON_VERSION": "3.11"
+    }
+  },
+  "functions": {
+    "api/app.py": {
+      "memory": 1024,
+      "maxDuration": 10
     }
   }
 }

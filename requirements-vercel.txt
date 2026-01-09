@@ -1,0 +1,16 @@
+# Minimal requirements for Vercel deployment
+# This file contains only the essential dependencies needed for the demo API
+# to keep the deployment size under Vercel's 250MB limit
+
+# FastAPI and server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Minimal scientific computing (only numpy for market simulator)
+numpy==2.4.0
+
+# Pydantic for data validation (required by FastAPI)
+pydantic==2.12.5
+
+# Core utilities
+python-dateutil==2.9.0.post0
