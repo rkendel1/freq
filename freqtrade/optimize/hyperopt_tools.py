@@ -7,7 +7,7 @@ for hyperoptimization.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from freqtrade.constants import Config
 from freqtrade.enums import HyperoptState
@@ -33,7 +33,7 @@ class HyperoptTools:
     """
 
     @staticmethod
-    def load_params(filename: Path) -> dict[str, Any]:
+    def load_params(filename: Path) -> Dict[str, Any]:
         """
         Stub for loading hyperopt parameters from file.
         

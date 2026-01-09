@@ -210,8 +210,8 @@ class FreqtradeBot(LoggingMixin):
 
         # Log startup information instead of RPC notifications
         logger.info("Bot startup complete")
-        logger.info(f"Pairlists: {[p.name for p in self.pairlists._pairlist_handlers]}")
-        logger.info(f"Protections: {[p.name for p in self.protections._protection_handlers]}")
+        logger.info(f"Pairlists: {self.pairlists.name_list}")
+        logger.info(f"Protections: {self.protections.name_list}")
         
         # Update older trades with precision and precision mode
         self.startup_backpopulate_precision()
