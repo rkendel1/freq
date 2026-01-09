@@ -501,8 +501,8 @@ def test_funding_rate_sudden_change_detection():
     safe, reason = manager.check_funding_rate("BTC/USDT", 0.0004)
     assert safe is True
 
-    # Large sudden change should be detected
-    safe, reason = manager.check_funding_rate("BTC/USDT", 0.008)  # Change of 0.0076 (from 0.0004 to 0.008) > 0.005 threshold
+    # Large sudden change should be detected (0.008 - 0.0004 = 0.0076 change > 0.005 threshold)
+    safe, reason = manager.check_funding_rate("BTC/USDT", 0.008)
     assert safe is False
     assert "change" in reason.lower()
 

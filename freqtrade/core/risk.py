@@ -190,13 +190,13 @@ class RiskManager:
 
         Args:
             connected: True if exchange is connected, False otherwise
-            current_timestamp: Current timestamp (reserved for future use)
+            current_timestamp: Current timestamp (for future logging/metrics)
         """
         if connected and not self._exchange_connected:
-            logger.info("Exchange reconnected")
+            logger.info(f"Exchange reconnected at timestamp {current_timestamp}")
             self._exchange_connected = True
         elif not connected and self._exchange_connected:
-            logger.error("Exchange disconnected - Trading halted")
+            logger.error(f"Exchange disconnected at timestamp {current_timestamp} - Trading halted")
             self._exchange_connected = False
 
     def is_exchange_connected(self) -> bool:
