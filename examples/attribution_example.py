@@ -137,6 +137,8 @@ def example_batch_attribution():
     print("=" * 60)
     
     # Create sample trades from different exploits
+    base_date = datetime(2024, 1, 10, 0, 0, 0, tzinfo=timezone.utc)
+    
     trades = [
         LocalTrade(
             id=101,
@@ -144,9 +146,9 @@ def example_batch_attribution():
             open_rate=50000.0,
             amount=0.05,
             stake_amount=2500.0,
-            open_date=datetime.now(timezone.utc) - timedelta(hours=48),
+            open_date=base_date - timedelta(hours=48),
             close_rate=51000.0,
-            close_date=datetime.now(timezone.utc) - timedelta(hours=24),
+            close_date=base_date - timedelta(hours=24),
             fee_open=0.001,
             fee_close=0.001,
             fee_open_cost=2.5,
@@ -162,9 +164,9 @@ def example_batch_attribution():
             open_rate=2800.0,
             amount=0.5,
             stake_amount=1400.0,
-            open_date=datetime.now(timezone.utc) - timedelta(hours=72),
+            open_date=base_date - timedelta(hours=72),
             close_rate=2950.0,
-            close_date=datetime.now(timezone.utc) - timedelta(hours=12),
+            close_date=base_date - timedelta(hours=12),
             fee_open=0.001,
             fee_close=0.001,
             fee_open_cost=1.4,
@@ -180,9 +182,9 @@ def example_batch_attribution():
             open_rate=0.50,
             amount=2000.0,
             stake_amount=1000.0,
-            open_date=datetime.now(timezone.utc) - timedelta(hours=120),
+            open_date=base_date - timedelta(hours=120),
             close_rate=0.48,
-            close_date=datetime.now(timezone.utc) - timedelta(hours=6),
+            close_date=base_date - timedelta(hours=6),
             fee_open=0.001,
             fee_close=0.001,
             fee_open_cost=1.0,

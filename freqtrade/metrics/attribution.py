@@ -31,7 +31,7 @@ class TradeAttribution:
     
     Attributes:
         trade_id: Unique identifier for the trade
-        exploit_id: ID of the exploit that generated this trade (from strategy name or enter_tag)
+        exploit_id: ID of the exploit that generated this trade (from strategy name, enter_tag, or "unknown")
         capital_source: Source of capital used (e.g., "initial", "reinvested", "borrowed")
         pair: Trading pair
         is_short: Whether this is a short position
@@ -54,7 +54,7 @@ class TradeAttribution:
         total_fees: Total fees paid in quote currency
         
         # Funding (for futures/margin)
-        funding_fees: Total funding fees earned/paid (negative = paid, positive = earned)
+        funding_fees: Total funding fees earned/paid (negative = paid, positive = earned, 0.0 for spot)
         
         # Duration
         holding_duration_seconds: How long the position was/has been held (in seconds)
@@ -70,7 +70,7 @@ class TradeAttribution:
     """
     
     trade_id: int
-    exploit_id: Optional[str]
+    exploit_id: str
     capital_source: str
     pair: str
     is_short: bool
@@ -93,7 +93,7 @@ class TradeAttribution:
     total_fees: float
     
     # Funding
-    funding_fees: Optional[float]
+    funding_fees: float
     
     # Duration
     holding_duration_seconds: float
