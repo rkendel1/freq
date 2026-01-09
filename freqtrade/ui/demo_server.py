@@ -164,7 +164,7 @@ class DemoServer:
                 "current_price": self.market_simulator.current_price,
                 "price_change_pct": self.market_simulator.get_price_change_percent(),
                 "tick_count": self.market_simulator.tick_count,
-                "strategy_stats": self.automated_exploit.get_statistics(),
+                "process_stats": self.automated_exploit.get_statistics(),
             })
 
         @self.app.route("/api/price-history")
@@ -405,7 +405,7 @@ class DemoServer:
 
     def _execute_automated_tick(self, tick) -> dict[str, Any]:
         """
-        Execute one automated tick with market data and strategy decisions.
+        Execute one automated tick with market data and process evaluations.
         
         Args:
             tick: MarketTick from simulator
@@ -437,6 +437,9 @@ class DemoServer:
         
         # Step 3: Automated exploit generates Actions based on market analysis
         actions = self.automated_exploit.evaluate(exec_state)
+        
+        # Capture decision criteria that was used
+        decision_criteria = self.automated_exploit.get_last_decision_criteria()
         
         actions_data = []
         for action in actions:
@@ -567,15 +570,28 @@ class DemoServer:
         
         # Build flow trace
         self.current_step += 1
+        
+        # Generate a descriptive scenario label based on actions
+        scenario_label = "automated_tick"
+        if actions_data:
+            action_type = actions_data[0].get("type", "").lower()
+            if action_type == "open":
+                side = actions_data[0].get("side", "").lower()
+                scenario_label = f"automated_open_{side}"
+            elif action_type == "close":
+                scenario_label = "automated_close"
+        
         return {
             "step": self.current_step,
             "mode": "automated",
+            "scenario": scenario_label,
             "timestamp": timestamp,
             "market_data": {
                 "price": tick.price,
                 "volume": tick.volume,
                 "condition": tick.condition,
             },
+            "decision_criteria": decision_criteria,  # NEW: Show how decision was made
             "flow": {
                 "1_initial_state": initial_state,
                 "2_execution_state": {

@@ -906,6 +906,7 @@
             const flowViz = document.getElementById('flowViz');
             const flow = trace.flow;
             const marketData = trace.market_data;
+            const criteria = trace.decision_criteria;
             
             let html = `<div class="flow-container">
                 <div class="flow-step fade-in">
@@ -923,6 +924,90 @@
                     </div>
                 </div>
             `;
+            
+            // Add decision criteria visualization
+            if (criteria && criteria.status !== 'insufficient_data') {
+                html += `
+                    <div class="arrow fade-in"></div>
+                    <div class="flow-step fade-in">
+                        <div class="flow-step-header">
+                            <div>🔍 Process Evaluation</div>
+                        </div>
+                        <div class="flow-step-content">
+                            <h3 style="font-size:11px;margin-bottom:8px;color:#667eea;">Decision Criteria</h3>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <label>Fast MA (5)</label>
+                                    <div class="value">$${criteria.fast_ma.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Slow MA (10)</label>
+                                    <div class="value">$${criteria.slow_ma.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Momentum</label>
+                                    <div class="value ${criteria.momentum > 0 ? 'positive' : 'negative'}">${(criteria.momentum * 100).toFixed(2)}%</div>
+                                </div>
+                `;
+                
+                // Show entry conditions if no position
+                if (!criteria.has_position && criteria.entry_thresholds) {
+                    const longCond = criteria.entry_thresholds.long;
+                    const shortCond = criteria.entry_thresholds.short;
+                    
+                    html += `
+                                <div class="data-item" style="grid-column: 1 / -1;">
+                                    <label>Entry Conditions (LONG)</label>
+                                    <div style="font-size:10px;margin-top:4px;">
+                                        ${longCond.fast_ma_above_slow ? '✅' : '❌'} Fast MA > Slow MA<br>
+                                        ${longCond.price_above_fast_ma ? '✅' : '❌'} Price > Fast MA<br>
+                                        ${longCond.positive_momentum ? '✅' : '❌'} Momentum > 1%<br>
+                                        <strong>${longCond.all_conditions_met ? '✅ SIGNAL: ENTER LONG' : '⏸️ No signal'}</strong>
+                                    </div>
+                                </div>
+                                <div class="data-item" style="grid-column: 1 / -1;">
+                                    <label>Entry Conditions (SHORT)</label>
+                                    <div style="font-size:10px;margin-top:4px;">
+                                        ${shortCond.fast_ma_below_slow ? '✅' : '❌'} Fast MA < Slow MA<br>
+                                        ${shortCond.price_below_fast_ma ? '✅' : '❌'} Price < Fast MA<br>
+                                        ${shortCond.negative_momentum ? '✅' : '❌'} Momentum < -1%<br>
+                                        <strong>${shortCond.all_conditions_met ? '✅ SIGNAL: ENTER SHORT' : '⏸️ No signal'}</strong>
+                                    </div>
+                                </div>
+                    `;
+                }
+                
+                // Show exit conditions if position exists
+                if (criteria.has_position && criteria.exit_thresholds) {
+                    const exitCond = criteria.exit_thresholds;
+                    const pnl = criteria.position_pnl;
+                    
+                    html += `
+                                <div class="data-item">
+                                    <label>Position P&L</label>
+                                    <div class="value ${pnl > 0 ? 'positive' : 'negative'}">${(pnl * 100).toFixed(2)}%</div>
+                                </div>
+                                <div class="data-item" style="grid-column: 1 / -1;">
+                                    <label>Exit Conditions</label>
+                                    <div style="font-size:10px;margin-top:4px;">
+                                        ${exitCond.profit_target_hit ? '✅' : '❌'} Profit Target (+${(exitCond.profit_target * 100).toFixed(0)}%)<br>
+                                        ${exitCond.stop_loss_hit ? '⚠️' : '✅'} Stop Loss (-${(exitCond.stop_loss * 100).toFixed(0)}%)<br>
+                                        <strong>${exitCond.profit_target_hit || exitCond.stop_loss_hit ? '✅ SIGNAL: EXIT POSITION' : '⏸️ Hold position'}</strong>
+                                    </div>
+                                </div>
+                    `;
+                }
+                
+                html += `
+                            </div>
+                            <div style="margin-top:10px;padding:8px;background:#f0f0f0;border-radius:4px;font-size:10px;color:#666;">
+                                💡 <strong>Why this decision?</strong><br>
+                                ${getDecisionExplanation(criteria, flow['3_actions_generated'])}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
             
             // Add actions if any
             if (flow['3_actions_generated'].length > 0) {
@@ -982,6 +1067,57 @@
             
             html += `</div>`;
             flowViz.innerHTML = html;
+        }
+        
+        // Helper function to explain decision
+        function getDecisionExplanation(criteria, actions) {
+            if (!criteria || criteria.status === 'insufficient_data') {
+                return 'Building price history for analysis...';
+            }
+            
+            if (actions.length === 0) {
+                if (criteria.has_position) {
+                    const pnl = criteria.position_pnl;
+                    const exitCond = criteria.exit_thresholds;
+                    if (pnl > 0 && pnl < exitCond.profit_target) {
+                        return `Position is profitable (+${(pnl*100).toFixed(1)}%) but hasn't reached target (+${(exitCond.profit_target*100).toFixed(0)}%). Holding to maximize gains.`;
+                    } else if (pnl < 0 && pnl > -exitCond.stop_loss) {
+                        return `Position is slightly negative (${(pnl*100).toFixed(1)}%) but within acceptable range. Waiting for trend reversal.`;
+                    }
+                    return 'Monitoring position. No exit signal yet.';
+                } else {
+                    const longMet = criteria.entry_thresholds.long.all_conditions_met;
+                    const shortMet = criteria.entry_thresholds.short.all_conditions_met;
+                    
+                    if (criteria.ticks_since_last_action < criteria.cooldown_required) {
+                        return `Cooldown period active (${criteria.ticks_since_last_action}/${criteria.cooldown_required} ticks). Waiting before next action.`;
+                    }
+                    
+                    if (!longMet && !shortMet) {
+                        return 'Market conditions do not meet entry criteria. No inefficiency detected to exploit. Waiting for signal.';
+                    }
+                }
+            } else {
+                const action = actions[0];
+                if (action.type === 'OPEN') {
+                    if (action.side === 'LONG') {
+                        return `All LONG entry conditions met: Fast MA > Slow MA, price trending up, positive momentum. Exploiting bullish inefficiency.`;
+                    } else {
+                        return `All SHORT entry conditions met: Fast MA < Slow MA, price trending down, negative momentum. Exploiting bearish inefficiency.`;
+                    }
+                } else if (action.type === 'CLOSE') {
+                    const exitCond = criteria.exit_thresholds;
+                    if (exitCond.profit_target_hit) {
+                        return `Profit target reached! Closing position to lock in gains. Inefficiency has been successfully exploited.`;
+                    } else if (exitCond.stop_loss_hit) {
+                        return `Stop loss triggered. Closing position to limit losses. Market conditions changed.`;
+                    } else {
+                        return `Trend reversal detected. Closing position before it becomes unprofitable.`;
+                    }
+                }
+            }
+            
+            return 'Evaluating market conditions...';
         }
 
         // Update speed control
