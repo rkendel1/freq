@@ -40,6 +40,10 @@ class RiskLimits:
     position_cooldown: int = 0  # Min time between positions on same symbol
     global_cooldown: int = 0  # Min time between any positions
 
+    # Funding anomaly detection
+    max_funding_rate: float = 0.01  # Max acceptable funding rate (1% default)
+    funding_rate_change_threshold: float = 0.005  # Max sudden change in funding rate
+
 
 class RiskManager:
     """
@@ -60,6 +64,9 @@ class RiskManager:
         self._daily_loss: float = 0.0
         self._last_action_time: dict[str, int] = {}  # symbol -> timestamp
         self._last_global_action_time: int = 0
+        self._emergency_stop: bool = False  # Manual kill switch
+        self._exchange_connected: bool = True  # Exchange connection status
+        self._last_funding_rate: dict[str, float] = {}  # symbol -> last funding rate
 
     def check_action(
         self,
@@ -83,6 +90,18 @@ class RiskManager:
             (allowed: bool, reason: Optional[str])
             If not allowed, reason explains why.
         """
+        # CRITICAL: Check emergency stop first - this cannot be bypassed
+        if self._emergency_stop:
+            return False, "EMERGENCY STOP ACTIVE - All trading halted"
+
+        # CRITICAL: Check exchange connectivity - cannot trade if disconnected
+        if not self._exchange_connected:
+            return False, "Exchange disconnected - Trading halted"
+
+        # CRITICAL: Check daily loss limit - this is non-bypassable
+        if self._daily_loss >= self.limits.max_daily_loss:
+            return False, f"Daily loss limit reached: {self._daily_loss:.2%}"
+
         # Check position limit
         if action.type == ActionType.OPEN:
             if open_positions >= self.limits.max_open_positions:
@@ -104,10 +123,6 @@ class RiskManager:
                 False,
                 f"Position size {action.size:.2%} exceeds limit {self.limits.max_position_size:.2%}",
             )
-
-        # Check daily loss limit
-        if self._daily_loss >= self.limits.max_daily_loss:
-            return False, f"Daily loss limit reached: {self._daily_loss:.2%}"
 
         # Check cooldown periods
         if self.limits.position_cooldown > 0:
@@ -146,6 +161,91 @@ class RiskManager:
         """Reset daily loss counter (call at start of new trading day)."""
         self._daily_loss = 0.0
 
+    def activate_emergency_stop(self) -> None:
+        """
+        Activate emergency stop - halts all trading immediately.
+
+        This is a manual kill switch that cannot be bypassed.
+        Once activated, no trades will be allowed until deactivated.
+        """
+        logger.critical("EMERGENCY STOP ACTIVATED - All trading halted")
+        self._emergency_stop = True
+
+    def deactivate_emergency_stop(self) -> None:
+        """
+        Deactivate emergency stop - resumes trading.
+
+        Use with extreme caution. Ensure all issues are resolved before resuming.
+        """
+        logger.warning("Emergency stop deactivated - Trading resumed")
+        self._emergency_stop = False
+
+    def is_emergency_stop_active(self) -> bool:
+        """Check if emergency stop is active."""
+        return self._emergency_stop
+
+    def set_exchange_connected(self, connected: bool, current_timestamp: int) -> None:
+        """
+        Update exchange connection status.
+
+        Args:
+            connected: True if exchange is connected, False otherwise
+            current_timestamp: Current timestamp (for future logging/metrics)
+        """
+        if connected and not self._exchange_connected:
+            logger.info(f"Exchange reconnected at timestamp {current_timestamp}")
+            self._exchange_connected = True
+        elif not connected and self._exchange_connected:
+            logger.error(f"Exchange disconnected at timestamp {current_timestamp} - Trading halted")
+            self._exchange_connected = False
+
+    def is_exchange_connected(self) -> bool:
+        """Check if exchange is currently connected."""
+        return self._exchange_connected
+
+    def check_funding_rate(
+        self, symbol: str, funding_rate: float
+    ) -> tuple[bool, str | None]:
+        """
+        Check if funding rate is within acceptable limits.
+
+        Args:
+            symbol: Trading pair symbol
+            funding_rate: Current funding rate
+
+        Returns:
+            (safe: bool, reason: Optional[str])
+            If not safe, reason explains the anomaly.
+        """
+        # Check absolute funding rate limit
+        if abs(funding_rate) > self.limits.max_funding_rate:
+            logger.error(
+                f"Funding rate anomaly detected for {symbol}: "
+                f"{funding_rate:.4%} exceeds limit {self.limits.max_funding_rate:.4%}"
+            )
+            return (
+                False,
+                f"Funding rate {funding_rate:.4%} exceeds limit {self.limits.max_funding_rate:.4%}",
+            )
+
+        # Check sudden funding rate changes
+        if symbol in self._last_funding_rate:
+            last_rate = self._last_funding_rate[symbol]
+            rate_change = abs(funding_rate - last_rate)
+            if rate_change > self.limits.funding_rate_change_threshold:
+                logger.error(
+                    f"Sudden funding rate change detected for {symbol}: "
+                    f"{rate_change:.4%} exceeds threshold {self.limits.funding_rate_change_threshold:.4%}"
+                )
+                return (
+                    False,
+                    f"Funding rate change {rate_change:.4%} exceeds threshold",
+                )
+
+        # Update last known funding rate
+        self._last_funding_rate[symbol] = funding_rate
+        return True, None
+
 
 def create_risk_manager_from_config(config: dict) -> RiskManager:
     """
@@ -166,6 +266,8 @@ def create_risk_manager_from_config(config: dict) -> RiskManager:
         max_leverage=config.get("leverage", {}).get("max", 1.0),
         position_cooldown=config.get("position_cooldown", 0),
         global_cooldown=config.get("global_cooldown", 0),
+        max_funding_rate=config.get("max_funding_rate", 0.01),  # Default 1%
+        funding_rate_change_threshold=config.get("funding_rate_change_threshold", 0.005),  # Default 0.5%
     )
 
     return RiskManager(limits)
