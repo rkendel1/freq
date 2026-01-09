@@ -44,9 +44,6 @@ class RiskLimits:
     max_funding_rate: float = 0.01  # Max acceptable funding rate (1% default)
     funding_rate_change_threshold: float = 0.005  # Max sudden change in funding rate
 
-    # Exchange health monitoring
-    max_exchange_disconnect_time: int = 30  # Max seconds exchange can be disconnected
-
 
 class RiskManager:
     """
@@ -69,7 +66,6 @@ class RiskManager:
         self._last_global_action_time: int = 0
         self._emergency_stop: bool = False  # Manual kill switch
         self._exchange_connected: bool = True  # Exchange connection status
-        self._exchange_disconnect_time: int | None = None  # When exchange disconnected
         self._last_funding_rate: dict[str, float] = {}  # symbol -> last funding rate
 
     def check_action(
@@ -101,14 +97,6 @@ class RiskManager:
         # CRITICAL: Check exchange connectivity - cannot trade if disconnected
         if not self._exchange_connected:
             return False, "Exchange disconnected - Trading halted"
-
-        # CRITICAL: Check if exchange has been disconnected too long
-        if (
-            self._exchange_disconnect_time is not None
-            and current_timestamp - self._exchange_disconnect_time
-            > self.limits.max_exchange_disconnect_time
-        ):
-            return False, "Exchange disconnect timeout exceeded - Trading halted"
 
         # CRITICAL: Check daily loss limit - this is non-bypassable
         if self._daily_loss >= self.limits.max_daily_loss:
@@ -202,16 +190,14 @@ class RiskManager:
 
         Args:
             connected: True if exchange is connected, False otherwise
-            current_timestamp: Current timestamp
+            current_timestamp: Current timestamp (reserved for future use)
         """
         if connected and not self._exchange_connected:
             logger.info("Exchange reconnected")
             self._exchange_connected = True
-            self._exchange_disconnect_time = None
         elif not connected and self._exchange_connected:
             logger.error("Exchange disconnected - Trading halted")
             self._exchange_connected = False
-            self._exchange_disconnect_time = current_timestamp
 
     def is_exchange_connected(self) -> bool:
         """Check if exchange is currently connected."""
@@ -282,7 +268,6 @@ def create_risk_manager_from_config(config: dict) -> RiskManager:
         global_cooldown=config.get("global_cooldown", 0),
         max_funding_rate=config.get("max_funding_rate", 0.01),  # Default 1%
         funding_rate_change_threshold=config.get("funding_rate_change_threshold", 0.005),  # Default 0.5%
-        max_exchange_disconnect_time=config.get("max_exchange_disconnect_time", 30),  # Default 30s
     )
 
     return RiskManager(limits)

@@ -349,7 +349,6 @@ def test_exchange_disconnect_halts_trading():
         max_open_positions=10,
         max_loss_per_trade=0.10,
         max_daily_loss=0.20,
-        max_exchange_disconnect_time=30,
     )
     manager = RiskManager(limits)
 
@@ -403,14 +402,13 @@ def test_exchange_disconnect_halts_trading():
 
 
 def test_exchange_disconnect_timeout():
-    """Test that trading halts if exchange is disconnected too long."""
+    """Test that trading remains halted while exchange is disconnected."""
     limits = RiskLimits(
         max_position_size=0.5,
         max_total_exposure=0.95,
         max_open_positions=10,
         max_loss_per_trade=0.10,
         max_daily_loss=0.20,
-        max_exchange_disconnect_time=30,  # 30 second timeout
     )
     manager = RiskManager(limits)
 
@@ -425,10 +423,10 @@ def test_exchange_disconnect_timeout():
     # Disconnect exchange at timestamp 1000
     manager.set_exchange_connected(False, 1000)
 
-    # Reconnect at timestamp 1020 (20 seconds later - within timeout)
+    # Reconnect at timestamp 1020 (20 seconds later)
     manager.set_exchange_connected(True, 1020)
 
-    # Action should be allowed (reconnected and within timeout)
+    # Action should be allowed (reconnected)
     allowed, reason = manager.check_action(
         action=action,
         available=1000.0,
@@ -441,8 +439,7 @@ def test_exchange_disconnect_timeout():
     # Disconnect again at timestamp 1100
     manager.set_exchange_connected(False, 1100)
 
-    # Try action at timestamp 1140 (40 seconds later - exceeds timeout)
-    # Even though still disconnected, the timeout check should trigger
+    # Try action at timestamp 1140 (40 seconds later - still disconnected)
     allowed, reason = manager.check_action(
         action=action,
         available=1000.0,
@@ -505,7 +502,7 @@ def test_funding_rate_sudden_change_detection():
     assert safe is True
 
     # Large sudden change should be detected
-    safe, reason = manager.check_funding_rate("BTC/USDT", 0.008)  # Change of 0.0076 > 0.005
+    safe, reason = manager.check_funding_rate("BTC/USDT", 0.008)  # Change of 0.0076 (from 0.0004 to 0.008) > 0.005 threshold
     assert safe is False
     assert "change" in reason.lower()
 
