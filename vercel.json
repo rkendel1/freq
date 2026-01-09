@@ -12,7 +12,7 @@
     }
   },
   "functions": {
-    "api/**/*.py": {
+    "api/app.py": {
       "memory": 1024,
       "maxDuration": 10
     }
