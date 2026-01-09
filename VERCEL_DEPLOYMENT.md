@@ -28,7 +28,8 @@ The `vercel.json` file configures:
 - Python version: 3.11
 - Entry point: `api/app.py`
 - Routes: All requests go to the FastAPI app
-- Lambda size limit: 50MB (optimized for Vercel's limits)
+- Function memory: 1024 MB (1 GB)
+- Function max duration: 10 seconds
 
 ### Deployment Optimization
 
