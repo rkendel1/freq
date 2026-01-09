@@ -667,21 +667,34 @@
     <div class="container">
         <header>
             <h1>🚀 Execution Engine Demo</h1>
-            <p>See how to MAKE MONEY: Open Position → Market Moves → Close with Profit</p>
-            <p style="font-size: 0.9em; margin-top: 5px;">💡 Try "Profitable Trade Cycle" to see the complete money-making flow!</p>
+            <p>Structural Inefficiency Harvesting Across All Markets</p>
+            <p style="font-size: 0.9em; margin-top: 5px;">
+                💡 Exploits work on Crypto, ETFs, Stocks, Futures, Options - Change symbol above to see!
+            </p>
+            <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 5px; font-size: 0.85em; text-align: left;">
+                <strong>🎯 Our Exploits Are Structural, Not Crypto-Specific:</strong><br>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                    <div>📊 <strong>Imbalance → Compensation</strong><br><small>Funding, carry, rebates</small></div>
+                    <div>🔄 <strong>Forced Flows</strong><br><small>ETF rebalances, index changes</small></div>
+                    <div>📉 <strong>Decay</strong><br><small>Mean reversion of incentives</small></div>
+                    <div>📈 <strong>Convexity</strong><br><small>Mispriced tails & volatility</small></div>
+                    <div>💰 <strong>Capital Routing</strong><br><small>Volatility insulation</small></div>
+                </div>
+            </div>
         </header>
 
         <div class="controls">
             <div class="control-group">
                 <label for="symbol">Symbol:</label>
                 <select id="symbol">
-                    <option value="BTC/USDT" data-price="50000">BTC/USDT (Bitcoin)</option>
-                    <option value="ETH/USDT" data-price="3000">ETH/USDT (Ethereum)</option>
-                    <option value="SPY" data-price="450">SPY (S&P 500 ETF)</option>
-                    <option value="QQQ" data-price="380">QQQ (Nasdaq-100 ETF)</option>
-                    <option value="AAPL" data-price="185">AAPL (Apple Stock)</option>
-                    <option value="TSLA" data-price="250">TSLA (Tesla Stock)</option>
-                    <option value="GLD" data-price="185">GLD (Gold ETF)</option>
+                    <option value="BTC/USDT" data-price="50000">🪙 BTC/USDT - Funding Capture</option>
+                    <option value="ETH/USDT" data-price="3000">🪙 ETH/USDT - Perp Funding</option>
+                    <option value="SPY" data-price="450">📊 SPY - ETF Rebalance Flow</option>
+                    <option value="QQQ" data-price="380">📊 QQQ - Creation/Redemption</option>
+                    <option value="AAPL" data-price="185">📈 AAPL - Borrow Rebates</option>
+                    <option value="TSLA" data-price="250">📈 TSLA - Vol Skew</option>
+                    <option value="GLD" data-price="185">🥇 GLD - Futures Basis</option>
+                    <option value="VIX" data-price="15">📉 VIX - Convexity Seeding</option>
                 </select>
             </div>
             
@@ -1148,33 +1161,8 @@
                 <div class="flow-container">
                     <div class="flow-step fade-in">
                         <div class="flow-step-header">
-                            <div>1️⃣ Initial State</div>
-                            <span class="step-number">Step 1</span>
-                        </div>
-                        <div class="flow-step-content">
-                            <div class="data-grid">
-                                <div class="data-item">
-                                    <label>Available Capital</label>
-                                    <div class="value">$${flow['1_initial_state'].available_capital.toFixed(2)}</div>
-                                </div>
-                                <div class="data-item">
-                                    <label>Deployed Capital</label>
-                                    <div class="value">$${flow['1_initial_state'].deployed_capital.toFixed(2)}</div>
-                                </div>
-                                <div class="data-item">
-                                    <label>Open Positions</label>
-                                    <div class="value">${flow['1_initial_state'].open_positions}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="arrow fade-in"></div>
-
-                    <div class="flow-step fade-in">
-                        <div class="flow-step-header">
-                            <div>2️⃣ Execution State</div>
-                            <span class="step-number">Step 2</span>
+                            <div>1️⃣ Market Structure</div>
+                            <span class="step-number">Detect Inefficiency</span>
                         </div>
                         <div class="flow-step-content">
                             <div class="data-grid">
@@ -1187,8 +1175,12 @@
                                     <div class="value">$${flow['2_execution_state'].current_price.toFixed(2)}</div>
                                 </div>
                                 <div class="data-item">
-                                    <label>Available</label>
-                                    <div class="value">$${flow['2_execution_state'].available_capital.toFixed(2)}</div>
+                                    <label>Available Capital</label>
+                                    <div class="value">$${flow['1_initial_state'].available_capital.toFixed(2)}</div>
+                                </div>
+                                <div class="data-item">
+                                    <label>Deployed Capital</label>
+                                    <div class="value">$${flow['1_initial_state'].deployed_capital.toFixed(2)}</div>
                                 </div>
                             </div>
                         </div>
@@ -1198,8 +1190,8 @@
 
                     <div class="flow-step fade-in">
                         <div class="flow-step-header">
-                            <div>3️⃣ Actions</div>
-                            <span class="step-number">Step 3</span>
+                            <div>2️⃣ Exploit Analysis</div>
+                            <span class="step-number">Intent Generation</span>
                         </div>
                         <div class="flow-step-content">
                             ${flow['3_actions_generated'].length > 0 
@@ -1207,12 +1199,13 @@
                                     <div class="action-card">
                                         <div class="action-header">${action.type} ${action.symbol}</div>
                                         <div class="action-details">
-                                            Size: ${(action.size * 100).toFixed(1)}%<br>
-                                            ${action.reason.substring(0, 40)}...
+                                            <strong>Exploit:</strong> ${getExploitType(action.reason)}<br>
+                                            <strong>Size:</strong> ${(action.size * 100).toFixed(1)}%<br>
+                                            <strong>Signal:</strong> ${action.reason}
                                         </div>
                                     </div>
                                 `).join('')
-                                : '<p style="font-size:11px;color:#999;">No actions</p>'
+                                : '<p style="font-size:11px;color:#999;">No structural inefficiency detected</p>'
                             }
                         </div>
                     </div>
@@ -1221,8 +1214,8 @@
 
                     <div class="flow-step fade-in">
                         <div class="flow-step-header">
-                            <div>4️⃣ Risk Checks</div>
-                            <span class="step-number">Step 4</span>
+                            <div>3️⃣ Risk Validation</div>
+                            <span class="step-number">Guardrails</span>
                         </div>
                         <div class="flow-step-content">
                             ${flow['4_risk_checks'].length > 0
@@ -1232,12 +1225,12 @@
                                             ${check.approved ? '✅' : '❌'} ${check.approved ? 'Approved' : 'Rejected'}
                                         </div>
                                         <div class="action-details">
-                                            Required: $${check.required_capital.toFixed(0)}<br>
+                                            Capital: $${check.required_capital.toFixed(0)}<br>
                                             ${check.reason}
                                         </div>
                                     </div>
                                 `).join('')
-                                : '<p style="font-size:11px;color:#999;">No checks</p>'
+                                : '<p style="font-size:11px;color:#999;">No risk checks</p>'
                             }
                         </div>
                     </div>
@@ -1246,8 +1239,8 @@
 
                     <div class="flow-step fade-in">
                         <div class="flow-step-header">
-                            <div>5️⃣ Execution</div>
-                            <span class="step-number">Step 5</span>
+                            <div>4️⃣ Execution</div>
+                            <span class="step-number">Trade Fill</span>
                         </div>
                         <div class="flow-step-content">
                             ${flow['5_execution_results'].length > 0
@@ -1278,8 +1271,8 @@
 
                     <div class="flow-step fade-in">
                         <div class="flow-step-header">
-                            <div>6️⃣ Final State</div>
-                            <span class="step-number">Step 6</span>
+                            <div>5️⃣ Outcome</div>
+                            <span class="step-number">Portfolio Impact</span>
                         </div>
                         <div class="flow-step-content">
                             <div class="data-grid">
@@ -1295,6 +1288,12 @@
                                     <label>Open Positions</label>
                                     <div class="value">${flow['6_final_state'].open_positions}</div>
                                 </div>
+                                <div class="data-item">
+                                    <label>Realized PnL</label>
+                                    <div class="value ${flow['6_final_state'].pnl_realized >= 0 ? 'positive' : 'negative'}">
+                                        ${flow['6_final_state'].pnl_realized >= 0 ? '+' : ''}$${flow['6_final_state'].pnl_realized.toFixed(2)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1302,6 +1301,18 @@
             `;
             
             flowViz.innerHTML = html;
+        }
+        
+        // Helper function to determine exploit type from reason
+        function getExploitType(reason) {
+            if (!reason) return 'Unknown';
+            const r = reason.toLowerCase();
+            if (r.includes('funding') || r.includes('carry') || r.includes('rebate')) return 'Funding Capture';
+            if (r.includes('flow') || r.includes('liquidity') || r.includes('rebalance')) return 'Flow Pressure';
+            if (r.includes('decay') || r.includes('normalize') || r.includes('revert')) return 'Funding Decay';
+            if (r.includes('convexity') || r.includes('skew') || r.includes('vol')) return 'Convexity Seeding';
+            if (r.includes('momentum') || r.includes('trend')) return 'Momentum (Demo)';
+            return 'Market Structure';
         }
 
         // Add to history
@@ -1915,7 +1926,11 @@
         document.getElementById('applyStopLoss').addEventListener('click', () => applyDspySuggestion('stop_loss'));
         document.getElementById('applyCooldown').addEventListener('click', () => applyDspySuggestion('min_ticks_between_actions'));
         document.getElementById('exploitSelector').addEventListener('change', loadExploitParameters);
-        document.getElementById('refreshParameters').addEventListener('click', loadExploitParameters);
+        document.getElementById('refreshParameters').addEventListener('click', () => {
+            loadExploitParameters();
+            fetchDspySuggestions();
+            fetchDspyMetrics();
+        });
 
         // DSPy Functions
         let currentSuggestions = {};
@@ -1971,9 +1986,28 @@
             try {
                 const response = await fetch('/api/dspy/suggestions');
                 const data = await response.json();
+                
+                console.log('DSPy Suggestions Response:', data);
 
                 if (data.suggestions && data.suggestions.length > 0) {
                     displayDspySuggestions(data.suggestions);
+                } else {
+                    // Show that we're waiting for data
+                    const container = document.getElementById('dspySuggestions');
+                    const totalTrades = data.total_trades_observed || allTrades.length;
+                    if (totalTrades < 5) {
+                        container.innerHTML = `<div class="no-suggestions">
+                            <strong>Need more data for DSPy analysis</strong><br>
+                            <span style="font-size: 0.9em;">Trades completed: ${totalTrades} / 5 minimum</span><br>
+                            <span style="font-size: 0.85em; color: #999;">Run automated mode to accumulate trade data.</span>
+                        </div>`;
+                    } else {
+                        container.innerHTML = `<div class="no-suggestions">
+                            <strong>Analyzing ${totalTrades} trades...</strong><br>
+                            <span style="font-size: 0.9em;">DSPy is learning your strategy patterns.</span><br>
+                            <span style="font-size: 0.85em; color: #999;">Suggestions will appear as confidence builds.</span>
+                        </div>`;
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching DSPy suggestions:', error);
@@ -1984,9 +2018,17 @@
             try {
                 const response = await fetch('/api/dspy/metrics');
                 const data = await response.json();
+                
+                console.log('DSPy Metrics Response:', data);
 
                 if (data.metrics && Object.keys(data.metrics).length > 0) {
                     displayDspyMetrics(data.metrics);
+                } else {
+                    // Show default state
+                    document.getElementById('metricSharpe').textContent = '—';
+                    document.getElementById('metricWinRate').textContent = '—';
+                    document.getElementById('metricCapEff').textContent = '—';
+                    document.getElementById('metricTrades').textContent = allTrades.length;
                 }
             } catch (error) {
                 console.error('Error fetching DSPy metrics:', error);
@@ -2080,13 +2122,17 @@
             return names[name] || name;
         }
 
-        // Poll for DSPy updates when in automated mode
+        // Poll for DSPy updates - always poll, not just in automated mode
         setInterval(() => {
-            if (automatedInterval) {
-                fetchDspySuggestions();
-                fetchDspyMetrics();
-            }
-        }, 5000); // Every 5 seconds
+            fetchDspySuggestions();
+            fetchDspyMetrics();
+        }, 3000); // Every 3 seconds
+        
+        // Initial fetch on page load
+        setTimeout(() => {
+            fetchDspySuggestions();
+            fetchDspyMetrics();
+        }, 1000);
 
         // Load exploit list on page load
         async function loadExploitList() {

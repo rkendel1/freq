@@ -232,6 +232,8 @@ class DemoServer:
         def get_dspy_suggestions():
             """Get DSPy parameter suggestions."""
             suggestions = self.dspy_advisor.generate_suggestions()
+            logger.info(f"DSPy suggestions requested: {len(suggestions)} suggestions generated")
+            logger.debug(f"Trade counter: {self.trade_counter}, Total trades observed by DSPy")
             return jsonify({
                 "suggestions": [
                     {
@@ -245,7 +247,8 @@ class DemoServer:
                         "confidence": s.confidence,
                     }
                     for s in suggestions
-                ]
+                ],
+                "total_trades_observed": self.trade_counter,
             })
 
         @self.app.route("/api/dspy/metrics")
