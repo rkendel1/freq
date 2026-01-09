@@ -38,8 +38,8 @@ def test_null_exploit_never_proposes_actions():
     
     state = ExecutionState(
         symbol="BTC/USDT",
-        available=1000.0,
-        deployed=0.0,
+        available_capital=1000.0,
+        deployed_capital=0.0,
         open_positions=[],
         recent_trades=[],
         current_price=50000.0,
@@ -64,8 +64,8 @@ def test_engine_with_no_exploits_does_nothing():
     # Simulate multiple evaluation cycles
     state1 = ExecutionState(
         symbol="BTC/USDT",
-        available=1000.0,
-        deployed=0.0,
+        available_capital=1000.0,
+        deployed_capital=0.0,
         open_positions=[],
         recent_trades=[],
         current_price=50000.0,
@@ -74,8 +74,8 @@ def test_engine_with_no_exploits_does_nothing():
     
     state2 = ExecutionState(
         symbol="ETH/USDT",
-        available=1000.0,
-        deployed=0.0,
+        available_capital=1000.0,
+        deployed_capital=0.0,
         open_positions=[],
         recent_trades=[],
         current_price=3000.0,
@@ -119,8 +119,8 @@ def test_trading_requires_action_object():
     exploit = TestExploit()
     state = ExecutionState(
         symbol="BTC/USDT",
-        available=1000.0,
-        deployed=0.0,
+        available_capital=1000.0,
+        deployed_capital=0.0,
         open_positions=[],
         recent_trades=[],
         current_price=50000.0,
