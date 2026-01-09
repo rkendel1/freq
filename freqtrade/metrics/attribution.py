@@ -16,9 +16,16 @@ This is RAW attribution only - no analytics or aggregation.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-from freqtrade.persistence import Trade
+if TYPE_CHECKING:
+    from freqtrade.persistence import Trade
+else:
+    # For runtime when persistence is not available (e.g., Vercel deployment)
+    try:
+        from freqtrade.persistence import Trade
+    except (ImportError, ModuleNotFoundError):
+        Trade = Any
 
 
 @dataclass
