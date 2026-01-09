@@ -36,3 +36,6 @@ pytz==2025.2
 schedule==1.2.2
 
 packaging==25.0
+
+# Demo UI
+flask==3.1.0
