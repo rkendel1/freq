@@ -126,6 +126,75 @@ See [freqtrade/ui/README.md](freqtrade/ui/README.md) for complete documentation 
 - Architecture details
 - Example walkthroughs
 
+## DSPy Advisor Integration (NEW!)
+
+The demo now includes a **DSPy Advisor UI** that provides AI-powered parameter optimization suggestions:
+
+### Features
+
+1. **⚙️ Current Parameters** - View and adjust trading parameters:
+   - Position Size (0.01 - 0.50)
+   - Profit Target (0.01 - 0.20)
+   - Stop Loss (0.01 - 0.15)
+
+2. **💡 DSPy Suggestions** - Get AI recommendations:
+   - Side-by-side comparison: Current → Suggested
+   - Confidence scores with color-coded bars
+   - Detailed rationale for each suggestion
+   - One-click "Apply" buttons
+
+3. **📈 Performance Metrics** - Real-time tracking:
+   - Sharpe Ratio
+   - Win Rate
+   - Capital Efficiency
+   - Total Trades
+
+### How to Use DSPy
+
+1. **Start Automated Mode:**
+   ```
+   Mode: 🤖 Automated
+   Market: Mixed (Realistic)
+   Click "▶️ Start Auto"
+   ```
+
+2. **Wait for Data:**
+   - DSPy needs at least 5 completed trades
+   - Suggestions auto-refresh every 5 seconds
+   - Watch metrics update in real-time
+
+3. **Review Suggestions:**
+   - Check confidence scores (higher = more reliable)
+   - Read rationale to understand why
+   - Compare current vs. suggested values
+
+4. **Apply Changes:**
+   - Click "Apply" next to any suggestion
+   - Or manually adjust in the input fields
+   - Click "💾 Update Parameters" to save
+
+### Example Output
+
+After 10 trades with mixed performance, DSPy might suggest:
+
+```
+Position Size: 0.15 → 0.12 (-20%)
+Confidence: 85%
+Rationale: Low Sharpe ratio (0.45) suggests reducing exposure
+```
+
+You can then apply this suggestion with one click!
+
+### Screenshot
+
+![DSPy Advisor UI](https://github.com/user-attachments/assets/6f1b5eb2-9815-4157-9f15-cb1238176cb2)
+
+The DSPy section appears at the bottom of the demo page, showing:
+- Current parameters with editable inputs
+- Suggested values side-by-side
+- Performance metrics dashboard
+- Real-time updates as trades execute
+
 ## Why This Matters
 
 This demo proves the architecture works as designed:
@@ -133,4 +202,5 @@ This demo proves the architecture works as designed:
 ✅ **Intent ↔ Execution Separation** - Clear boundary between decision and execution  
 ✅ **Explicit State Flow** - No hidden mutations, all changes are visible  
 ✅ **Risk Enforcement** - Actions validated before execution  
-✅ **Testability** - Complete end-to-end testing with predictable results
+✅ **Testability** - Complete end-to-end testing with predictable results  
+✅ **AI-Powered Optimization** - DSPy provides intelligent parameter suggestions (NEW!)
