@@ -20,13 +20,11 @@ from freqtrade.constants import (
     PairWithTimeframe,
 )
 from freqtrade.data.history import get_datahandler, load_pair_history
-from freqtrade.enums import CandleType, RPCMessageType, RunMode, TradingMode
+from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.exchange.exchange_types import FundingRate, OrderBook
 from freqtrade.misc import append_candles_to_dataframe
-from freqtrade.rpc import RPCManager
-from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg
 from freqtrade.util import PeriodicCache
 
 
@@ -42,12 +40,10 @@ class DataProvider:
         config: Config,
         exchange: Exchange | None,
         pairlists=None,
-        rpc: RPCManager | None = None,
     ) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
-        self.__rpc = rpc
         self.__cached_pairs: dict[PairWithTimeframe, tuple[DataFrame, datetime]] = {}
         self.__slice_index: dict[str, int] = {}
         self.__slice_date: datetime | None = None
@@ -119,29 +115,15 @@ class DataProvider:
 
     def _emit_df(self, pair_key: PairWithTimeframe, dataframe: DataFrame, new_candle: bool) -> None:
         """
-        Send this dataframe as an ANALYZED_DF message to RPC
+        Log dataframe analysis instead of sending RPC message.
 
         :param pair_key: PairWithTimeframe tuple
         :param dataframe: Dataframe to emit
         :param new_candle: This is a new candle
         """
-        if self.__rpc:
-            msg: RPCAnalyzedDFMsg = {
-                "type": RPCMessageType.ANALYZED_DF,
-                "data": {
-                    "key": pair_key,
-                    "df": dataframe.tail(1),
-                    "la": datetime.now(UTC),
-                },
-            }
-            self.__rpc.send_msg(msg)
-            if new_candle:
-                self.__rpc.send_msg(
-                    {
-                        "type": RPCMessageType.NEW_CANDLE,
-                        "data": pair_key,
-                    }
-                )
+        # RPC removed - just log if needed
+        if new_candle:
+            logger.debug(f"New candle for {pair_key}")
 
     def _replace_external_df(
         self,
