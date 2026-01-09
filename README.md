@@ -25,6 +25,34 @@ but contains **no trading logic** or signal generation.
 - ✅ Risk management primitives
 - ✅ Capital and state isolation
 
+## 🎯 Demo UI - See It In Action
+
+**NEW:** Interactive demo UI for visualizing the execution flow!
+
+```bash
+# Quick start - just run this script
+./start_demo.sh         # Linux/Mac
+./start_demo.ps1        # Windows
+
+# Then open your browser to:
+# http://127.0.0.1:5000
+```
+
+![Demo UI Screenshot](https://github.com/user-attachments/assets/d01df924-4108-478d-a0fd-9cc0a5108209)
+
+The demo UI shows step-by-step how data flows through the system:
+- **State** → **Exploit** → **Action** → **Risk** → **Execution** → **Result**
+
+Try different scenarios to see how:
+- Actions are generated from state
+- Risk limits approve or reject actions
+- Capital moves through the system
+- One component's output becomes another's input
+
+📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)** | 📝 **[Quick Start Guide](DEMO_UI_QUICKSTART.md)**
+
+---
+
 ## Architecture
 
 This system follows a strict **Intent → Execution** separation:
