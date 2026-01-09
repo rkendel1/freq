@@ -438,6 +438,9 @@ class DemoServer:
         # Step 3: Automated exploit generates Actions based on market analysis
         actions = self.automated_exploit.evaluate(exec_state)
         
+        # Capture decision criteria that was used
+        decision_criteria = self.automated_exploit.get_last_decision_criteria()
+        
         actions_data = []
         for action in actions:
             actions_data.append({
@@ -588,6 +591,7 @@ class DemoServer:
                 "volume": tick.volume,
                 "condition": tick.condition,
             },
+            "decision_criteria": decision_criteria,  # NEW: Show how decision was made
             "flow": {
                 "1_initial_state": initial_state,
                 "2_execution_state": {
