@@ -25,11 +25,10 @@ This repository can be deployed to Vercel to provide a public demo of the Execut
 ## Configuration
 
 The `vercel.json` file configures:
-- Python version: 3.11
-- Entry point: `api/app.py`
-- Routes: All requests go to the FastAPI app
-- Function memory: 1024 MB (1 GB)
-- Function max duration: 10 seconds
+- Rewrites: All requests are routed to the FastAPI app at `/api/app`
+- Entry point: `api/app.py` (auto-detected by Vercel)
+- Python version: Uses Vercel's default Python runtime (3.9+)
+- Function settings: Can be configured in Vercel dashboard if needed (memory, max duration, etc.)
 
 ### Deployment Optimization
 
@@ -93,6 +92,12 @@ Then visit `http://127.0.0.1:8000` in your browser.
 
 ## Troubleshooting
 
+### Deployment fails with "pattern doesn't match any Serverless Functions"
+- This error occurs if `vercel.json` has an incorrect `functions` configuration
+- Solution: Remove the `functions` block or use correct glob patterns
+- Vercel auto-detects Python files in `api/` directory
+- Function settings can be configured in Vercel dashboard instead
+
 ### Deployment fails with "Serverless Function has exceeded the unzipped maximum size"
 - The repository has been optimized to stay under the 250MB limit
 - Ensure `.vercelignore` is present and properly configured
@@ -116,9 +121,9 @@ Then visit `http://127.0.0.1:8000` in your browser.
 
 ## Environment Variables
 
-You can set environment variables in Vercel dashboard if needed:
-- `PYTHON_VERSION`: Set in vercel.json (3.11)
-- Add any custom environment variables for your deployment
+You can set environment variables in the Vercel dashboard if needed:
+- Python version: Managed by Vercel's default runtime (typically Python 3.9+)
+- Add any custom environment variables for your deployment in the Vercel dashboard
 
 ## Monitoring
 
