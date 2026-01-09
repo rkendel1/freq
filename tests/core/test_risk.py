@@ -44,8 +44,8 @@ def test_risk_manager_allows_valid_action():
 
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1000,
     )
@@ -73,8 +73,8 @@ def test_risk_manager_rejects_oversized_position():
 
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1000,
     )
@@ -103,8 +103,8 @@ def test_risk_manager_rejects_too_many_positions():
     # Already have 3 positions open
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=500.0,
+        available=1000.0,
+        deployed=500.0,
         open_positions=3,  # At limit
         current_timestamp=1000,
     )
@@ -133,8 +133,8 @@ def test_risk_manager_rejects_excessive_exposure():
     # Already at 95% exposure
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=50.0,  # Only 5% available
-        deployed_capital=950.0,  # 95% deployed
+        available=50.0,  # Only 5% available
+        deployed=950.0,  # 95% deployed
         open_positions=2,
         current_timestamp=1000,
     )
@@ -167,8 +167,8 @@ def test_risk_manager_cooldown():
     # Try again at timestamp 1030 (30 seconds later, within cooldown)
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1030,
     )
@@ -179,8 +179,8 @@ def test_risk_manager_cooldown():
     # Try again at timestamp 1070 (70 seconds later, after cooldown)
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1070,
     )
@@ -211,8 +211,8 @@ def test_risk_manager_daily_loss_limit():
 
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1000,
     )
@@ -225,8 +225,8 @@ def test_risk_manager_daily_loss_limit():
 
     allowed, reason = manager.check_action(
         action=action,
-        available_capital=1000.0,
-        deployed_capital=0.0,
+        available=1000.0,
+        deployed=0.0,
         open_positions=0,
         current_timestamp=1000,
     )
