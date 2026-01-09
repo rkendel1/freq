@@ -6,7 +6,7 @@ Tests that risk limits are enforced properly before execution.
 
 import pytest
 from freqtrade.core.risk import RiskLimits, RiskManager
-from freqtrade.exploits.exploit_module import Action, ActionType
+from freqtrade.core.actions import Action, ActionType, Side
 
 
 def test_risk_limits_creation():
@@ -37,9 +37,11 @@ def test_risk_manager_allows_valid_action():
     manager = RiskManager(limits)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.05,  # 5% position size, within 10% limit
+        reason="test_action",
     )
 
     allowed, reason = manager.check_action(
@@ -66,9 +68,11 @@ def test_risk_manager_rejects_oversized_position():
     manager = RiskManager(limits)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.15,  # 15% position size, exceeds 10% limit
+        reason="test_action",
     )
 
     allowed, reason = manager.check_action(
@@ -95,9 +99,11 @@ def test_risk_manager_rejects_too_many_positions():
     manager = RiskManager(limits)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.05,
+        reason="test_action",
     )
 
     # Already have 3 positions open
@@ -125,9 +131,11 @@ def test_risk_manager_rejects_excessive_exposure():
     manager = RiskManager(limits)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.1,
+        reason="test_action",
     )
 
     # Already at 95% exposure
@@ -156,9 +164,11 @@ def test_risk_manager_cooldown():
     manager = RiskManager(limits)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.1,
+        reason="test_action",
     )
 
     # Record action at timestamp 1000
@@ -204,9 +214,11 @@ def test_risk_manager_daily_loss_limit():
     manager.record_loss(0.20)
 
     action = Action(
-        type=ActionType.OPEN_LONG,
+        type=ActionType.OPEN,
         symbol="BTC/USDT",
+        side=Side.LONG,
         size=0.1,
+        reason="test_action",
     )
 
     allowed, reason = manager.check_action(
