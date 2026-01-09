@@ -121,33 +121,73 @@ python -m freqtrade.ui.demo_server
 To run the trading bot in dry-run mode (no real trading):
 
 ```bash
-# First, create a user directory
+# Step 1: Create a user directory
 python -m freqtrade create-userdir --userdir user_data
 
-# Create a config file
-python -m freqtrade new-config --config user_data/config.json
+# Step 2: Copy example config
+cp config.example.json user_data/config.json
 
-# Run in dry-run mode
-python -m freqtrade trade --config user_data/config.json --strategy SampleStrategy
+# Step 3: Edit the config (optional)
+# Open user_data/config.json and customize as needed
+# Make sure "dry_run": true is set!
+
+# Step 4: Run in dry-run mode
+python -m freqtrade trade --config user_data/config.json
+
+# Note: Even in dry-run mode, you may need exchange API keys
+# for market data. For fully local testing, use the demo UI instead.
 ```
+
+**Alternative: Use NullExploitModule for Testing**
+
+To test the engine without any trading logic:
+
+```bash
+# Create user directory
+python -m freqtrade create-userdir --userdir user_data
+
+# Copy example config
+cp config.example.json user_data/config.json
+
+# Edit config to use NullExploitModule (does nothing, just runs)
+# Add to config.json:
+# "exploit_module": "freqtrade.exploits.exploit_module.NullExploitModule"
+
+# Run the bot
+python -m freqtrade trade --config user_data/config.json
+```
+
+This proves the execution engine is decoupled from decision-making.
+
 
 ### Complete Platform (Backend + UI)
 
 Run both the backend and demo UI simultaneously:
 
 ```bash
-# Use the unified startup script
+# Use the unified startup script (starts demo UI only)
 ./start.sh          # Linux/Mac
 ./start.ps1         # Windows
 
-# Or manually in separate terminals:
+# To run both backend AND demo UI, use separate terminals:
 
-# Terminal 1: Start backend
-python -m freqtrade trade --config user_data/config.json --strategy SampleStrategy
+# Terminal 1: Start backend (if you have exchange API keys)
+python -m freqtrade create-userdir --userdir user_data
+cp config.example.json user_data/config.json
+# Edit user_data/config.json with your exchange keys
+python -m freqtrade trade --config user_data/config.json
 
 # Terminal 2: Start demo UI
 python -m freqtrade.ui.demo_server
 ```
+
+**Note:** For most development and testing, the demo UI alone is sufficient. The backend is only needed when you want to:
+- Connect to real exchange APIs
+- Run live or dry-run trading
+- Test your custom exploit modules with market data
+
+See [examples/README.md](examples/README.md) for more backend examples.
+
 
 ---
 
