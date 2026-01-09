@@ -48,7 +48,7 @@ This single command will:
 
 ## 🎯 Demo UI - See It In Action
 
-**Interactive demo UI showing HOW THE SYSTEM MAKES MONEY:**
+**Interactive demo with TWO modes:**
 
 ```bash
 # Quick start - just run this script
@@ -61,22 +61,53 @@ This single command will:
 
 ![Demo UI Screenshot](https://github.com/user-attachments/assets/d01df924-4108-478d-a0fd-9cc0a5108209)
 
-The demo UI shows the complete money-making cycle:
+### 📝 Manual Mode - Understanding the System
+
+Shows the complete money-making cycle step-by-step:
 - **Open Position** → Deploy capital into a trade
 - **Market Movement** → Price moves in your favor  
 - **Close Position** → Realize profit and get capital back **with gains**
 
-**💡 Try the "Profitable Trade Cycle" scenario** to see a complete example:
+**💡 Try the "Profitable Trade Cycle" scenario:**
 1. Opens a 15% position (deploys $1,500)
 2. Closes with 8% profit (returns $1,500 + $120 profit)
 3. Your capital grows from $10,000 → $10,120
 
-This clearly demonstrates:
-- How capital moves through the system
-- Where profit is generated
-- How money is made through trading
+### 🤖 Automated Mode - Realistic Bot Operation **NEW!**
 
-📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)** | 📝 **[Quick Start Guide](DEMO_UI_QUICKSTART.md)**
+**See the bot operate autonomously with realistic market simulation:**
+- ✅ **Continuous operation** - Bot runs automatically without manual intervention
+- ✅ **Realistic market data** - Simulated price ticks mimicking real markets
+- ✅ **Live decision-making** - Watch the strategy analyze and execute in real-time
+- ✅ **Multiple market conditions** - Test in trending, volatile, ranging markets
+- ✅ **Real performance metrics** - See actual wins, losses, and P&L
+
+Switch to **Automated Mode** in the UI and click "Start Auto" to see the platform do what it will do in live markets!
+
+📖 **[Automated Demo Guide](AUTOMATED_DEMO_GUIDE.md)** | 📖 **[Full Demo UI Documentation](freqtrade/ui/README.md)** | 📝 **[Quick Start Guide](DEMO_UI_QUICKSTART.md)**
+
+### 🧪 Backtesting Adapter
+
+**Easy integration with backtesting tools:**
+
+```python
+from freqtrade.ui.backtest_adapter import run_quick_backtest
+
+# Run realistic automated simulation
+results = run_quick_backtest(
+    market_condition="mixed",
+    num_ticks=1000,
+    initial_capital=10000.0
+)
+
+print(f"Final Capital: ${results['final_capital']:,.2f}")
+print(f"Total Return: {results['total_return_pct']:+.2f}%")
+print(f"Win Rate: {results['win_rate']:.2f}%")
+```
+
+See `examples/automated_backtest_example.py` for complete examples.
+
+
 
 ---
 
