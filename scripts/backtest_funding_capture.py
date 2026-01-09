@@ -21,6 +21,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+# NOTE: Full integration with freqtrade backtesting engine is planned for future work.
+# This standalone script validates the deterministic behavior of data generation
+# and strategy logic. For production use, integrate with freqtrade's Backtesting class.
+
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -363,10 +367,11 @@ def main():
 
     results = []
 
-    # Run each scenario
-    for scenario_name, market_type in scenarios:
-        # Set seed for reproducibility
-        np.random.seed(42)
+    # Run each scenario with different seeds
+    for idx, (scenario_name, market_type) in enumerate(scenarios):
+        # Use different seed for each scenario to create diverse market conditions
+        # But keep it fixed for reproducibility
+        np.random.seed(42 + idx)
         result = run_backtest_scenario(scenario_name, market_type)
         results.append(result)
 
