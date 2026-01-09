@@ -339,6 +339,27 @@ netstat -ano | findstr :5000
 taskkill /PID <PID> /F
 ```
 
+### "HTTP ERROR 403" or "Access Denied" when accessing 127.0.0.1:5000
+
+**This has been fixed!** The server now runs without debug mode by default, which resolves this issue.
+
+**Cause:** Flask 3.1.0's debug mode can cause 403 errors due to debugger PIN protection and stricter security settings.
+
+**Solution:** The fix is already applied. The server runs in non-debug mode by default. If you still encounter this issue:
+1. Make sure you're running the latest version of the code
+2. Try restarting the server
+3. Clear your browser cache
+4. Try accessing from a different browser
+
+**For Developers:** If you need debug mode for development, you can enable it:
+```bash
+# Linux/Mac
+FLASK_DEBUG=true ./start.sh
+
+# Windows PowerShell
+$env:FLASK_DEBUG='true'; python -m freqtrade.ui.demo_server
+```
+
 ### Virtual Environment Won't Activate (Windows)
 
 **Solution:** Allow script execution
