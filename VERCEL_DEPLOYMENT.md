@@ -34,20 +34,25 @@ The `vercel.json` file configures:
 
 To keep the deployment under Vercel's 250MB limit, this repository uses several optimization strategies:
 
-1. **`.vercelignore`** - Excludes large unnecessary files:
+1. **`.vercelignore`** - Excludes large unnecessary files from the repository:
    - Tests directory (22MB+)
    - Build helpers with wheel files (41MB+)
    - Documentation files
    - Development tools
 
-2. **Minimal Dependencies** - `requirements.txt` contains only essential packages:
+2. **`vercel.json` Function Exclusions** - Uses `excludeFiles` to exclude unnecessary modules from the serverless function bundle:
+   - Excludes 4.2MB of freqtrade modules not needed by the API (exchange integrations, backtesting, database persistence, etc.)
+   - Keeps only 568KB of essential modules (core, exploits, ui, metrics)
+   - Reduces serverless function code size by 87%
+
+3. **Minimal Dependencies** - `requirements.txt` contains only essential packages:
    - FastAPI, uvicorn (web server)
    - numpy (for market simulator)
    - pydantic, python-dateutil (utilities)
    
    Full dependencies are available in `requirements-full.txt` for local development.
 
-3. **Conditional Imports** - Heavy dependencies (pandas, SQLAlchemy, ccxt) are imported conditionally and gracefully degrade if not available.
+4. **Conditional Imports** - Heavy dependencies (pandas, SQLAlchemy, ccxt) are imported conditionally with proper fallbacks and gracefully degrade if not available.
 
 ## What Gets Deployed
 
@@ -133,9 +138,26 @@ You can set environment variables in the Vercel dashboard if needed:
 
 ## Size Breakdown
 
-Current deployment size breakdown (approximate):
-- Python packages: ~30MB (minimal set)
-- Source code: ~5MB
-- Total: Well under 250MB limit ✅
+Current deployment size breakdown (approximate, uncompressed):
+- Python packages: ~50-70MB (minimal set: FastAPI, numpy, etc.)
+- Source code: ~732KB (api + dspy + essential freqtrade modules)
+- **Total: ~70-80MB** - Well under 250MB limit ✅
 
-For comparison, the full installation with all dependencies would be ~200MB+.
+For comparison, without optimizations the deployment would be ~200-300MB+, exceeding the limit.
+
+### What's Excluded from Deployment
+
+The `vercel.json` configuration excludes these freqtrade modules from the serverless function:
+- `freqtrade/exchange/` - Exchange integrations (2.7MB)
+- `freqtrade/data/` - Data processing
+- `freqtrade/optimize/` - Backtesting & optimization
+- `freqtrade/persistence/` - Database models
+- `freqtrade/strategy/` - Strategy framework
+- `freqtrade/commands/` - CLI commands
+- `freqtrade/configuration/` - Config parsing
+- And 10 other directories not needed for the demo API
+
+These exclusions are safe because:
+1. The API only uses core functionality (state management, actions, exploits)
+2. Excluded modules have proper import fallbacks
+3. The demo doesn't require exchange connectivity or database persistence
