@@ -101,19 +101,28 @@ python -c "import flask; print(f'Flask {flask.__version__}')"
 
 ## Running the Platform
 
-### Demo UI Only
+### Demo UI - Quick Start
 
-The demo UI provides a visual walkthrough of the execution engine:
+**Recommended: Use the unified startup script**
 
 ```bash
-# Method 1: Using the dedicated demo script
-./start_demo.sh     # Linux/Mac
-./start_demo.ps1    # Windows
+./start.sh      # Linux/Mac
+./start.ps1     # Windows
 
-# Method 2: Direct Python execution
+# Then open: http://localhost:5000
+```
+
+**Or try the live demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/)
+
+**Alternative methods:**
+
+```bash
+# Direct Python execution
 python -m freqtrade.ui.demo_server
 
-# Then open: http://127.0.0.1:5000
+# Legacy demo-only script (still works)
+./start_demo.sh     # Linux/Mac
+./start_demo.ps1    # Windows
 ```
 
 ### Trading Bot Backend (Dry Run Mode)
@@ -337,6 +346,27 @@ lsof -ti:5000 | xargs kill -9
 # Windows
 netstat -ano | findstr :5000
 taskkill /PID <PID> /F
+```
+
+### "HTTP ERROR 403" or "Access Denied" when accessing 127.0.0.1:5000
+
+**This has been fixed!** The server now runs without debug mode by default, which resolves this issue.
+
+**Cause:** Flask 3.1.0's debug mode can cause 403 errors due to debugger PIN protection and stricter security settings.
+
+**Solution:** The fix is already applied. The server runs in non-debug mode by default. If you still encounter this issue:
+1. Make sure you're running the latest version of the code
+2. Try restarting the server
+3. Clear your browser cache
+4. Try accessing from a different browser
+
+**For Developers:** If you need debug mode for development, you can enable it:
+```bash
+# Linux/Mac
+FLASK_DEBUG=true ./start.sh
+
+# Windows PowerShell
+$env:FLASK_DEBUG='true'; python -m freqtrade.ui.demo_server
 ```
 
 ### Virtual Environment Won't Activate (Windows)

@@ -47,15 +47,26 @@ echo ""
 # Navigate to the correct directory
 cd "$(dirname "$0")"
 
+# Determine host and port
+HOST=${HOST:-0.0.0.0}
+PORT=${PORT:-5000}
+
 echo "=================================================="
 echo "  Starting Demo Server"
 echo "=================================================="
 echo ""
 echo "The demo UI will be available at:"
 echo ""
-echo "    http://127.0.0.1:5000"
+if [ "$HOST" = "0.0.0.0" ]; then
+    echo "    http://localhost:${PORT}"
+    echo "    http://127.0.0.1:${PORT}"
+else
+    echo "    http://${HOST}:${PORT}"
+fi
 echo ""
 echo "Press Ctrl+C to stop the server"
+echo "Tip: Set FLASK_DEBUG=true to enable debug mode"
+echo "Tip: Customize with HOST=0.0.0.0 PORT=8080 ./start_demo.sh"
 echo ""
 echo "=================================================="
 echo ""

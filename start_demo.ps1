@@ -52,6 +52,7 @@ Write-Host ""
 Write-Host "    http://127.0.0.1:5000" -ForegroundColor Green
 Write-Host ""
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
+Write-Host "Tip: Set `$env:FLASK_DEBUG='true'` before running to enable debug mode" -ForegroundColor Gray
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""

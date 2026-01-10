@@ -25,6 +25,14 @@ but contains **no trading logic** or signal generation.
 - ✅ Risk management primitives
 - ✅ Capital and state isolation
 
+## 🚀 Quick Start - Try It Online
+
+**🌐 Live Demo on Render:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/)
+
+No installation needed - try the full demo UI instantly in your browser!
+
+---
+
 ## 🚀 Quick Start - Run Locally
 
 **Pushbutton startup - get the platform running in seconds:**
@@ -40,7 +48,7 @@ but contains **no trading logic** or signal generation.
 This single command will:
 - ✅ Check dependencies and install if needed
 - ✅ Start the demo UI server
-- ✅ Open the platform at http://127.0.0.1:5000
+- ✅ Open the platform at http://localhost:5000
 
 📖 **[Complete Local Development Guide](LOCAL_DEVELOPMENT.md)** - Full setup instructions, troubleshooting, and development workflow
 
@@ -50,13 +58,17 @@ This single command will:
 
 **Interactive demo with TWO modes:**
 
+**Option 1: Use the live demo (no setup needed)**
+- 🌐 **Live Demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/)
+
+**Option 2: Run locally**
 ```bash
 # Quick start - just run this script
-./start_demo.sh         # Linux/Mac
-./start_demo.ps1        # Windows
+./start.sh         # Linux/Mac
+./start.ps1        # Windows
 
 # Then open your browser to:
-# http://127.0.0.1:5000
+# http://localhost:5000
 ```
 
 ![Demo UI Screenshot](https://github.com/user-attachments/assets/d01df924-4108-478d-a0fd-9cc0a5108209)

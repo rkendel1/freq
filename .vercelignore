@@ -1,0 +1,78 @@
+# Vercel Ignore - Exclude unnecessary files from deployment to stay under 250MB limit
+
+# Tests (22MB+)
+tests/
+*.test.py
+*_test.py
+
+# Build helpers with large wheel files (41MB+)
+build_helpers/
+
+# Documentation
+docs/
+*.md
+!README.md
+mkdocs.yml
+.readthedocs.yml
+
+# Examples and demos
+examples/
+config_examples/
+
+# Development files
+.git/
+.github/
+.vscode/
+.devcontainer/
+.aider/
+
+# Docker files
+docker/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development dependencies
+requirements-dev.txt
+.pre-commit-config.yaml
+.pylintrc
+.coveragerc
+
+# Scripts
+scripts/
+setup.sh
+setup.ps1
+start.sh
+start.ps1
+start_demo.sh
+start_demo.ps1
+
+# Validation and testing scripts
+validate_*.py
+scale_validation_report_30day.json
+
+# Service files
+freqtrade.service
+freqtrade.service.watchdog
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.eggs/
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# User data
+user_data/
+
+# Manifest
+MANIFEST.in

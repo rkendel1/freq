@@ -159,6 +159,7 @@ Write-Host ""
 Print-Warning "Press Ctrl+C to stop the server"
 Write-Host ""
 Write-Host "  For backend trading bot, see: LOCAL_DEVELOPMENT.md" -ForegroundColor Gray
+Write-Host "  To enable debug mode, set `$env:FLASK_DEBUG='true'` before running this script" -ForegroundColor Blue
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""

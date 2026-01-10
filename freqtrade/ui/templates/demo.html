@@ -20,10 +20,11 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 100%;
+            width: 100%;
+            margin: 0;
             background: white;
-            border-radius: 10px;
+            border-radius: 0;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             overflow: hidden;
         }
@@ -371,18 +372,106 @@
 
         .history-item {
             background: white;
-            padding: 20px;
+            padding: 12px 20px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 4px solid #667eea;
+        }
+        
+        .history-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(2px);
+        }
+        
+        .history-item.expanded {
+            padding: 20px;
         }
 
         .history-item-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e9ecef;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .history-item-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .history-item-metrics {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .history-metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        .history-metric-label {
+            font-size: 10px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        
+        .history-metric-value {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .history-metric-value.positive {
+            color: #28a745;
+        }
+        
+        .history-metric-value.negative {
+            color: #dc3545;
+        }
+        
+        .history-expand-icon {
+            transition: transform 0.3s ease;
+            font-size: 18px;
+            color: #667eea;
+        }
+        
+        .history-item.expanded .history-expand-icon {
+            transform: rotate(90deg);
+        }
+        
+        .history-item-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .history-item.expanded .history-item-details {
+            max-height: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .history-item.border-profit {
+            border-left-color: #28a745;
+        }
+        
+        .history-item.border-loss {
+            border-left-color: #dc3545;
+        }
+        
+        .history-item.border-neutral {
+            border-left-color: #667eea;
         }
         
         /* Individual Trade Details */
@@ -1323,6 +1412,8 @@
             // Extract trade details
             const executionResults = trace.flow['5_execution_results'] || [];
             let tradeDetailsHTML = '';
+            let profit = 0;
+            let hasProfit = false;
             
             executionResults.forEach(result => {
                 if (result.profit !== undefined) {
@@ -1338,6 +1429,9 @@
                     };
                     allTrades.push(trade);
                     tradeTimestamps.push(Date.now());
+                    
+                    profit = result.profit;
+                    hasProfit = true;
                     
                     const entryPrice = result.entry_price || 0;
                     const exitPrice = result.exit_price || 0;
@@ -1396,33 +1490,44 @@
                 }
             });
             
+            // Determine border class based on profit
+            let borderClass = 'border-neutral';
+            if (hasProfit) {
+                borderClass = profit > 0 ? 'border-profit' : 'border-loss';
+            }
+            
             const historyHTML = `
-                <div class="history-item fade-in">
+                <div class="history-item fade-in ${borderClass}" data-step="${trace.step}">
                     <div class="history-item-header">
-                        <strong>Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
-                        <span>${timestamp}</span>
-                    </div>
-                    <div class="data-grid">
-                        <div class="data-item">
-                            <label>Actions Generated</label>
-                            <div class="value">${trace.flow['3_actions_generated'].length}</div>
+                        <div class="history-item-title">
+                            <strong style="font-size: 14px;">Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
+                            <span style="font-size: 12px; color: #6c757d;">${timestamp}</span>
                         </div>
-                        <div class="data-item">
-                            <label>Actions Approved</label>
-                            <div class="value">${trace.flow['4_risk_checks'].filter(c => c.approved).length}</div>
-                        </div>
-                        <div class="data-item">
-                            <label>Executions</label>
-                            <div class="value">${trace.flow['5_execution_results'].length}</div>
-                        </div>
-                        <div class="data-item">
-                            <label>Capital Change</label>
-                            <div class="value ${trace.state_changes.capital_change < 0 ? 'negative' : 'positive'}">
-                                ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
+                        <div class="history-item-metrics">
+                            <div class="history-metric">
+                                <div class="history-metric-label">Generated</div>
+                                <div class="history-metric-value">${trace.flow['3_actions_generated'].length}</div>
                             </div>
+                            <div class="history-metric">
+                                <div class="history-metric-label">Approved</div>
+                                <div class="history-metric-value">${trace.flow['4_risk_checks'].filter(c => c.approved).length}</div>
+                            </div>
+                            <div class="history-metric">
+                                <div class="history-metric-label">Executed</div>
+                                <div class="history-metric-value">${trace.flow['5_execution_results'].length}</div>
+                            </div>
+                            <div class="history-metric">
+                                <div class="history-metric-label">P&L</div>
+                                <div class="history-metric-value ${trace.state_changes.capital_change < 0 ? 'negative' : 'positive'}">
+                                    ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="history-expand-icon">▶</div>
                         </div>
                     </div>
-                    ${tradeDetailsHTML}
+                    <div class="history-item-details">
+                        ${tradeDetailsHTML}
+                    </div>
                 </div>
             `;
             
@@ -1431,6 +1536,14 @@
             }
             
             history.insertAdjacentHTML('afterbegin', historyHTML);
+            
+            // Add event listener to the new history item using event delegation
+            const newItem = history.firstElementChild;
+            if (newItem && newItem.classList.contains('history-item')) {
+                newItem.addEventListener('click', function() {
+                    this.classList.toggle('expanded');
+                });
+            }
             
             // Update metrics and chart
             updateTransactionMetrics();
