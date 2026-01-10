@@ -37,8 +37,8 @@ Just visit [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/) an
 **1. Start the Demo Server**
 
 ```bash
-./start_demo.sh        # Linux/Mac
-./start_demo.ps1       # Windows
+./start.sh        # Linux/Mac
+./start.ps1       # Windows
 ```
 
 Or manually:

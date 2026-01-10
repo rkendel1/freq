@@ -64,8 +64,8 @@ This single command will:
 **Option 2: Run locally**
 ```bash
 # Quick start - just run this script
-./start_demo.sh         # Linux/Mac
-./start_demo.ps1        # Windows
+./start.sh         # Linux/Mac
+./start.ps1        # Windows
 
 # Then open your browser to:
 # http://localhost:5000

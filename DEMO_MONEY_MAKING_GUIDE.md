@@ -10,11 +10,13 @@
 
 1. **Start the demo:**
    ```bash
-   ./start_demo.sh        # Linux/Mac
-   ./start_demo.ps1       # Windows
+   ./start.sh        # Linux/Mac
+   ./start.ps1       # Windows
    ```
+   
+   Or try the live demo: [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/)
 
-2. **Open browser:** http://127.0.0.1:5000
+2. **Open browser:** http://localhost:5000 (or use the live demo link above)
 
 3. **Select "💰 Profitable Trade Cycle"** (first option in dropdown)
 

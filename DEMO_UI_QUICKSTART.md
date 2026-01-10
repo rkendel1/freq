@@ -10,7 +10,27 @@ No setup needed - access the full demo UI instantly in your browser!
 
 ## Starting the Demo Locally
 
-### Ultra-Quick Start (No Setup Needed)
+### Recommended: Use the Startup Script
+
+**Linux/Mac:**
+```bash
+./start.sh
+```
+
+**Windows:**
+```powershell
+./start.ps1
+```
+
+The scripts automatically:
+- ✅ Check if you're in a virtual environment (optional, not required)
+- ✅ Check Python version
+- ✅ Install dependencies if needed
+- ✅ Start the server
+
+Then open: **http://localhost:5000**
+
+### Alternative: Quick Start (No Setup Needed)
 
 ```bash
 # Install Flask (if not already installed)
@@ -23,26 +43,6 @@ python -m freqtrade.ui.demo_server
 ```
 
 **That's it!** No virtual environment, Docker, or complex setup required for the demo.
-
-### Using the Startup Scripts (Recommended)
-
-**Linux/Mac:**
-```bash
-./start_demo.sh
-```
-
-**Windows:**
-```powershell
-./start_demo.ps1
-```
-
-The scripts automatically:
-- ✅ Check if you're in a virtual environment (optional, not required)
-- ✅ Check Python version
-- ✅ Install Flask if needed
-- ✅ Start the server
-
-Then open: **http://localhost:5000**
 
 ## Do I Need a Virtual Environment?
 

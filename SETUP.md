@@ -146,15 +146,17 @@ pip install -r requirements.txt
 ### Step 3: Run the Demo
 
 ```bash
-# Method 1: Use the startup script
-./start_demo.sh      # Linux/Mac
-./start_demo.ps1     # Windows
+# Recommended: Use the unified startup script
+./start.sh       # Linux/Mac
+./start.ps1      # Windows
 
-# Method 2: Run directly
+# Or run directly
 python -m freqtrade.ui.demo_server
 
-# Open browser to http://127.0.0.1:5000
+# Open browser to http://localhost:5000
 ```
+
+**Or try the live demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/) (no installation needed!)
 
 ### Deactivating the Virtual Environment
 

@@ -101,19 +101,28 @@ python -c "import flask; print(f'Flask {flask.__version__}')"
 
 ## Running the Platform
 
-### Demo UI Only
+### Demo UI - Quick Start
 
-The demo UI provides a visual walkthrough of the execution engine:
+**Recommended: Use the unified startup script**
 
 ```bash
-# Method 1: Using the dedicated demo script
-./start_demo.sh     # Linux/Mac
-./start_demo.ps1    # Windows
+./start.sh      # Linux/Mac
+./start.ps1     # Windows
 
-# Method 2: Direct Python execution
+# Then open: http://localhost:5000
+```
+
+**Or try the live demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/)
+
+**Alternative methods:**
+
+```bash
+# Direct Python execution
 python -m freqtrade.ui.demo_server
 
-# Then open: http://127.0.0.1:5000
+# Legacy demo-only script (still works)
+./start_demo.sh     # Linux/Mac
+./start_demo.ps1    # Windows
 ```
 
 ### Trading Bot Backend (Dry Run Mode)
