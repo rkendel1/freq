@@ -131,19 +131,30 @@ echo "=========================================================="
 echo "  Starting Platform"
 echo "=========================================================="
 echo ""
+
+# Determine host and port
+HOST=${HOST:-0.0.0.0}
+PORT=${PORT:-5000}
+
 print_status "Demo UI will be available at:"
 echo ""
-echo "    ${GREEN}http://127.0.0.1:5000${NC}"
+if [ "$HOST" = "0.0.0.0" ]; then
+    echo "    ${GREEN}http://localhost:${PORT}${NC}"
+    echo "    ${GREEN}http://127.0.0.1:${PORT}${NC}"
+else
+    echo "    ${GREEN}http://${HOST}:${PORT}${NC}"
+fi
 echo ""
 print_warning "Press Ctrl+C to stop the server"
 echo ""
 echo "  For backend trading bot, see: ${BLUE}LOCAL_DEVELOPMENT.md${NC}"
 echo "  To enable debug mode: ${BLUE}FLASK_DEBUG=true ./start.sh${NC}"
+echo "  To customize host/port: ${BLUE}HOST=0.0.0.0 PORT=8080 ./start.sh${NC}"
 echo ""
 echo "=========================================================="
 echo ""
 
 # Start the demo server
-print_status "Starting demo UI server..."
+print_status "Starting demo UI server on ${HOST}:${PORT}..."
 echo ""
 python3 -m freqtrade.ui.demo_server

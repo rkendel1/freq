@@ -904,8 +904,13 @@ def main():
     # Default to False for production-like usage, can be enabled via environment variable
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
     
+    # Bind to 0.0.0.0 for cloud deployments (Render, etc.)
+    # Use PORT environment variable if available (Render default)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    
     server = DemoServer()
-    server.run(debug=debug_mode)
+    server.run(host=host, port=port, debug=debug_mode)
 
 
 if __name__ == "__main__":
