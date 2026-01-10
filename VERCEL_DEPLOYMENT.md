@@ -40,19 +40,14 @@ To keep the deployment under Vercel's 250MB limit, this repository uses several 
    - Documentation files
    - Development tools
 
-2. **`vercel.json` Function Exclusions** - Uses `excludeFiles` to exclude unnecessary modules from the serverless function bundle:
-   - Excludes 4.2MB of freqtrade modules not needed by the API (exchange integrations, backtesting, database persistence, etc.)
-   - Keeps only 568KB of essential modules (core, exploits, ui, metrics)
-   - Reduces serverless function code size by 87%
-
-3. **Minimal Dependencies** - `requirements.txt` contains only essential packages:
+2. **Minimal Dependencies** - `requirements.txt` contains only essential packages:
    - FastAPI, uvicorn (web server)
    - numpy (for market simulator)
    - pydantic, python-dateutil (utilities)
    
    Full dependencies are available in `requirements-full.txt` for local development.
 
-4. **Conditional Imports** - Heavy dependencies (pandas, SQLAlchemy, ccxt) are imported conditionally with proper fallbacks and gracefully degrade if not available.
+3. **Conditional Imports** - Heavy dependencies (pandas, SQLAlchemy, ccxt) are imported conditionally with proper fallbacks and gracefully degrade if not available.
 
 ## What Gets Deployed
 
@@ -147,17 +142,20 @@ For comparison, without optimizations the deployment would be ~200-300MB+, excee
 
 ### What's Excluded from Deployment
 
-The `vercel.json` configuration excludes these freqtrade modules from the serverless function:
-- `freqtrade/exchange/` - Exchange integrations (2.7MB)
-- `freqtrade/data/` - Data processing
-- `freqtrade/optimize/` - Backtesting & optimization
-- `freqtrade/persistence/` - Database models
-- `freqtrade/strategy/` - Strategy framework
-- `freqtrade/commands/` - CLI commands
-- `freqtrade/configuration/` - Config parsing
-- And 10 other directories not needed for the demo API
+The `.vercelignore` configuration excludes these files and directories from the deployment:
+- Tests directory and test files (22MB+)
+- Build helpers with wheel files (41MB+)
+- Documentation files (keeping only README.md)
+- Examples and configuration examples
+- Development files (.git, .github, .vscode, etc.)
+- Docker files
+- Development dependencies
+- Scripts and validation files
+- Python cache files
+- Virtual environment directories
+- User data directories
 
-These exclusions are safe because:
-1. The API only uses core functionality (state management, actions, exploits)
-2. Excluded modules have proper import fallbacks
-3. The demo doesn't require exchange connectivity or database persistence
+These exclusions ensure:
+1. The deployment stays well under the 250MB limit
+2. Only essential code needed for the demo API is deployed
+3. The serverless function remains fast and efficient
