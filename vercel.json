@@ -4,5 +4,10 @@
       "source": "/(.*)",
       "destination": "/api/app"
     }
-  ]
+  ],
+  "functions": {
+    "api/**": {
+      "excludeFiles": "{freqtrade/exchange/**,freqtrade/data/**,freqtrade/optimize/**,freqtrade/persistence/**,freqtrade/strategy/**,freqtrade/commands/**,freqtrade/configuration/**,freqtrade/config_schema/**,freqtrade/resolvers/**,freqtrade/loggers/**,freqtrade/plugins/**,freqtrade/rpc/**,freqtrade/leverage/**,freqtrade/mixins/**,freqtrade/system/**,freqtrade/vendor/**,freqtrade/freqtradebot.py}"
+    }
+  }
 }
