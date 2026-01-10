@@ -1,5 +1,13 @@
 # Demo UI - Execution Engine Flow Visualization
 
+## Quick Access
+
+🌐 **Live Demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/) - Try it now, no installation required!
+
+📖 **Local Setup:** See below for running locally
+
+---
+
 ## Overview
 
 This demo UI provides a visual, step-by-step walkthrough of how data flows through the execution engine. It demonstrates the complete journey from initial state through exploit evaluation, risk checks, execution, and final state updates.
@@ -21,14 +29,14 @@ This visualization makes it clear:
 - Why certain actions are approved or rejected
 - How capital moves from available to deployed and back
 
-## Prerequisites
+## Quick Start - Local Setup
 
-Before starting the demo UI, ensure you have:
+### Prerequisites
+
+Before starting the demo UI locally, ensure you have:
 
 1. **Python 3.11+** installed
 2. **Flask** web framework installed
-
-## Quick Start
 
 ### Step 1: Install Dependencies
 

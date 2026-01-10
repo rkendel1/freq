@@ -2,6 +2,14 @@
 
 This guide explains how to use the **automated demo mode** that simulates how the trading bot operates autonomously in real market conditions.
 
+## Try It Now
+
+🌐 **Live Demo:** [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/) - No installation required!
+
+📖 **Or run locally:** See setup instructions below
+
+---
+
 ## What's New: Automated Mode 🤖
 
 The automated demo solves the key issue raised in the feature request:
@@ -20,7 +28,13 @@ The automated demo solves the key issue raised in the feature request:
 
 ## Quick Start - Automated Mode
 
-### 1. Start the Demo Server
+### Option 1: Use the Live Demo (Instant Access)
+
+Just visit [https://freq-0x5y.onrender.com/](https://freq-0x5y.onrender.com/) and start exploring!
+
+### Option 2: Run Locally
+
+**1. Start the Demo Server**
 
 ```bash
 ./start_demo.sh        # Linux/Mac
