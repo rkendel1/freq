@@ -867,54 +867,6 @@
         "retry_delay": {
           "type": "number",
           "minimum": 0
-        },
-        "status": {
-          "type": "object"
-        },
-        "warning": {
-          "type": "object"
-        },
-        "exception": {
-          "type": "object"
-        },
-        "startup": {
-          "type": "object"
-        },
-        "entry": {
-          "type": "object"
-        },
-        "entry_fill": {
-          "type": "object"
-        },
-        "entry_cancel": {
-          "type": "object"
-        },
-        "exit": {
-          "type": "object"
-        },
-        "exit_fill": {
-          "type": "object"
-        },
-        "exit_cancel": {
-          "type": "object"
-        },
-        "protection_trigger": {
-          "type": "object"
-        },
-        "protection_trigger_global": {
-          "type": "object"
-        },
-        "strategy_msg": {
-          "type": "object"
-        },
-        "whitelist": {
-          "type": "object"
-        },
-        "analyzed_df": {
-          "type": "object"
-        },
-        "new_candle": {
-          "type": "object"
         }
       }
     },
