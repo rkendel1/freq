@@ -41,6 +41,7 @@ Important Facts
 	•	Heavily stripped-down fork of Freqtrade (~40,000+ lines removed)
 	•	No trading logic, no indicators, no ML (FreqAI), no optimization (Hyperopt), no UI/API/Telegram
 	•	Persistence: SQLAlchemy + SQLite (trades, orders, key-value store)
+	•	Optional QuestDB integration for time-series metrics logging (trading metrics, backtest results)
 	•	Risk enforced before execution — config-driven, deterministic
 	•	Explicit capital tracking: total / available / deployed / reserved + realized/unrealized PnL
 	•	No global mutable state — everything explicit & isolated
@@ -50,6 +51,7 @@ Folder Structure & Responsibilities
 	•	/freqtrade/exchange/ → CCXT connectors, order/balance handling
 	•	/freqtrade/persistence/ → DB models & migrations
 	•	/freqtrade/optimize/ → Backtesting & price replay only (simulation mode)
+	•	/docs/ → Documentation including QuestDB integration guide
 Coding Conventions & Rules
 	•	Python 3.11+, heavy use of type hints
 	•	Prefer composition over inheritance
@@ -71,5 +73,6 @@ Critical Reference Files
 	•	DEPENDENCIES.md → Current dependency graph
 	•	FILES_DELETED.md → What was removed (never reintroduce!)
 	•	REMAINING_WORK.md → Known areas needing attention
+	•	docs/questdb.md → QuestDB integration guide for metrics logging
 	•	config.json example → Full configuration reference
 Follow these instructions in EVERY suggestion, plan, code generation, or review. The engine is infrastructure — keep it clean, agnostic, modular, and deterministic.

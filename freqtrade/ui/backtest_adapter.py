@@ -27,6 +27,7 @@ Usage Example:
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -380,6 +381,7 @@ def run_quick_backtest(
     num_ticks: int = 1000,
     initial_capital: float = 10000.0,
     verbose: bool = True,
+    config: dict | None = None,
 ) -> dict[str, Any]:
     """
     Quick helper function to run a backtest with default settings.
@@ -389,6 +391,7 @@ def run_quick_backtest(
         num_ticks: Number of ticks to simulate
         initial_capital: Starting capital
         verbose: Enable verbose logging
+        config: Optional config dict for QuestDB logging and other settings
         
     Returns:
         Backtest results dictionary
@@ -398,4 +401,67 @@ def run_quick_backtest(
         market_condition=market_condition,
     )
     
-    return adapter.run(num_ticks=num_ticks, verbose=verbose)
+    results = adapter.run(num_ticks=num_ticks, verbose=verbose)
+    
+    # Optional: Log to QuestDB if enabled
+    if config and config.get('questdb_enabled', False):
+        _log_backtest_to_questdb(config, market_condition, results)
+    
+    return results
+
+
+def _log_backtest_to_questdb(
+    config: dict,
+    market_condition: str,
+    results: dict[str, Any],
+) -> None:
+    """
+    Log backtest results to QuestDB.
+    
+    Args:
+        config: Configuration dict with questdb settings
+        market_condition: Market condition that was tested
+        results: Backtest results dictionary
+    """
+    try:
+        # Import here to avoid dependency if not used
+        from questdb.ingress import Sender, TimestampNanos
+        
+        host = config.get('questdb_host', 'localhost')
+        port = config.get('questdb_port', 9009)
+        
+        # Connection string format: tcp::addr=host:port;
+        with Sender.from_conf(f'tcp::addr={host}:{port};') as sender:
+            sender.row(
+                'backtest_results',
+                symbols={
+                    'market_condition': market_condition,
+                    'strategy': config.get('strategy_name', 'unknown'),
+                },
+                columns={
+                    'initial_capital': results.get('initial_capital', 0.0),
+                    'final_capital': results.get('final_capital', 0.0),
+                    'total_return': results.get('total_return', 0.0),
+                    'total_return_pct': results.get('total_return_pct', 0.0),
+                    'total_trades': results.get('total_trades', 0),
+                    'winning_trades': results.get('winning_trades', 0),
+                    'losing_trades': results.get('losing_trades', 0),
+                    'win_rate': results.get('win_rate', 0.0),
+                    'avg_win': results.get('avg_win', 0.0),
+                    'avg_loss': results.get('avg_loss', 0.0),
+                    'profit_factor': results.get('profit_factor', 0.0),
+                    'price_change_pct': results.get('price_change_pct', 0.0),
+                    'total_ticks': results.get('total_ticks', 0),
+                },
+                at=TimestampNanos(int(time.time() * 1_000_000_000)),
+            )
+            sender.flush()
+            logger.info(f"Backtest results logged to QuestDB: {market_condition}")
+            
+    except ImportError:
+        logger.warning(
+            "QuestDB logging enabled but questdb package not installed. "
+            "Install with: pip install questdb"
+        )
+    except Exception as e:
+        logger.error(f"QuestDB backtest logging failed: {e}", exc_info=True)
