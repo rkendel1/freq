@@ -197,32 +197,41 @@ if df is not None and not df.empty:
         
         if not has_pnl and not has_deployed:
             st.warning("Required columns 'realized_pnl' or 'deployed_capital_pct' not found in data")
+        elif df_filtered.empty:
+            st.warning("No data available after filtering")
         else:
             # Group by strategy for color coding
             if 'strategy' in df_filtered.columns:
-                for strategy in df_filtered['strategy'].unique():
-                    df_strategy = df_filtered[df_filtered['strategy'] == strategy]
-                    
-                    # Realized PnL line
-                    if has_pnl:
-                        fig.add_trace(go.Scatter(
-                            x=df_strategy['timestamp'],
-                            y=df_strategy['realized_pnl'],
-                            name=f'{strategy} - Realized PnL',
-                            mode='lines+markers',
-                            yaxis='y1'
-                        ))
-                    
-                    # Deployed Capital % line
-                    if has_deployed:
-                        fig.add_trace(go.Scatter(
-                            x=df_strategy['timestamp'],
-                            y=df_strategy['deployed_capital_pct'],
-                            name=f'{strategy} - Deployed %',
-                            mode='lines+markers',
-                            yaxis='y2',
-                            line=dict(dash='dash')
-                        ))
+                strategies = df_filtered['strategy'].unique()
+                if len(strategies) == 0:
+                    st.warning("No strategies found in filtered data")
+                else:
+                    for strategy in strategies:
+                        df_strategy = df_filtered[df_filtered['strategy'] == strategy]
+                        
+                        if df_strategy.empty:
+                            continue
+                        
+                        # Realized PnL line
+                        if has_pnl:
+                            fig.add_trace(go.Scatter(
+                                x=df_strategy['timestamp'],
+                                y=df_strategy['realized_pnl'],
+                                name=f'{strategy} - Realized PnL',
+                                mode='lines+markers',
+                                yaxis='y1'
+                            ))
+                        
+                        # Deployed Capital % line
+                        if has_deployed:
+                            fig.add_trace(go.Scatter(
+                                x=df_strategy['timestamp'],
+                                y=df_strategy['deployed_capital_pct'],
+                                name=f'{strategy} - Deployed %',
+                                mode='lines+markers',
+                                yaxis='y2',
+                                line=dict(dash='dash')
+                            ))
         
         fig.update_layout(
             hovermode='x unified',
@@ -286,26 +295,38 @@ if df is not None and not df.empty:
             
             # Create time-based bins
             df_heatmap = df.copy()
-            df_heatmap['hour'] = df_heatmap['timestamp'].dt.hour
-            df_heatmap['date'] = df_heatmap['timestamp'].dt.date
             
-            pivot_data = df_heatmap.pivot_table(
-                values='deployed_capital_pct',
-                index='hour',
-                columns='date',
-                aggfunc='mean'
-            )
+            # Drop rows with NaN timestamps
+            df_heatmap = df_heatmap.dropna(subset=['timestamp'])
             
-            if not pivot_data.empty:
-                fig_time_heat = px.imshow(
-                    pivot_data,
-                    title='Deployed Capital % by Hour and Date',
-                    labels=dict(x="Date", y="Hour of Day", color="Deployed %"),
-                    color_continuous_scale='YlOrRd',
-                    aspect='auto'
-                )
-                fig_time_heat.update_layout(height=500)
-                st.plotly_chart(fig_time_heat, use_container_width=True)
+            if df_heatmap.empty:
+                st.warning("No valid timestamp data available for heatmap")
+            else:
+                df_heatmap['hour'] = df_heatmap['timestamp'].dt.hour
+                df_heatmap['date'] = df_heatmap['timestamp'].dt.date
+                
+                try:
+                    pivot_data = df_heatmap.pivot_table(
+                        values='deployed_capital_pct',
+                        index='hour',
+                        columns='date',
+                        aggfunc='mean'
+                    )
+                    
+                    if not pivot_data.empty:
+                        fig_time_heat = px.imshow(
+                            pivot_data,
+                            title='Deployed Capital % by Hour and Date',
+                            labels=dict(x="Date", y="Hour of Day", color="Deployed %"),
+                            color_continuous_scale='YlOrRd',
+                            aspect='auto'
+                        )
+                        fig_time_heat.update_layout(height=500)
+                        st.plotly_chart(fig_time_heat, use_container_width=True)
+                    else:
+                        st.warning("No data available for time-based heatmap")
+                except Exception as e:
+                    st.error(f"Failed to create heatmap: {str(e)}")
     
     with tab3:
         st.subheader("Statistical Summary")
