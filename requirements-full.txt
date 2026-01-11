@@ -4,7 +4,7 @@
 # FastAPI server for demo UI
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-pydantic==2.12.5
+pydantic==2.5.0
 
 # Minimal scientific computing (only numpy for market simulator)
 numpy==2.4.0
