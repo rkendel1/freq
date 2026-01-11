@@ -20,11 +20,16 @@ questdb==4.1.0
 scikit-learn>=1.5.0
 joblib==1.3.2
 
-# Optional: Dashboard dependencies (for Streamlit visualization)
-# To install dashboard dependencies:
-# pip install -r dashboard/requirements.txt
-# or
-# pip install streamlit plotly pandas psycopg2-binary pyarrow
+# Optional: Production Dashboard dependencies (for Streamlit visualization)
+# To install production dashboard dependencies:
+# pip install streamlit plotly pandas
+# 
+# Production dashboards:
+# - freqtrade/ui/prod_config.py - Configuration management
+# - freqtrade/ui/prod_monitor.py - Real-time monitoring
+streamlit>=1.31.0
+plotly>=5.18.0
+pandas>=2.1.0
 
 # Optional: DSPy for LM-based insights in external analysis script
 # To use DSPy insights: pip install dspy-ai ollama
