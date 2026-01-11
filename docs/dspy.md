@@ -54,7 +54,17 @@ pip install -r requirements.txt
 
 Before running the analysis script, you need metrics data. You can either:
 
-**Option A: Export to Parquet** (recommended for simplicity)
+**Option A: Use Sample Data (for testing)**
+
+Run the helper script to create sample metrics:
+
+```bash
+python scripts/create_sample_metrics.py
+```
+
+This creates `exports/metrics.parquet` with sample data for testing.
+
+**Option B: Export Real Metrics to Parquet** (recommended for actual analysis)
 
 Create a metrics export in your application and save to `exports/metrics.parquet`.
 
@@ -64,7 +74,7 @@ Example columns the script looks for:
 - `win_rate`: Win rate percentage
 - `sharpe_ratio`: Sharpe ratio
 
-**Option B: Use QuestDB** (if already configured)
+**Option C: Use QuestDB** (if already configured)
 
 If you have QuestDB running with trading metrics, the script will automatically try to load from there if no parquet file is found.
 

@@ -249,6 +249,33 @@ The engine will:
 - [DEPENDENCIES.md](DEPENDENCIES.md) - Dependency graph
 - [FILES_DELETED.md](FILES_DELETED.md) - What was removed
 - [REMAINING_WORK.md](REMAINING_WORK.md) - What still needs work
+- [docs/dspy.md](docs/dspy.md) - DSPy LM-based insights for external analysis
+
+## Analysis Tools
+
+### DSPy LM-Based Insights (External)
+
+Generate manual insights and parameter adjustment suggestions using a local LLM:
+
+```bash
+# Install dependencies
+pip install dspy-ai ollama
+
+# Run Ollama
+ollama run llama3.2
+
+# Generate insights from metrics
+python analysis/dspy_insights.py
+```
+
+**Key features:**
+- Uses local LLM (Ollama) for privacy and zero cost
+- Analyzes deployed capital, PnL, Sharpe ratio, win rate
+- Outputs manual adjustment suggestions
+- **External only** - NO automatic application to engine
+- **Manual review required** - suggestions are logged only
+
+📖 **[Complete DSPy Setup Guide](docs/dspy.md)**
 
 ## Testing
 
