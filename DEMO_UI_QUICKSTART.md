@@ -1,5 +1,21 @@
 # Demo UI - Quick Reference
 
+## 🎯 NEW: Category Presets & Time-Based Demos
+
+The demo now includes powerful new features:
+- **Category Presets**: Conservative, Moderate, and Aggressive risk profiles
+- **Time-Based Simulations**: Test strategies over 3 months to 10 years
+
+**📖 See the complete guide**: [DEMO_CATEGORIES_TIME_GUIDE.md](DEMO_CATEGORIES_TIME_GUIDE.md)
+
+Quick usage:
+1. Switch to Automated Mode
+2. Select a Strategy category (Conservative/Moderate/Aggressive)
+3. Select a Duration (3mo, 6mo, 1yr, 5yr, 10yr)
+4. Watch how different approaches perform over various timeframes!
+
+---
+
 ## Starting the Demo
 
 ### Ultra-Quick Start (No Setup Needed)
