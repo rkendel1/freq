@@ -26,6 +26,11 @@ joblib==1.3.2
 # or
 # pip install streamlit plotly pandas psycopg2-binary pyarrow
 
+# Optional: DSPy for LM-based insights in external analysis script
+# To use DSPy insights: pip install dspy-ai ollama
+dspy-ai==2.4.0
+ollama==0.1.0
+
 # Optional: Full stack for local development (commented out for Vercel)
 # To install full dependencies locally:
 # pip install -r requirements-full.txt
