@@ -191,29 +191,38 @@ if df is not None and not df.empty:
         # Create dual-axis plot
         fig = go.Figure()
         
-        # Group by strategy for color coding
-        if 'strategy' in df_filtered.columns:
-            for strategy in df_filtered['strategy'].unique():
-                df_strategy = df_filtered[df_filtered['strategy'] == strategy]
-                
-                # Realized PnL line
-                fig.add_trace(go.Scatter(
-                    x=df_strategy['timestamp'],
-                    y=df_strategy['realized_pnl'],
-                    name=f'{strategy} - Realized PnL',
-                    mode='lines+markers',
-                    yaxis='y1'
-                ))
-                
-                # Deployed Capital % line
-                fig.add_trace(go.Scatter(
-                    x=df_strategy['timestamp'],
-                    y=df_strategy['deployed_capital_pct'],
-                    name=f'{strategy} - Deployed %',
-                    mode='lines+markers',
-                    yaxis='y2',
-                    line=dict(dash='dash')
-                ))
+        # Verify required columns exist
+        has_pnl = 'realized_pnl' in df_filtered.columns
+        has_deployed = 'deployed_capital_pct' in df_filtered.columns
+        
+        if not has_pnl and not has_deployed:
+            st.warning("Required columns 'realized_pnl' or 'deployed_capital_pct' not found in data")
+        else:
+            # Group by strategy for color coding
+            if 'strategy' in df_filtered.columns:
+                for strategy in df_filtered['strategy'].unique():
+                    df_strategy = df_filtered[df_filtered['strategy'] == strategy]
+                    
+                    # Realized PnL line
+                    if has_pnl:
+                        fig.add_trace(go.Scatter(
+                            x=df_strategy['timestamp'],
+                            y=df_strategy['realized_pnl'],
+                            name=f'{strategy} - Realized PnL',
+                            mode='lines+markers',
+                            yaxis='y1'
+                        ))
+                    
+                    # Deployed Capital % line
+                    if has_deployed:
+                        fig.add_trace(go.Scatter(
+                            x=df_strategy['timestamp'],
+                            y=df_strategy['deployed_capital_pct'],
+                            name=f'{strategy} - Deployed %',
+                            mode='lines+markers',
+                            yaxis='y2',
+                            line=dict(dash='dash')
+                        ))
         
         fig.update_layout(
             hovermode='x unified',
@@ -305,13 +314,20 @@ if df is not None and not df.empty:
         if 'strategy' in df.columns:
             st.write("**Performance by Strategy**")
             
-            stats = df.groupby('strategy').agg({
-                'realized_pnl': ['mean', 'std', 'min', 'max'],
-                'deployed_capital_pct': ['mean', 'std'],
-                'total_capital': ['first', 'last'],
-            }).round(2)
+            # Build aggregation dict based on available columns
+            agg_dict = {}
+            if 'realized_pnl' in df.columns:
+                agg_dict['realized_pnl'] = ['mean', 'std', 'min', 'max']
+            if 'deployed_capital_pct' in df.columns:
+                agg_dict['deployed_capital_pct'] = ['mean', 'std']
+            if 'total_capital' in df.columns:
+                agg_dict['total_capital'] = ['first', 'last']
             
-            st.dataframe(stats, use_container_width=True)
+            if agg_dict:
+                stats = df.groupby('strategy').agg(agg_dict).round(2)
+                st.dataframe(stats, use_container_width=True)
+            else:
+                st.warning("No numeric columns available for strategy analysis")
         
         # Overall statistics
         st.write("**Overall Statistics**")
