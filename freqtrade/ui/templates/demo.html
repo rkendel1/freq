@@ -1141,16 +1141,32 @@
             <div class="metrics-graph-container">
                 <div class="chart-controls">
                     <label>Display Metrics:</label>
-                    <select id="metricSelector" multiple size="1" style="width: 200px;">
-                        <option value="price" selected>Price</option>
-                        <option value="available_capital" selected>Available Capital</option>
-                        <option value="deployed_capital" selected>Deployed Capital</option>
-                        <option value="pnl_realized" selected>Realized PnL</option>
-                        <option value="open_positions" selected>Open Positions</option>
-                        <option value="total_actions" selected>Total Actions</option>
-                        <option value="success_rate" selected>Success Rate</option>
-                        <option value="transactions_per_min" selected>Transactions/Min</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="price" checked onchange="toggleMetricCheckbox(this)"> Price
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="available_capital" checked onchange="toggleMetricCheckbox(this)"> Available Capital
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="deployed_capital" checked onchange="toggleMetricCheckbox(this)"> Deployed Capital
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="pnl_realized" checked onchange="toggleMetricCheckbox(this)"> Realized PnL
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="open_positions" checked onchange="toggleMetricCheckbox(this)"> Open Positions
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="total_actions" checked onchange="toggleMetricCheckbox(this)"> Total Actions
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="success_rate" checked onchange="toggleMetricCheckbox(this)"> Success Rate
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="transactions_per_min" checked onchange="toggleMetricCheckbox(this)"> Transactions/Min
+                        </label>
+                    </div>
                     <button id="toggleAllMetrics" style="padding: 5px 15px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Toggle All</button>
                 </div>
                 <canvas id="metricsTimeSeriesChart"></canvas>
@@ -1435,6 +1451,7 @@
         let metricsTimeSeries = {
             data: [],
             maxDataPoints: 100,
+            maxXLabels: 10,  // Maximum number of X-axis labels
             canvas: null,
             ctx: null,
             activeMetrics: new Set(['price', 'available_capital', 'deployed_capital', 'pnl_realized', 
@@ -1472,9 +1489,9 @@
                     transactions_per_min: dataPoint.transactions_per_min || 0
                 });
                 
-                // Keep only last N data points
+                // Keep only last N data points - use slice for better performance
                 if (this.data.length > this.maxDataPoints) {
-                    this.data.shift();
+                    this.data = this.data.slice(-this.maxDataPoints);
                 }
                 
                 this.render();
@@ -1629,9 +1646,12 @@
                 // Draw X-axis labels (tick numbers)
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                const xLabelStep = Math.max(1, Math.floor(this.data.length / 10));
+                const xLabelStep = Math.max(1, Math.floor(this.data.length / this.maxXLabels));
                 for (let i = 0; i < this.data.length; i += xLabelStep) {
-                    const x = padding.left + (chartWidth / (this.data.length - 1)) * i;
+                    // Handle single data point case
+                    const x = this.data.length === 1 
+                        ? padding.left + chartWidth / 2 
+                        : padding.left + (chartWidth / (this.data.length - 1)) * i;
                     ctx.fillText(this.data[i].tick, x, padding.top + chartHeight + 10);
                 }
                 
@@ -1653,7 +1673,10 @@
                     ctx.beginPath();
                     
                     this.data.forEach((point, index) => {
-                        const x = padding.left + (chartWidth / (this.data.length - 1)) * index;
+                        // Handle single data point case
+                        const x = this.data.length === 1 
+                            ? padding.left + chartWidth / 2 
+                            : padding.left + (chartWidth / (this.data.length - 1)) * index;
                         const y = getY(point[metric], min, max);
                         
                         if (index === 0) {
@@ -3038,18 +3061,34 @@
         document.getElementById('applyTimePresetBtn').addEventListener('click', applyTimePreset);
 
         // Time series chart event listeners
+        function toggleMetricCheckbox(checkbox) {
+            const metric = checkbox.value;
+            if (checkbox.checked) {
+                metricsTimeSeries.activeMetrics.add(metric);
+            } else {
+                metricsTimeSeries.activeMetrics.delete(metric);
+            }
+            metricsTimeSeries.updateLegend();
+            metricsTimeSeries.render();
+        }
+        
         document.getElementById('toggleAllMetrics').addEventListener('click', () => {
             const allMetrics = ['price', 'available_capital', 'deployed_capital', 'pnl_realized', 
                                'open_positions', 'total_actions', 'success_rate', 'transactions_per_min'];
             
-            // If all are active, deactivate all; otherwise activate all
+            // Check if all are active
             const allActive = allMetrics.every(m => metricsTimeSeries.activeMetrics.has(m));
             
-            if (allActive) {
-                metricsTimeSeries.activeMetrics.clear();
-            } else {
-                allMetrics.forEach(m => metricsTimeSeries.activeMetrics.add(m));
-            }
+            // Update checkboxes and activeMetrics
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][onchange="toggleMetricCheckbox(this)"]');
+            checkboxes.forEach(cb => {
+                cb.checked = !allActive;
+                if (!allActive) {
+                    metricsTimeSeries.activeMetrics.add(cb.value);
+                } else {
+                    metricsTimeSeries.activeMetrics.delete(cb.value);
+                }
+            });
             
             metricsTimeSeries.updateLegend();
             metricsTimeSeries.render();
