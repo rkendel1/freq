@@ -801,6 +801,34 @@
                 </select>
             </div>
             
+            <!-- Category Selector (for automated mode) -->
+            <div id="categoryControls" style="display: none;">
+                <div class="control-group">
+                    <label for="categorySelect">Strategy:</label>
+                    <select id="categorySelect">
+                        <option value="conservative">🛡️ Conservative</option>
+                        <option value="moderate" selected>⚖️ Moderate</option>
+                        <option value="aggressive">⚡ Aggressive</option>
+                    </select>
+                    <button id="applyCategoryBtn" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Apply</button>
+                </div>
+            </div>
+            
+            <!-- Time-based Demo Selector (for automated mode) -->
+            <div id="timeControls" style="display: none;">
+                <div class="control-group">
+                    <label for="timePreset">Duration:</label>
+                    <select id="timePreset">
+                        <option value="3_months">📅 3 Months</option>
+                        <option value="6_months">📅 6 Months</option>
+                        <option value="1_year" selected>📅 1 Year</option>
+                        <option value="5_years">📅 5 Years</option>
+                        <option value="10_years">📅 10 Years</option>
+                    </select>
+                    <button id="applyTimePresetBtn" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Set Duration</button>
+                </div>
+            </div>
+            
             <!-- Manual Mode Controls -->
             <div id="manualControls">
                 <div class="control-group">
@@ -875,6 +903,14 @@
             <div class="state-card">
                 <h3>Trades/Min</h3>
                 <div class="value" id="tradesPerMin">0.0</div>
+            </div>
+            <div class="state-card" id="timeElapsedCard" style="display: none;">
+                <h3>⏱️ Time Elapsed</h3>
+                <div class="value" id="timeElapsed">0 days</div>
+            </div>
+            <div class="state-card" id="targetProgressCard" style="display: none;">
+                <h3>🎯 Target Progress</h3>
+                <div class="value" id="targetProgress">0%</div>
             </div>
         </div>
 
@@ -1676,20 +1712,142 @@
         // Automated mode variables
         let automatedInterval = null;
         let automatedSpeed = 500; // milliseconds
+        let currentTimePreset = '1_year';
+        let categoryInfo = null; // Store category info for tooltip
 
         // Toggle between manual and automated mode
         function toggleMode() {
             const mode = document.getElementById('mode').value;
             const manualControls = document.getElementById('manualControls');
             const automatedControls = document.getElementById('automatedControls');
+            const categoryControls = document.getElementById('categoryControls');
+            const timeControls = document.getElementById('timeControls');
+            const timeCards = document.getElementById('timeElapsedCard');
+            const targetCard = document.getElementById('targetProgressCard');
             
             if (mode === 'automated') {
                 manualControls.style.display = 'none';
                 automatedControls.style.display = 'flex';
+                categoryControls.style.display = 'flex';
+                timeControls.style.display = 'flex';
+                timeCards.style.display = 'block';
+                targetCard.style.display = 'block';
+                
+                // Load category info
+                loadCategoryInfo();
             } else {
                 manualControls.style.display = 'flex';
                 automatedControls.style.display = 'none';
+                categoryControls.style.display = 'none';
+                timeControls.style.display = 'none';
+                timeCards.style.display = 'none';
+                targetCard.style.display = 'none';
                 stopAutomated();
+            }
+        }
+
+        // Load category information
+        async function loadCategoryInfo() {
+            try {
+                const response = await fetch('/api/categories/list');
+                const data = await response.json();
+                categoryInfo = data.categories;
+                console.log('Category info loaded:', categoryInfo);
+            } catch (error) {
+                console.error('Error loading category info:', error);
+            }
+        }
+
+        // Apply category preset
+        async function applyCategory() {
+            const category = document.getElementById('categorySelect').value;
+            
+            try {
+                const response = await fetch('/api/categories/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Category applied:', data);
+                    
+                    // Show category info
+                    if (categoryInfo && categoryInfo[category]) {
+                        const info = categoryInfo[category];
+                        alert(`✅ ${category.toUpperCase()} strategy applied!\n\n${info.description}\n\n💡 Impact: ${info.impact}`);
+                    } else {
+                        alert(`✅ ${category.toUpperCase()} strategy applied!`);
+                    }
+                } else {
+                    alert('Failed to apply category');
+                }
+            } catch (error) {
+                console.error('Error applying category:', error);
+                alert('Error applying category. Make sure the server is running.');
+            }
+        }
+
+        // Apply time preset
+        async function applyTimePreset() {
+            const preset = document.getElementById('timePreset').value;
+            currentTimePreset = preset;
+            
+            try {
+                const response = await fetch('/api/time/preset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preset })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Time preset applied:', data);
+                    alert(`✅ Duration set to ${preset.replace('_', ' ').toUpperCase()}!\n\n${data.description}\n\nThe simulation will be scaled so that reaching the target takes approximately ${data.target_ticks.toLocaleString()} ticks.`);
+                } else {
+                    alert('Failed to apply time preset');
+                }
+            } catch (error) {
+                console.error('Error applying time preset:', error);
+                alert('Error applying time preset. Make sure the server is running.');
+            }
+        }
+
+        // Update time display
+        function updateTimeDisplay(simulationTime) {
+            if (!simulationTime) return;
+            
+            const elapsed = simulationTime;
+            let displayText = '';
+            
+            if (elapsed.elapsed_years >= 1) {
+                displayText = `${elapsed.elapsed_years.toFixed(1)} years`;
+            } else if (elapsed.elapsed_months >= 1) {
+                displayText = `${elapsed.elapsed_months.toFixed(1)} months`;
+            } else if (elapsed.elapsed_days >= 1) {
+                displayText = `${elapsed.elapsed_days.toFixed(1)} days`;
+            } else if (elapsed.elapsed_hours >= 1) {
+                displayText = `${elapsed.elapsed_hours.toFixed(1)} hours`;
+            } else {
+                displayText = `${elapsed.elapsed_seconds.toFixed(0)} seconds`;
+            }
+            
+            document.getElementById('timeElapsed').textContent = displayText;
+        }
+
+        // Update target progress
+        async function updateTargetProgress() {
+            try {
+                const response = await fetch('/api/time/config');
+                const data = await response.json();
+                
+                if (data.timeframes && data.timeframes[currentTimePreset]) {
+                    const progress = data.timeframes[currentTimePreset].completed_pct;
+                    document.getElementById('targetProgress').textContent = `${progress.toFixed(1)}%`;
+                }
+            } catch (error) {
+                console.error('Error updating target progress:', error);
             }
         }
 
@@ -1782,6 +1940,12 @@
                         successful_actions: currentState.successful_actions + flowTrace.flow['5_execution_results'].length
                     };
                     updateStateDisplay(state);
+                }
+                
+                // Update time display
+                if (flowTrace.simulation_time) {
+                    updateTimeDisplay(flowTrace.simulation_time);
+                    updateTargetProgress();
                 }
                 
                 // Display flow trace if actions were taken
@@ -2035,6 +2199,10 @@
         document.getElementById('speedControl').addEventListener('input', updateSpeed);
         document.getElementById('symbol').addEventListener('change', changeSymbol);
         document.getElementById('applyCapital').addEventListener('click', applyCapitalChange);
+        
+        // Category and time event listeners
+        document.getElementById('applyCategoryBtn').addEventListener('click', applyCategory);
+        document.getElementById('applyTimePresetBtn').addEventListener('click', applyTimePreset);
 
         // DSPy-related event listeners
         document.getElementById('updateParametersBtn').addEventListener('click', updateParameters);

@@ -35,6 +35,35 @@ from freqtrade.metrics.attribution import TradeAttribution
 logger = logging.getLogger(__name__)
 
 
+# Category presets for exploit configuration
+CATEGORY_PRESETS = {
+    "conservative": {
+        "position_size": 0.08,  # 8% per trade (less capital deployed)
+        "profit_target": 0.08,  # 8% profit target (higher threshold, more patience)
+        "stop_loss": 0.05,  # 5% stop loss (wider, more room for movement)
+        "min_ticks_between_actions": 10,  # Wait longer between trades
+        "description": "Conservative: Lower position sizes (8%), wider stop losses (5%), higher profit targets (8%). Slower capital deployment, more patient approach. Suitable for risk-averse traders.",
+        "impact": "Uses less capital per trade, giving more room for price movement. Takes longer to deploy capital and reach targets, but provides better protection against losses."
+    },
+    "moderate": {
+        "position_size": 0.15,  # 15% per trade (balanced)
+        "profit_target": 0.05,  # 5% profit target (balanced)
+        "stop_loss": 0.03,  # 3% stop loss (balanced)
+        "min_ticks_between_actions": 5,  # Standard cooldown
+        "description": "Moderate: Balanced position sizes (15%), standard stop losses (3%), moderate profit targets (5%). Good balance between capital deployment and risk management.",
+        "impact": "Balanced approach with moderate capital usage. Standard risk/reward ratio. Good for most trading scenarios."
+    },
+    "aggressive": {
+        "position_size": 0.25,  # 25% per trade (higher capital usage)
+        "profit_target": 0.03,  # 3% profit target (lower threshold, take profits faster)
+        "stop_loss": 0.02,  # 2% stop loss (tighter, less tolerance for adverse movement)
+        "min_ticks_between_actions": 2,  # Shorter cooldown, more frequent trading
+        "description": "Aggressive: Larger position sizes (25%), tighter stop losses (2%), lower profit targets (3%). Faster capital deployment and quicker profit-taking. Higher risk, potentially higher returns.",
+        "impact": "Deploys capital faster with larger positions. Exits quickly with smaller gains. More sensitive to market movements - can accumulate profits faster but also hit stops more often."
+    }
+}
+
+
 class DemoServer:
     """Demo server for visualizing execution engine flow."""
 
@@ -72,6 +101,12 @@ class DemoServer:
         self.automated_exploit = AutomatedExploit({})
         self.market_simulator = MarketSimulator(initial_price=self.current_price, condition="mixed")
         self.price_history: list[dict[str, Any]] = []  # For charting
+        
+        # Time tracking for time-based demos
+        self.simulation_start_time = None
+        self.simulation_ticks = 0
+        self.tick_to_time_scale = 60.0  # Default: 1 tick = 60 seconds = 1 minute
+        self.current_category = "moderate"  # Track active category
         
         # DSPy Advisor integration
         self.dspy_advisor = DSPyAdvisor(min_trades_for_suggestion=5, suggestion_confidence_threshold=0.5)
@@ -130,6 +165,11 @@ class DemoServer:
             self.market_simulator.initial_price = self.current_price
             self.price_history = []
             self.automated_mode = False
+            
+            # Reset time tracking
+            self.simulation_start_time = None
+            self.simulation_ticks = 0
+            
             return jsonify({"status": "reset"})
 
         @self.app.route("/api/config/symbol", methods=["POST"])
@@ -179,6 +219,10 @@ class DemoServer:
             self.automated_exploit.clear_simulated_positions()
             self.price_history = []
             
+            # Reset time tracking
+            self.simulation_start_time = datetime.now(timezone.utc)
+            self.simulation_ticks = 0
+            
             logger.info(f"Automated mode started with {condition} market condition")
             return jsonify({"status": "started", "condition": condition})
 
@@ -195,6 +239,9 @@ class DemoServer:
             if not self.automated_mode:
                 return jsonify({"error": "Automated mode not active"}), 400
             
+            # Increment simulation time
+            self.simulation_ticks += 1
+            
             # Generate market tick
             tick = self.market_simulator.generate_tick()
             
@@ -206,6 +253,18 @@ class DemoServer:
             
             # Create flow trace with automated exploit
             flow_trace = self._execute_automated_tick(tick)
+            
+            # Add time information to flow trace
+            elapsed_time_seconds = self.simulation_ticks * self.tick_to_time_scale
+            flow_trace["simulation_time"] = {
+                "ticks": self.simulation_ticks,
+                "elapsed_seconds": elapsed_time_seconds,
+                "elapsed_hours": elapsed_time_seconds / 3600,
+                "elapsed_days": elapsed_time_seconds / 86400,
+                "elapsed_months": elapsed_time_seconds / (30 * 86400),
+                "elapsed_years": elapsed_time_seconds / (365 * 86400),
+            }
+            
             self.flow_history.append(flow_trace)
             
             return jsonify(flow_trace)
@@ -226,6 +285,148 @@ class DemoServer:
         def price_history():
             """Get price history for charting."""
             return jsonify({"prices": self.price_history[-100:]})  # Last 100 ticks
+
+        @self.app.route("/api/categories/list")
+        def list_categories():
+            """Get all available category presets."""
+            return jsonify({
+                "categories": {
+                    name: {
+                        "description": preset["description"],
+                        "impact": preset["impact"],
+                        "parameters": {
+                            "position_size": preset["position_size"],
+                            "profit_target": preset["profit_target"],
+                            "stop_loss": preset["stop_loss"],
+                            "min_ticks_between_actions": preset["min_ticks_between_actions"],
+                        }
+                    }
+                    for name, preset in CATEGORY_PRESETS.items()
+                },
+                "current_category": self.current_category
+            })
+
+        @self.app.route("/api/categories/apply", methods=["POST"])
+        def apply_category():
+            """Apply a category preset to the exploit."""
+            data = request.json or {}
+            category = data.get("category", "moderate")
+            
+            if category not in CATEGORY_PRESETS:
+                return jsonify({"error": f"Invalid category. Must be one of: {list(CATEGORY_PRESETS.keys())}"}), 400
+            
+            preset = CATEGORY_PRESETS[category]
+            
+            # Apply preset to automated exploit
+            self.automated_exploit.position_size = preset["position_size"]
+            self.automated_exploit.profit_target = preset["profit_target"]
+            self.automated_exploit.stop_loss = preset["stop_loss"]
+            self.automated_exploit.min_ticks_between_actions = preset["min_ticks_between_actions"]
+            
+            self.current_category = category
+            
+            logger.info(f"Applied category preset: {category}")
+            return jsonify({
+                "status": "applied",
+                "category": category,
+                "parameters": {
+                    "position_size": self.automated_exploit.position_size,
+                    "profit_target": self.automated_exploit.profit_target,
+                    "stop_loss": self.automated_exploit.stop_loss,
+                    "min_ticks_between_actions": self.automated_exploit.min_ticks_between_actions,
+                }
+            })
+
+        @self.app.route("/api/time/config", methods=["GET", "POST"])
+        def time_config():
+            """Get or set time scaling configuration."""
+            if request.method == "POST":
+                data = request.json or {}
+                
+                # Set time scale (how many real seconds per tick)
+                if "tick_to_time_scale" in data:
+                    scale = float(data["tick_to_time_scale"])
+                    if scale < 1 or scale > 86400:  # 1 second to 1 day
+                        return jsonify({"error": "tick_to_time_scale must be between 1 and 86400"}), 400
+                    self.tick_to_time_scale = scale
+                
+                logger.info(f"Time scale updated: 1 tick = {self.tick_to_time_scale}s")
+                
+            # Calculate current simulation time
+            elapsed_seconds = self.simulation_ticks * self.tick_to_time_scale
+            elapsed_days = elapsed_seconds / 86400
+            elapsed_months = elapsed_days / 30
+            elapsed_years = elapsed_days / 365
+            
+            return jsonify({
+                "tick_to_time_scale": self.tick_to_time_scale,
+                "simulation_ticks": self.simulation_ticks,
+                "elapsed": {
+                    "seconds": elapsed_seconds,
+                    "minutes": elapsed_seconds / 60,
+                    "hours": elapsed_seconds / 3600,
+                    "days": elapsed_days,
+                    "months": elapsed_months,
+                    "years": elapsed_years,
+                },
+                "timeframes": {
+                    "3_months": {"ticks_needed": int((90 * 86400) / self.tick_to_time_scale), "completed_pct": (elapsed_months / 3) * 100},
+                    "6_months": {"ticks_needed": int((180 * 86400) / self.tick_to_time_scale), "completed_pct": (elapsed_months / 6) * 100},
+                    "1_year": {"ticks_needed": int((365 * 86400) / self.tick_to_time_scale), "completed_pct": (elapsed_years / 1) * 100},
+                    "5_years": {"ticks_needed": int((5 * 365 * 86400) / self.tick_to_time_scale), "completed_pct": (elapsed_years / 5) * 100},
+                    "10_years": {"ticks_needed": int((10 * 365 * 86400) / self.tick_to_time_scale), "completed_pct": (elapsed_years / 10) * 100},
+                }
+            })
+
+        @self.app.route("/api/time/preset", methods=["POST"])
+        def apply_time_preset():
+            """Apply a time-based demo preset (3mo, 6mo, 1yr, 5yr, 10yr)."""
+            data = request.json or {}
+            preset = data.get("preset", "1_year")
+            
+            # Define preset configurations
+            presets = {
+                "3_months": {
+                    "target_ticks": 1000,  # Run for 1000 ticks
+                    "tick_scale": (90 * 86400) / 1000,  # Scale so 1000 ticks = 3 months
+                    "description": "3-month simulation with ~1000 trading opportunities"
+                },
+                "6_months": {
+                    "target_ticks": 2000,
+                    "tick_scale": (180 * 86400) / 2000,
+                    "description": "6-month simulation with ~2000 trading opportunities"
+                },
+                "1_year": {
+                    "target_ticks": 4000,
+                    "tick_scale": (365 * 86400) / 4000,
+                    "description": "1-year simulation with ~4000 trading opportunities"
+                },
+                "5_years": {
+                    "target_ticks": 20000,
+                    "tick_scale": (5 * 365 * 86400) / 20000,
+                    "description": "5-year simulation with ~20000 trading opportunities"
+                },
+                "10_years": {
+                    "target_ticks": 40000,
+                    "tick_scale": (10 * 365 * 86400) / 40000,
+                    "description": "10-year simulation with ~40000 trading opportunities"
+                }
+            }
+            
+            if preset not in presets:
+                return jsonify({"error": f"Invalid preset. Must be one of: {list(presets.keys())}"}), 400
+            
+            config = presets[preset]
+            self.tick_to_time_scale = config["tick_scale"]
+            
+            logger.info(f"Applied time preset: {preset} - {config['description']}")
+            return jsonify({
+                "status": "applied",
+                "preset": preset,
+                "description": config["description"],
+                "target_ticks": config["target_ticks"],
+                "tick_to_time_scale": self.tick_to_time_scale,
+            })
 
         @self.app.route("/api/dspy/suggestions")
         def get_dspy_suggestions():
