@@ -62,13 +62,19 @@ def load_data_from_questdb(host: str = 'localhost', port: int = 8812):
     """
     try:
         import psycopg2
+        import os
+        
+        # Use environment variables for credentials, fallback to defaults
+        db_user = os.getenv('QUESTDB_USER', 'admin')
+        db_password = os.getenv('QUESTDB_PASSWORD', 'quest')
+        db_name = os.getenv('QUESTDB_DATABASE', 'qdb')
         
         conn = psycopg2.connect(
             host=host,
             port=port,
-            database='qdb',
-            user='admin',
-            password='quest'
+            database=db_name,
+            user=db_user,
+            password=db_password
         )
         
         query = """
@@ -149,20 +155,29 @@ if df is not None and not df.empty:
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        latest_pnl = df['realized_pnl'].iloc[0] if 'realized_pnl' in df.columns else 0
+        latest_pnl = df['realized_pnl'].iloc[0] if 'realized_pnl' in df.columns and len(df) > 0 else 0
         st.metric("Latest Realized PnL", f"${latest_pnl:,.2f}")
     
     with col2:
-        latest_deployed = df['deployed_capital_pct'].iloc[0] if 'deployed_capital_pct' in df.columns else 0
+        latest_deployed = df['deployed_capital_pct'].iloc[0] if 'deployed_capital_pct' in df.columns and len(df) > 0 else 0
         st.metric("Deployed Capital %", f"{latest_deployed:.2f}%")
     
     with col3:
-        total_capital = df['total_capital'].iloc[0] if 'total_capital' in df.columns else 0
+        total_capital = df['total_capital'].iloc[0] if 'total_capital' in df.columns and len(df) > 0 else 0
         st.metric("Total Capital", f"${total_capital:,.2f}")
     
     with col4:
-        open_positions = df['open_positions'].iloc[0] if 'open_positions' in df.columns else 0
-        st.metric("Open Positions", int(open_positions))
+        open_positions_raw = df['open_positions'].iloc[0] if 'open_positions' in df.columns and len(df) > 0 else 0
+        # Safe conversion to int, handling NaN and non-numeric values
+        try:
+            import pandas as pd
+            if pd.notna(open_positions_raw):
+                open_positions = int(float(open_positions_raw))
+            else:
+                open_positions = 0
+        except (ValueError, TypeError):
+            open_positions = 0
+        st.metric("Open Positions", open_positions)
     
     # Tabs for different visualizations
     tab1, tab2, tab3, tab4 = st.tabs([
