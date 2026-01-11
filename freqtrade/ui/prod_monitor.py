@@ -47,9 +47,13 @@ def load_capital_state(db_path: Path) -> dict[str, Any] | None:
         realized_pnl = sum(t.close_profit_abs or 0.0 for t in closed_trades if t.close_profit_abs)
         
         # Calculate unrealized PnL from open positions
-        # Note: This is approximate as we don't have current market prices here
-        # In production, this should be calculated from live price feeds
-        unrealized_pnl = sum(t.close_profit_abs or 0.0 for t in open_trades if t.close_profit_abs)
+        # Note: This uses the trade's internal profit calculation if available
+        # In production, ideally this should be calculated from live market price feeds
+        unrealized_pnl = 0.0
+        for trade in open_trades:
+            # Use close_profit_abs if available (updated by engine), otherwise 0
+            if hasattr(trade, 'close_profit_abs') and trade.close_profit_abs:
+                unrealized_pnl += trade.close_profit_abs
         
         # Try to get initial capital from config
         config_path = Path(__file__).parent.parent.parent / "config.prod.json"
@@ -90,13 +94,17 @@ def get_open_positions(db_path: Path) -> list[dict[str, Any]]:
         
         positions = []
         for trade in trades:
+            # For open trades, use open_rate as current_rate since we don't have live prices
+            # In production, this should be replaced with actual current market rate
+            current_rate = trade.open_rate  # Default to open rate for display
+            
             positions.append({
                 "id": trade.id,
                 "pair": trade.pair,
                 "side": "long" if trade.is_long else "short",
                 "amount": trade.amount,
                 "open_rate": trade.open_rate,
-                "current_rate": trade.close_rate or trade.open_rate,
+                "current_rate": current_rate,
                 "stake_amount": trade.stake_amount,
                 "profit_pct": (trade.close_profit * 100) if trade.close_profit else 0.0,
                 "profit_abs": trade.close_profit_abs or 0.0,
