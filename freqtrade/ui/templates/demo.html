@@ -1657,6 +1657,10 @@
                 
                 // Helper function to get Y position for value
                 const getY = (value, min, max) => {
+                    // Handle case when min equals max (all values identical)
+                    if (max === min) {
+                        return padding.top + chartHeight / 2;  // Center line
+                    }
                     const ratio = (value - min) / (max - min);
                     return padding.top + chartHeight - (ratio * chartHeight);
                 };
@@ -1673,13 +1677,13 @@
                     ctx.beginPath();
                     
                     this.data.forEach((point, index) => {
-                        // Handle single data point case
+                        // Handle single data point case - center horizontally
                         const x = this.data.length === 1 
                             ? padding.left + chartWidth / 2 
                             : padding.left + (chartWidth / (this.data.length - 1)) * index;
                         const y = getY(point[metric], min, max);
                         
-                        if (index === 0) {
+                        if (index === 0 || this.data.length === 1) {
                             ctx.moveTo(x, y);
                         } else {
                             ctx.lineTo(x, y);
