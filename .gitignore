@@ -120,3 +120,9 @@ docker-compose-*.yml
 
 # Dashboard exports
 exports/*.parquet
+
+# ML models and training artifacts
+ml/*.pkl
+ml/*.joblib
+ml/__pycache__/
+ml/.ipynb_checkpoints/
