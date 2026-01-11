@@ -904,6 +904,73 @@
         .overall-balance-value.aggressive {
             color: #dc3545;
         }
+
+        /* Time Series Graph Styles */
+        .metrics-graph-section {
+            padding: 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .metrics-graph-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .metrics-graph-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #metricsTimeSeriesChart {
+            width: 100%;
+            height: 400px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .chart-legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .chart-controls label {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .chart-controls select {
+            padding: 5px 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -1065,6 +1132,45 @@
             <div class="state-card" id="targetProgressCard" style="display: none;">
                 <h3>🎯 Target Progress</h3>
                 <div class="value" id="targetProgress">0%</div>
+            </div>
+        </div>
+
+        <!-- Time Series Metrics Graph -->
+        <div class="metrics-graph-section">
+            <h2>📈 Key Metrics Over Time</h2>
+            <div class="metrics-graph-container">
+                <div class="chart-controls">
+                    <label>Display Metrics:</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="price" checked onchange="toggleMetricCheckbox(this)"> Price
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="available_capital" checked onchange="toggleMetricCheckbox(this)"> Available Capital
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="deployed_capital" checked onchange="toggleMetricCheckbox(this)"> Deployed Capital
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="pnl_realized" checked onchange="toggleMetricCheckbox(this)"> Realized PnL
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="open_positions" checked onchange="toggleMetricCheckbox(this)"> Open Positions
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="total_actions" checked onchange="toggleMetricCheckbox(this)"> Total Actions
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="success_rate" checked onchange="toggleMetricCheckbox(this)"> Success Rate
+                        </label>
+                        <label style="font-size: 12px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" value="transactions_per_min" checked onchange="toggleMetricCheckbox(this)"> Transactions/Min
+                        </label>
+                    </div>
+                    <button id="toggleAllMetrics" style="padding: 5px 15px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Toggle All</button>
+                </div>
+                <canvas id="metricsTimeSeriesChart"></canvas>
+                <div class="chart-legend" id="chartLegend"></div>
             </div>
         </div>
 
@@ -1341,6 +1447,277 @@
         let tradeTimestamps = [];
         let transactionChart = null;
 
+        // Time Series Chart for Key Metrics
+        let metricsTimeSeries = {
+            data: [],
+            maxDataPoints: 100,
+            maxXLabels: 10,  // Maximum number of X-axis labels
+            canvas: null,
+            ctx: null,
+            activeMetrics: new Set(['price', 'available_capital', 'deployed_capital', 'pnl_realized', 
+                                     'open_positions', 'total_actions', 'success_rate', 'transactions_per_min']),
+            
+            metricConfig: {
+                price: { color: '#667eea', label: 'Price', axis: 'left' },
+                available_capital: { color: '#28a745', label: 'Available Capital', axis: 'left' },
+                deployed_capital: { color: '#ffc107', label: 'Deployed Capital', axis: 'left' },
+                pnl_realized: { color: '#17a2b8', label: 'Realized PnL', axis: 'left' },
+                open_positions: { color: '#6f42c1', label: 'Open Positions', axis: 'right' },
+                total_actions: { color: '#fd7e14', label: 'Total Actions', axis: 'right' },
+                success_rate: { color: '#20c997', label: 'Success Rate (%)', axis: 'right' },
+                transactions_per_min: { color: '#e83e8c', label: 'Transactions/Min', axis: 'right' }
+            },
+            
+            init: function() {
+                this.canvas = document.getElementById('metricsTimeSeriesChart');
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.updateLegend();
+            },
+            
+            addDataPoint: function(dataPoint) {
+                this.data.push({
+                    timestamp: dataPoint.timestamp || Date.now(),
+                    tick: dataPoint.tick || this.data.length,
+                    price: dataPoint.price || 0,
+                    available_capital: dataPoint.available_capital || 0,
+                    deployed_capital: dataPoint.deployed_capital || 0,
+                    pnl_realized: dataPoint.pnl_realized || 0,
+                    open_positions: dataPoint.open_positions || 0,
+                    total_actions: dataPoint.total_actions || 0,
+                    success_rate: dataPoint.success_rate || 0,
+                    transactions_per_min: dataPoint.transactions_per_min || 0
+                });
+                
+                // Keep only last N data points - use slice for better performance
+                if (this.data.length > this.maxDataPoints) {
+                    this.data = this.data.slice(-this.maxDataPoints);
+                }
+                
+                this.render();
+            },
+            
+            clear: function() {
+                this.data = [];
+                this.render();
+            },
+            
+            updateLegend: function() {
+                const legendEl = document.getElementById('chartLegend');
+                if (!legendEl) return;
+                
+                let html = '';
+                for (const [key, config] of Object.entries(this.metricConfig)) {
+                    const active = this.activeMetrics.has(key);
+                    html += `
+                        <div class="chart-legend-item" style="opacity: ${active ? 1 : 0.4}; cursor: pointer;" data-metric="${key}">
+                            <div class="chart-legend-color" style="background-color: ${config.color};"></div>
+                            <span>${config.label}</span>
+                        </div>
+                    `;
+                }
+                legendEl.innerHTML = html;
+                
+                // Add click handlers
+                legendEl.querySelectorAll('.chart-legend-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const metric = e.currentTarget.getAttribute('data-metric');
+                        if (this.activeMetrics.has(metric)) {
+                            this.activeMetrics.delete(metric);
+                        } else {
+                            this.activeMetrics.add(metric);
+                        }
+                        this.updateLegend();
+                        this.render();
+                    });
+                });
+            },
+            
+            render: function() {
+                if (!this.canvas || !this.ctx) return;
+                
+                const ctx = this.ctx;
+                const width = this.canvas.width = this.canvas.offsetWidth;
+                const height = this.canvas.height = 400;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                if (this.data.length === 0) {
+                    ctx.fillStyle = '#999';
+                    ctx.font = '14px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No data yet. Start executing to see metrics over time.', width / 2, height / 2);
+                    return;
+                }
+                
+                const padding = { top: 20, right: 80, bottom: 40, left: 80 };
+                const chartWidth = width - padding.left - padding.right;
+                const chartHeight = height - padding.top - padding.bottom;
+                
+                // Separate metrics by axis
+                const leftMetrics = Array.from(this.activeMetrics).filter(m => this.metricConfig[m].axis === 'left');
+                const rightMetrics = Array.from(this.activeMetrics).filter(m => this.metricConfig[m].axis === 'right');
+                
+                // Calculate scales for left axis (capital/price metrics)
+                let leftMin = Infinity, leftMax = -Infinity;
+                if (leftMetrics.length > 0) {
+                    leftMetrics.forEach(metric => {
+                        this.data.forEach(d => {
+                            const val = d[metric];
+                            if (val < leftMin) leftMin = val;
+                            if (val > leftMax) leftMax = val;
+                        });
+                    });
+                    // Add 10% padding
+                    const leftRange = leftMax - leftMin;
+                    leftMin = leftMin - leftRange * 0.1;
+                    leftMax = leftMax + leftRange * 0.1;
+                } else {
+                    leftMin = 0;
+                    leftMax = 1;
+                }
+                
+                // Calculate scales for right axis (count metrics)
+                let rightMin = 0, rightMax = 1;
+                if (rightMetrics.length > 0) {
+                    rightMetrics.forEach(metric => {
+                        this.data.forEach(d => {
+                            const val = d[metric];
+                            if (val > rightMax) rightMax = val;
+                        });
+                    });
+                    // Add 10% padding
+                    rightMax = rightMax * 1.1;
+                }
+                
+                // Draw grid
+                ctx.strokeStyle = '#e9ecef';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding.top + (chartHeight / 5) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, y);
+                    ctx.lineTo(padding.left + chartWidth, y);
+                    ctx.stroke();
+                }
+                
+                // Draw axes
+                ctx.strokeStyle = '#495057';
+                ctx.lineWidth = 2;
+                
+                // Y-axis (left)
+                ctx.beginPath();
+                ctx.moveTo(padding.left, padding.top);
+                ctx.lineTo(padding.left, padding.top + chartHeight);
+                ctx.stroke();
+                
+                // Y-axis (right)
+                ctx.beginPath();
+                ctx.moveTo(padding.left + chartWidth, padding.top);
+                ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+                ctx.stroke();
+                
+                // X-axis
+                ctx.beginPath();
+                ctx.moveTo(padding.left, padding.top + chartHeight);
+                ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+                ctx.stroke();
+                
+                // Draw Y-axis labels (left)
+                ctx.fillStyle = '#495057';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let i = 0; i <= 5; i++) {
+                    const value = leftMax - (leftMax - leftMin) * (i / 5);
+                    const y = padding.top + (chartHeight / 5) * i;
+                    ctx.fillText(value.toFixed(0), padding.left - 10, y);
+                }
+                
+                // Draw Y-axis labels (right)
+                ctx.textAlign = 'left';
+                for (let i = 0; i <= 5; i++) {
+                    const value = rightMax - (rightMax - rightMin) * (i / 5);
+                    const y = padding.top + (chartHeight / 5) * i;
+                    ctx.fillText(value.toFixed(1), padding.left + chartWidth + 10, y);
+                }
+                
+                // Draw X-axis labels (tick numbers)
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const xLabelStep = Math.max(1, Math.floor(this.data.length / this.maxXLabels));
+                for (let i = 0; i < this.data.length; i += xLabelStep) {
+                    // Handle single data point case
+                    const x = this.data.length === 1 
+                        ? padding.left + chartWidth / 2 
+                        : padding.left + (chartWidth / (this.data.length - 1)) * i;
+                    ctx.fillText(this.data[i].tick, x, padding.top + chartHeight + 10);
+                }
+                
+                // Helper function to get Y position for value
+                const getY = (value, min, max) => {
+                    // Handle case when min equals max (all values identical)
+                    if (max === min) {
+                        return padding.top + chartHeight / 2;  // Center line
+                    }
+                    const ratio = (value - min) / (max - min);
+                    return padding.top + chartHeight - (ratio * chartHeight);
+                };
+                
+                // Draw metric lines
+                this.activeMetrics.forEach(metric => {
+                    const config = this.metricConfig[metric];
+                    const isLeft = config.axis === 'left';
+                    const min = isLeft ? leftMin : rightMin;
+                    const max = isLeft ? leftMax : rightMax;
+                    
+                    ctx.strokeStyle = config.color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    this.data.forEach((point, index) => {
+                        // Handle single data point case - center horizontally
+                        const x = this.data.length === 1 
+                            ? padding.left + chartWidth / 2 
+                            : padding.left + (chartWidth / (this.data.length - 1)) * index;
+                        const y = getY(point[metric], min, max);
+                        
+                        if (index === 0 || this.data.length === 1) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    });
+                    
+                    ctx.stroke();
+                });
+                
+                // Draw axis titles
+                ctx.fillStyle = '#495057';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('Tick / Time →', padding.left + chartWidth / 2, height - 5);
+                
+                // Left axis title
+                ctx.save();
+                ctx.translate(15, padding.top + chartHeight / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Capital / Price ($)', 0, 0);
+                ctx.restore();
+                
+                // Right axis title
+                ctx.save();
+                ctx.translate(width - 15, padding.top + chartHeight / 2);
+                ctx.rotate(Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Counts / Rates', 0, 0);
+                ctx.restore();
+            }
+        };
+
         // Update state display
         function updateStateDisplay(state) {
             currentState = state;
@@ -1363,6 +1740,25 @@
             } else if (state.capital.pnl_realized < 0) {
                 pnlElement.parentElement.classList.add('negative');
             }
+            
+            // Calculate transactions per minute
+            const now = Date.now();
+            const oneMinuteAgo = now - 60000;
+            const recentTrades = tradeTimestamps.filter(t => t > oneMinuteAgo).length;
+            
+            // Add data point to time series chart
+            metricsTimeSeries.addDataPoint({
+                timestamp: now,
+                tick: metricsTimeSeries.data.length,
+                price: lastPrice,
+                available_capital: state.capital.available,
+                deployed_capital: state.capital.deployed,
+                pnl_realized: state.capital.pnl_realized,
+                open_positions: state.open_trades,
+                total_actions: state.total_actions,
+                success_rate: parseFloat(successRate),
+                transactions_per_min: recentTrades
+            });
         }
         
         // Update price ticker with animation
@@ -1892,6 +2288,9 @@
                     transactionChart.data = [];
                     transactionChart.render();
                 }
+                
+                // Reset time series chart
+                metricsTimeSeries.clear();
                 
             } catch (error) {
                 console.error('Error resetting:', error);
@@ -2665,6 +3064,40 @@
         document.getElementById('applyCategoryBtn').addEventListener('click', applyCategory);
         document.getElementById('applyTimePresetBtn').addEventListener('click', applyTimePreset);
 
+        // Time series chart event listeners
+        function toggleMetricCheckbox(checkbox) {
+            const metric = checkbox.value;
+            if (checkbox.checked) {
+                metricsTimeSeries.activeMetrics.add(metric);
+            } else {
+                metricsTimeSeries.activeMetrics.delete(metric);
+            }
+            metricsTimeSeries.updateLegend();
+            metricsTimeSeries.render();
+        }
+        
+        document.getElementById('toggleAllMetrics').addEventListener('click', () => {
+            const allMetrics = ['price', 'available_capital', 'deployed_capital', 'pnl_realized', 
+                               'open_positions', 'total_actions', 'success_rate', 'transactions_per_min'];
+            
+            // Check if all are active
+            const allActive = allMetrics.every(m => metricsTimeSeries.activeMetrics.has(m));
+            
+            // Update checkboxes and activeMetrics
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][onchange="toggleMetricCheckbox(this)"]');
+            checkboxes.forEach(cb => {
+                cb.checked = !allActive;
+                if (!allActive) {
+                    metricsTimeSeries.activeMetrics.add(cb.value);
+                } else {
+                    metricsTimeSeries.activeMetrics.delete(cb.value);
+                }
+            });
+            
+            metricsTimeSeries.updateLegend();
+            metricsTimeSeries.render();
+        });
+
         // DSPy-related event listeners
         document.getElementById('updateParametersBtn').addEventListener('click', updateParameters);
         document.getElementById('applyPositionSize').addEventListener('click', () => applyDspySuggestion('position_size'));
@@ -2969,6 +3402,9 @@
         
         // Initialize transaction chart
         initTransactionChart();
+        
+        // Initialize time series metrics chart
+        metricsTimeSeries.init();
         
         // Initialize price ticker
         updatePriceTicker(lastPrice);
