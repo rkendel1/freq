@@ -123,6 +123,8 @@ Secure interface to manage `config.prod.json` with:
 - 🔑 **API credentials** - Secure input for exchange keys
 - 🔒 **Password protection** - Environment-based authentication
 
+![Configuration Dashboard](https://github.com/user-attachments/assets/7c833cc3-cc7c-4c00-a3e7-13202473834d)
+
 **Run:**
 ```bash
 # Set password (optional but recommended)
@@ -148,6 +150,8 @@ Real-time production monitoring with:
 - 📈 **Cumulative PnL chart** - Visual profit/loss over time
 - 📜 **Live logs** - Tail of production log file
 - 🔄 **Auto-refresh** - Updates every 10 seconds
+
+![Monitoring Dashboard](https://github.com/user-attachments/assets/6a469d6d-6834-415f-b87d-536cbf8e0c5b)
 
 **Run:**
 ```bash
