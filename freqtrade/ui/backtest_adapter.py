@@ -27,6 +27,7 @@ Usage Example:
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -425,12 +426,11 @@ def _log_backtest_to_questdb(
     try:
         # Import here to avoid dependency if not used
         from questdb.ingress import Sender, TimestampNanos
-        import time
         
         host = config.get('questdb_host', 'localhost')
         port = config.get('questdb_port', 9009)
         
-        # Use correct connection string format: tcp::addr=host:port;
+        # Connection string format: tcp::addr=host:port;
         with Sender.from_conf(f'tcp::addr={host}:{port};') as sender:
             sender.row(
                 'backtest_results',

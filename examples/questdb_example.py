@@ -183,7 +183,7 @@ def check_questdb_available():
     try:
         from questdb.ingress import Sender
         
-        # Try to connect
+        # Try to connect using same format as main code
         try:
             with Sender.from_conf('tcp::addr=localhost:9009;') as sender:
                 # Just test connection
