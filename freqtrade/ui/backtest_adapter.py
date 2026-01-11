@@ -430,7 +430,8 @@ def _log_backtest_to_questdb(
         host = config.get('questdb_host', 'localhost')
         port = config.get('questdb_port', 9009)
         
-        with Sender.from_conf(f'tcp::{host}:{port}') as sender:
+        # Use correct connection string format: tcp::addr=host:port;
+        with Sender.from_conf(f'tcp::addr={host}:{port};') as sender:
             sender.row(
                 'backtest_results',
                 symbols={
