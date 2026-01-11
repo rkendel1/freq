@@ -55,16 +55,26 @@ def check_password() -> bool:
 
 def discover_exploit_modules() -> list[str]:
     """Discover available ExploitModule implementations."""
-    exploits_dir = Path(__file__).parent.parent / "exploits"
-    modules = []
-    
-    for file in exploits_dir.glob("*.py"):
-        if file.name.startswith("_") or file.name == "exploit_module.py":
-            continue
-        module_name = file.stem
-        modules.append(module_name)
-    
-    return sorted(modules)
+    try:
+        # Get exploits directory relative to this file
+        exploits_dir = Path(__file__).parent.parent / "exploits"
+        
+        if not exploits_dir.exists():
+            st.warning(f"⚠️ Exploits directory not found at: {exploits_dir}")
+            return []
+        
+        modules = []
+        
+        for file in exploits_dir.glob("*.py"):
+            if file.name.startswith("_") or file.name == "exploit_module.py":
+                continue
+            module_name = file.stem
+            modules.append(module_name)
+        
+        return sorted(modules)
+    except Exception as e:
+        st.error(f"❌ Error discovering exploit modules: {e}")
+        return []
 
 
 def get_ccxt_exchanges() -> list[str]:

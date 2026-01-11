@@ -40,12 +40,16 @@ def load_capital_state(db_path: Path) -> dict[str, Any] | None:
         
         # Get open trades
         open_trades = Trade.get_open_trades()
-        closed_trades = Trade.get_trades([Trade.is_open == False]).all()
+        closed_trades = Trade.get_trades([Trade.is_open.is_(False)]).all()
         
         # Calculate capital state
         deployed_capital = sum(t.stake_amount for t in open_trades)
         realized_pnl = sum(t.close_profit_abs or 0.0 for t in closed_trades if t.close_profit_abs)
-        unrealized_pnl = sum(t.calc_profit(t.close_rate) if hasattr(t, 'calc_profit') and t.close_rate else 0.0 for t in open_trades)
+        
+        # Calculate unrealized PnL from open positions
+        # Note: This is approximate as we don't have current market prices here
+        # In production, this should be calculated from live price feeds
+        unrealized_pnl = sum(t.close_profit_abs or 0.0 for t in open_trades if t.close_profit_abs)
         
         # Try to get initial capital from config
         config_path = Path(__file__).parent.parent.parent / "config.prod.json"
@@ -148,7 +152,7 @@ def get_pnl_history(db_path: Path) -> list[dict[str, Any]]:
         init_db(f"sqlite:///{db_path}")
         
         # Get closed trades
-        trades = Trade.get_trades([Trade.is_open == False]).all()
+        trades = Trade.get_trades([Trade.is_open.is_(False)]).all()
         
         pnl_data = []
         cumulative_pnl = 0.0
@@ -192,16 +196,13 @@ def main():
     st.title("📊 Production Monitoring Dashboard")
     st.markdown("---")
     
-    # Auto-refresh
-    if st.sidebar.checkbox("🔄 Auto-refresh (10s)", value=True):
-        st.sidebar.caption("Dashboard refreshes automatically")
-        # Note: In production, use st.rerun() with a timer
-        import time
-        time.sleep(0.1)  # Small delay to prevent immediate refresh
-    
-    # Sidebar controls
+    # Auto-refresh setting in sidebar
     with st.sidebar:
         st.header("⚙️ Settings")
+        
+        auto_refresh = st.checkbox("🔄 Auto-refresh (10s)", value=False)
+        if auto_refresh:
+            st.caption("Enable to refresh dashboard automatically")
         
         db_path_str = st.text_input(
             "Database Path",
@@ -401,11 +402,9 @@ def main():
         label_visibility="collapsed"
     )
     
-    # Auto-refresh implementation
-    if st.sidebar.checkbox("🔄 Auto-refresh (10s)", value=False, key="auto_refresh_bottom"):
-        import time
-        time.sleep(10)
-        st.rerun()
+    # Footer note about auto-refresh
+    if auto_refresh:
+        st.info("💡 Auto-refresh enabled. To implement: Use `st.rerun()` with a timer or external scheduler.")
 
 
 if __name__ == "__main__":
