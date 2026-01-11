@@ -750,6 +750,160 @@
             color: #6c757d;
             font-style: italic;
         }
+
+        /* Category Balance Visualizer Styles */
+        .category-visualizer {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .category-visualizer h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .balance-slider-container {
+            margin: 20px 0;
+        }
+
+        .balance-slider-row {
+            margin-bottom: 20px;
+        }
+
+        .balance-slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .balance-slider-track {
+            position: relative;
+            height: 30px;
+            background: linear-gradient(90deg, #28a745 0%, #ffc107 50%, #dc3545 100%);
+            border-radius: 15px;
+            overflow: visible;
+        }
+
+        .balance-slider-marker {
+            position: absolute;
+            top: -5px;
+            width: 40px;
+            height: 40px;
+            margin-left: -20px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .balance-slider-marker:hover {
+            transform: scale(1.1);
+        }
+
+        .balance-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        .radar-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .radar-chart {
+            width: 300px;
+            height: 300px;
+        }
+
+        .category-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .legend-color.conservative {
+            background: #28a745;
+        }
+
+        .legend-color.moderate {
+            background: #ffc107;
+        }
+
+        .legend-color.aggressive {
+            background: #dc3545;
+        }
+
+        .legend-color.current {
+            background: #667eea;
+            border: 2px solid #333;
+        }
+
+        .overall-balance-indicator {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .overall-balance-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .overall-balance-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .overall-balance-value.conservative {
+            color: #28a745;
+        }
+
+        .overall-balance-value.moderate {
+            color: #ffc107;
+        }
+
+        .overall-balance-value.aggressive {
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -911,6 +1065,108 @@
             <div class="state-card" id="targetProgressCard" style="display: none;">
                 <h3>🎯 Target Progress</h3>
                 <div class="value" id="targetProgress">0%</div>
+            </div>
+        </div>
+
+        <!-- Category Balance Visualizer (shown in automated mode) -->
+        <div id="categoryVisualizer" class="category-visualizer" style="display: none; margin: 20px 30px;">
+            <h3>📊 Configuration Balance Visualizer</h3>
+            
+            <!-- Slider-based visualization for each parameter -->
+            <div class="balance-slider-container">
+                <div class="balance-slider-row">
+                    <div class="balance-slider-label">
+                        <span>Position Size</span>
+                        <span id="positionSizeValue">15%</span>
+                    </div>
+                    <div class="balance-slider-track">
+                        <div class="balance-slider-marker" id="positionSizeMarker">📊</div>
+                    </div>
+                    <div class="balance-slider-labels">
+                        <span>🛡️ Conservative (8%)</span>
+                        <span>⚖️ Moderate (15%)</span>
+                        <span>⚡ Aggressive (25%)</span>
+                    </div>
+                </div>
+
+                <div class="balance-slider-row">
+                    <div class="balance-slider-label">
+                        <span>Profit Target</span>
+                        <span id="profitTargetValue">5%</span>
+                    </div>
+                    <div class="balance-slider-track">
+                        <div class="balance-slider-marker" id="profitTargetMarker">🎯</div>
+                    </div>
+                    <div class="balance-slider-labels">
+                        <span>⚡ Aggressive (3%)</span>
+                        <span>⚖️ Moderate (5%)</span>
+                        <span>🛡️ Conservative (8%)</span>
+                    </div>
+                </div>
+
+                <div class="balance-slider-row">
+                    <div class="balance-slider-label">
+                        <span>Stop Loss</span>
+                        <span id="stopLossValue">3%</span>
+                    </div>
+                    <div class="balance-slider-track">
+                        <div class="balance-slider-marker" id="stopLossMarker">🛑</div>
+                    </div>
+                    <div class="balance-slider-labels">
+                        <span>⚡ Aggressive (2%)</span>
+                        <span>⚖️ Moderate (3%)</span>
+                        <span>🛡️ Conservative (5%)</span>
+                    </div>
+                </div>
+
+                <div class="balance-slider-row">
+                    <div class="balance-slider-label">
+                        <span>Trade Frequency (Cooldown)</span>
+                        <span id="cooldownValue">5 ticks</span>
+                    </div>
+                    <div class="balance-slider-track">
+                        <div class="balance-slider-marker" id="cooldownMarker">⏱️</div>
+                    </div>
+                    <div class="balance-slider-labels">
+                        <span>⚡ Aggressive (2)</span>
+                        <span>⚖️ Moderate (5)</span>
+                        <span>🛡️ Conservative (10)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall balance indicator -->
+            <div class="overall-balance-indicator">
+                <div class="overall-balance-label">Overall Strategy Profile</div>
+                <div class="overall-balance-value" id="overallBalance">⚖️ MODERATE</div>
+                <div style="font-size: 12px; color: #6c757d; margin-top: 8px;" id="balanceDescription">
+                    Balanced approach with moderate capital usage
+                </div>
+            </div>
+
+            <!-- Radar chart canvas -->
+            <div class="radar-chart-container">
+                <canvas id="radarChart" class="radar-chart"></canvas>
+            </div>
+
+            <!-- Legend -->
+            <div class="category-legend">
+                <div class="legend-item">
+                    <div class="legend-color current"></div>
+                    <span>Current Settings</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color conservative"></div>
+                    <span>Conservative</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color moderate"></div>
+                    <span>Moderate</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color aggressive"></div>
+                    <span>Aggressive</span>
+                </div>
             </div>
         </div>
 
@@ -1724,6 +1980,7 @@
             const timeControls = document.getElementById('timeControls');
             const timeCards = document.getElementById('timeElapsedCard');
             const targetCard = document.getElementById('targetProgressCard');
+            const visualizer = document.getElementById('categoryVisualizer');
             
             if (mode === 'automated') {
                 manualControls.style.display = 'none';
@@ -1732,9 +1989,11 @@
                 timeControls.style.display = 'flex';
                 timeCards.style.display = 'block';
                 targetCard.style.display = 'block';
+                visualizer.style.display = 'block';
                 
-                // Load category info
+                // Load category info and update visualizer
                 loadCategoryInfo();
+                updateCategoryVisualizer();
             } else {
                 manualControls.style.display = 'flex';
                 automatedControls.style.display = 'none';
@@ -1742,6 +2001,7 @@
                 timeControls.style.display = 'none';
                 timeCards.style.display = 'none';
                 targetCard.style.display = 'none';
+                visualizer.style.display = 'none';
                 stopAutomated();
             }
         }
@@ -1758,6 +2018,204 @@
             }
         }
 
+        // Update category visualizer
+        async function updateCategoryVisualizer() {
+            try {
+                const response = await fetch('/api/dspy/parameters');
+                const data = await response.json();
+                const params = data.parameters;
+                
+                // Update slider positions and values
+                updateSliderPosition('positionSize', params.position_size, 0.08, 0.15, 0.25, false);
+                updateSliderPosition('profitTarget', params.profit_target, 0.03, 0.05, 0.08, true);
+                updateSliderPosition('stopLoss', params.stop_loss, 0.02, 0.03, 0.05, true);
+                updateSliderPosition('cooldown', params.min_ticks_between_actions, 2, 5, 10, true);
+                
+                // Update overall balance
+                updateOverallBalance(params);
+                
+                // Draw radar chart
+                drawRadarChart(params);
+            } catch (error) {
+                console.error('Error updating category visualizer:', error);
+            }
+        }
+
+        // Update slider position for a parameter
+        function updateSliderPosition(paramName, currentValue, aggressiveVal, moderateVal, conservativeVal, reversed) {
+            const marker = document.getElementById(`${paramName}Marker`);
+            const valueDisplay = document.getElementById(`${paramName}Value`);
+            
+            // Calculate position (0-100%)
+            let position;
+            if (reversed) {
+                // For reversed parameters (lower = aggressive, higher = conservative)
+                const min = aggressiveVal;
+                const max = conservativeVal;
+                position = ((currentValue - min) / (max - min)) * 100;
+            } else {
+                // For normal parameters (lower = conservative, higher = aggressive)
+                const min = conservativeVal;
+                const max = aggressiveVal;
+                position = ((currentValue - min) / (max - min)) * 100;
+            }
+            
+            // Clamp to 0-100%
+            position = Math.max(0, Math.min(100, position));
+            
+            // Update marker position
+            marker.style.left = `${position}%`;
+            
+            // Update value display
+            if (paramName === 'positionSize') {
+                valueDisplay.textContent = `${(currentValue * 100).toFixed(0)}%`;
+            } else if (paramName === 'profitTarget' || paramName === 'stopLoss') {
+                valueDisplay.textContent = `${(currentValue * 100).toFixed(0)}%`;
+            } else {
+                valueDisplay.textContent = `${currentValue} ticks`;
+            }
+        }
+
+        // Calculate overall balance score
+        function calculateBalanceScore(params) {
+            // Normalize each parameter to 0-1 scale where 0=conservative, 1=aggressive
+            const positionScore = (params.position_size - 0.08) / (0.25 - 0.08);
+            const profitScore = (0.08 - params.profit_target) / (0.08 - 0.03); // Reversed
+            const stopScore = (0.05 - params.stop_loss) / (0.05 - 0.02); // Reversed
+            const cooldownScore = (10 - params.min_ticks_between_actions) / (10 - 2); // Reversed
+            
+            // Average score
+            const avgScore = (positionScore + profitScore + stopScore + cooldownScore) / 4;
+            return Math.max(0, Math.min(1, avgScore));
+        }
+
+        // Update overall balance indicator
+        function updateOverallBalance(params) {
+            const score = calculateBalanceScore(params);
+            const balanceEl = document.getElementById('overallBalance');
+            const descEl = document.getElementById('balanceDescription');
+            
+            if (score < 0.33) {
+                balanceEl.textContent = '🛡️ CONSERVATIVE';
+                balanceEl.className = 'overall-balance-value conservative';
+                descEl.textContent = 'Lower risk, patient approach with capital preservation focus';
+            } else if (score < 0.67) {
+                balanceEl.textContent = '⚖️ MODERATE';
+                balanceEl.className = 'overall-balance-value moderate';
+                descEl.textContent = 'Balanced approach with moderate capital usage';
+            } else {
+                balanceEl.textContent = '⚡ AGGRESSIVE';
+                balanceEl.className = 'overall-balance-value aggressive';
+                descEl.textContent = 'High risk, fast capital deployment with quick profit-taking';
+            }
+        }
+
+        // Draw radar chart
+        function drawRadarChart(currentParams) {
+            const canvas = document.getElementById('radarChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = 300;
+            const height = canvas.height = 300;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 100;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Parameters to visualize
+            const params = [
+                { name: 'Position\nSize', key: 'position_size', max: 0.25 },
+                { name: 'Profit\nTarget', key: 'profit_target', max: 0.08 },
+                { name: 'Stop\nLoss', key: 'stop_loss', max: 0.05 },
+                { name: 'Cooldown', key: 'min_ticks_between_actions', max: 10 }
+            ];
+            
+            const numParams = params.length;
+            const angleStep = (Math.PI * 2) / numParams;
+            
+            // Draw background grid
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                const r = (radius / 5) * i;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#dee2e6';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < numParams; i++) {
+                const angle = angleStep * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                // Draw labels
+                const labelX = centerX + Math.cos(angle) * (radius + 30);
+                const labelY = centerY + Math.sin(angle) * (radius + 30);
+                ctx.fillStyle = '#495057';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const lines = params[i].name.split('\n');
+                lines.forEach((line, idx) => {
+                    ctx.fillText(line, labelX, labelY + (idx - lines.length/2 + 0.5) * 12);
+                });
+            }
+            
+            // Helper function to draw a polygon
+            function drawPolygon(values, color, lineWidth, fill) {
+                ctx.beginPath();
+                for (let i = 0; i < numParams; i++) {
+                    const value = values[params[i].key];
+                    const normalizedValue = value / params[i].max;
+                    const angle = angleStep * i - Math.PI / 2;
+                    const r = normalizedValue * radius;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                
+                if (fill) {
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+                ctx.strokeStyle = color.replace('0.2', '1'); // More opaque stroke
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+            
+            // Draw category presets (if available)
+            if (categoryInfo) {
+                // Conservative
+                drawPolygon(categoryInfo.conservative.parameters, 'rgba(40, 167, 69, 0.2)', 1, true);
+                
+                // Moderate
+                drawPolygon(categoryInfo.moderate.parameters, 'rgba(255, 193, 7, 0.2)', 1, true);
+                
+                // Aggressive
+                drawPolygon(categoryInfo.aggressive.parameters, 'rgba(220, 53, 69, 0.2)', 1, true);
+            }
+            
+            // Draw current settings (on top)
+            drawPolygon(currentParams, 'rgba(102, 126, 234, 0.3)', 3, true);
+        }
+
         // Apply category preset
         async function applyCategory() {
             const category = document.getElementById('categorySelect').value;
@@ -1772,6 +2230,9 @@
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Category applied:', data);
+                    
+                    // Update visualizer
+                    updateCategoryVisualizer();
                     
                     // Show category info
                     if (categoryInfo && categoryInfo[category]) {
@@ -2238,6 +2699,10 @@
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Parameters updated:', data);
+                    
+                    // Update visualizer
+                    updateCategoryVisualizer();
+                    
                     alert('Parameters updated successfully!');
                 } else {
                     const error = await response.json();
