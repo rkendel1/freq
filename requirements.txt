@@ -12,6 +12,9 @@ numpy==2.4.0
 # Core utilities
 python-dateutil==2.9.0.post0
 
+# Optional: QuestDB for time-series metrics logging
+questdb==4.1.0
+
 # Optional: Full stack for local development (commented out for Vercel)
 # To install full dependencies locally:
 # pip install -r requirements-full.txt
