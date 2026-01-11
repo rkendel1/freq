@@ -107,7 +107,71 @@ print(f"Win Rate: {results['win_rate']:.2f}%")
 
 See `examples/automated_backtest_example.py` for complete examples.
 
+---
 
+## 🔧 Production Dashboards
+
+**NEW: Production-ready Streamlit dashboards for configuration and monitoring**
+
+### ⚙️ Configuration Dashboard
+
+Secure interface to manage `config.prod.json` with:
+- 🎯 **Dynamic ExploitModule discovery** - Auto-detect and select modules
+- 🔌 **Full CCXT exchange support** - All CEX and DEX venues (Binance, Hyperliquid, etc.)
+- 🛡️ **Risk limits configuration** - Position sizes, exposure, stop losses
+- 💰 **Capital management** - Set initial capital and stake currency
+- 🔑 **API credentials** - Secure input for exchange keys
+- 🔒 **Password protection** - Environment-based authentication
+
+![Configuration Dashboard](https://github.com/user-attachments/assets/7c833cc3-cc7c-4c00-a3e7-13202473834d)
+
+**Run:**
+```bash
+# Set password (optional but recommended)
+export STREAMLIT_PASSWORD=your_secure_password
+
+# Start configuration dashboard
+streamlit run freqtrade/ui/prod_config.py
+
+# Access at: http://localhost:8501
+```
+
+**Install dependencies:**
+```bash
+pip install streamlit plotly pandas
+```
+
+### 📊 Monitoring Dashboard
+
+Real-time production monitoring with:
+- 💰 **Capital state overview** - Available, deployed, total with PnL metrics
+- 📊 **Open positions table** - Live position tracking from database
+- 📋 **Recent orders** - Order history and status
+- 📈 **Cumulative PnL chart** - Visual profit/loss over time
+- 📜 **Live logs** - Tail of production log file
+- 🔄 **Auto-refresh** - Updates every 10 seconds
+
+![Monitoring Dashboard](https://github.com/user-attachments/assets/6a469d6d-6834-415f-b87d-536cbf8e0c5b)
+
+**Run:**
+```bash
+# Start monitoring dashboard
+streamlit run freqtrade/ui/prod_monitor.py
+
+# Access at: http://localhost:8502
+```
+
+**Features:**
+- ✅ **No dependencies on running engine** - Reads directly from SQLite DB
+- ✅ **Production-safe** - Read-only access to database and logs
+- ✅ **CCXT agnostic** - Works with any exchange
+- ✅ **Module agnostic** - Shows results regardless of ExploitModules used
+
+**Security Notes:**
+- 🔒 Set `STREAMLIT_PASSWORD` environment variable for config dashboard
+- 🚫 Do not expose dashboards to public internet without additional authentication
+- 📁 Use firewall rules to restrict access to localhost or trusted IPs
+- 🔐 API credentials in config are masked in the UI
 
 ---
 
