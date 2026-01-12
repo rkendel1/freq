@@ -277,6 +277,34 @@ Logs include:
 3. Restart the service to reset the database connection
 4. If corrupted, delete `user_data/tradesv3.sqlite` (will lose trade history)
 
+### Build Failures with Python 3.13
+
+**Problem**: Build fails with "Read-only file system" error during Rust compilation or pydantic-core installation
+
+**Root Cause**: Render is detecting the service as a Python app instead of a Docker service, and older pydantic versions require Rust compilation which fails in Render's Python build environment.
+
+**Solutions**:
+1. **Verify Service Configuration**: In the Render dashboard, check that:
+   - Service type is set to "Docker" (not "Python")
+   - Dockerfile path is set to `./Dockerfile.dev`
+   - Build command is empty (or uses Docker)
+   
+2. **Recreate Service from Blueprint**: 
+   - Delete the existing service
+   - Create a new Blueprint Instance from `render.yaml`
+   - This ensures Docker mode is used
+   
+3. **Use Updated Dependencies**: The `requirements.txt` file has been updated to use:
+   - `pydantic>=2.10.0` (has pre-built wheels for Python 3.13)
+   - `dspy-ai>=3.0.0` (compatible with newer pydantic)
+   - These versions avoid Rust compilation issues
+
+4. **Check Branch Configuration**: Ensure the service is deploying from the correct branch:
+   - Default is `main` as specified in `render.yaml`
+   - If deploying from a different branch, verify it has the updated dependencies
+
+**Note**: Even if Render builds as a Python service, the updated `requirements.txt` should work correctly with Python 3.13 without compilation errors.
+
 ## Security Best Practices
 
 1. **Always Set Passwords**:
