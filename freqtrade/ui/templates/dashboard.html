@@ -426,6 +426,19 @@
             font-size: 14px;
         }
 
+        .filter-controls select:focus,
+        .filter-controls input:focus,
+        select:focus,
+        button:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        button:focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -583,11 +596,11 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('overview', event)">📊 Overview</button>
-            <button class="tab-button" onclick="switchTab('charts', event)">📈 Charts</button>
-            <button class="tab-button" onclick="switchTab('trades', event)">💼 Trades</button>
-            <button class="tab-button" onclick="switchTab('exploits', event)">🎯 Exploits</button>
-            <button class="tab-button" onclick="switchTab('analytics', event)">📉 Analytics</button>
+            <button class="tab-button active" data-tab="overview" onclick="switchTab('overview', event)">📊 Overview</button>
+            <button class="tab-button" data-tab="charts" onclick="switchTab('charts', event)">📈 Charts</button>
+            <button class="tab-button" data-tab="trades" onclick="switchTab('trades', event)">💼 Trades</button>
+            <button class="tab-button" data-tab="exploits" onclick="switchTab('exploits', event)">🎯 Exploits</button>
+            <button class="tab-button" data-tab="analytics" onclick="switchTab('analytics', event)">📉 Analytics</button>
         </div>
 
         <!-- Overview Tab -->
@@ -762,6 +775,13 @@
 
         // Tab switching
         function switchTab(tabName, event) {
+            // Validate tabName to prevent XSS
+            const validTabs = ['overview', 'charts', 'trades', 'exploits', 'analytics'];
+            if (!validTabs.includes(tabName)) {
+                console.error('Invalid tab name:', tabName);
+                return;
+            }
+
             // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -769,8 +789,9 @@
             if (event && event.target) {
                 event.target.classList.add('active');
             } else {
-                // Fallback: find button by tab name
-                document.querySelector(`.tab-button[onclick*="${tabName}"]`)?.classList.add('active');
+                // Fallback: find button by data attribute
+                const btn = document.querySelector(`button[data-tab="${tabName}"]`);
+                if (btn) btn.classList.add('active');
             }
 
             // Update tab content
@@ -1044,10 +1065,11 @@
 
             const combinedHTML = data1.slice(-10).map((item, index) => {
                 const height1 = maxValue > 0 ? (item.value / maxValue) * 100 : 10;
-                // Safely access data2 with bounds checking
-                const height2 = (index < data2.length && data2[index] && maxValue > 0) 
-                    ? (data2[index].value / maxValue) * 100 
-                    : 10;
+                // Safely access data2 with full validation
+                const data2Value = (index < data2.length && data2[index] && typeof data2[index].value === 'number') 
+                    ? data2[index].value 
+                    : 0;
+                const height2 = maxValue > 0 ? (data2Value / maxValue) * 100 : 10;
                 
                 return `
                     <div style="flex: 1; display: flex; gap: 5px; align-items: flex-end; height: 250px; position: relative;">
@@ -1159,7 +1181,7 @@
                         <td>${trade.action}</td>
                         <td>${trade.symbol}</td>
                         <td>$${trade.price.toFixed(2)}</td>
-                        <td>${(trade.size * 100).toFixed(1)}%</td>
+                        <td>${sizePercent}%</td>
                         <td class="${pnlClass}">${trade.pnl > 0 ? '+' : ''}$${trade.pnl.toFixed(2)}</td>
                         <td>${statusBadge}</td>
                     </tr>
@@ -1174,18 +1196,34 @@
                 return;
             }
 
-            const exploitsHTML = exploits.map(exploit => `
-                <div class="exploit-item">
-                    <h4>
-                        ${exploit.display_name || exploit.name}
-                        <span class="status-badge active">Active</span>
-                    </h4>
-                    <p>${exploit.description || 'No description available'}</p>
-                    <button onclick="loadExploitParameters('${exploit.name}')" style="margin-top: 10px;">
-                        View Parameters
-                    </button>
-                </div>
-            `).join('');
+            const exploitsHTML = exploits.map(exploit => {
+                // Sanitize exploit name to prevent XSS
+                const safeName = String(exploit.name || '').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+                const safeDisplayName = String(exploit.display_name || exploit.name || '').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+                const safeDescription = String(exploit.description || 'No description available').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+
+                return `
+                    <div class="exploit-item">
+                        <h4>
+                            ${safeDisplayName}
+                            <span class="status-badge active">Active</span>
+                        </h4>
+                        <p>${safeDescription}</p>
+                        <button onclick="loadExploitParameters('${safeName}')" style="margin-top: 10px;">
+                            View Parameters
+                        </button>
+                    </div>
+                `;
+            }).join('');
 
             document.getElementById('exploitList').innerHTML = exploitsHTML;
         }
@@ -1393,8 +1431,10 @@
         }
 
         function showNotification(message, type = 'info') {
-            // Create simple notification without using alert()
+            // Create accessible notification toast
             const notification = document.createElement('div');
+            notification.setAttribute('role', 'alert');
+            notification.setAttribute('aria-live', 'polite');
             notification.style.cssText = `
                 position: fixed;
                 top: 20px;
@@ -1405,14 +1445,24 @@
                 border-radius: 5px;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.2);
                 z-index: 10000;
-                animation: slideIn 0.3s ease-out;
             `;
+            
+            // Respect prefers-reduced-motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!prefersReducedMotion) {
+                notification.style.animation = 'slideIn 0.3s ease-out';
+            }
+            
             notification.textContent = message;
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => notification.remove(), 300);
+                if (!prefersReducedMotion) {
+                    notification.style.animation = 'slideOut 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                } else {
+                    notification.remove();
+                }
             }, 3000);
         }
 
@@ -1429,6 +1479,10 @@
                     const symbol = item.flow?.['2_execution_state']?.symbol || 'N/A';
                     const price = item.market_data?.price || item.flow?.['2_execution_state']?.current_price || 0;
                     const size = result.filled_size || 0;
+                    // Validate size is in expected range (0-1 for percentage)
+                    const sizePercent = (typeof size === 'number' && size >= 0 && size <= 1) 
+                        ? (size * 100).toFixed(1) 
+                        : '0.0';
                     const pnl = result.profit || 0;
                     const success = result.success ? 'Yes' : 'No';
                     
