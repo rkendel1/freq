@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
@@ -49,12 +49,19 @@
             background: #f8f9fa;
             padding: 15px 30px;
             border-bottom: 2px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
         }
 
         nav a {
             display: inline-block;
             padding: 8px 16px;
-            margin-right: 10px;
             color: #667eea;
             text-decoration: none;
             border-radius: 5px;
@@ -64,6 +71,27 @@
         nav a:hover, nav a.active {
             background: #667eea;
             color: white;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .refresh-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .refresh-control select {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
         }
 
         .metrics-grid {
@@ -115,6 +143,45 @@
             color: #6c757d;
         }
 
+        .tabs {
+            background: #f8f9fa;
+            padding: 0 30px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            gap: 5px;
+        }
+
+        .tab-button {
+            padding: 15px 25px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-button:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .section {
             padding: 30px;
             border-bottom: 1px solid #e9ecef;
@@ -124,6 +191,97 @@
             color: #667eea;
             margin-bottom: 20px;
             font-size: 1.8em;
+        }
+
+        .chart-container {
+            position: relative;
+            min-height: 300px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 250px;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s;
+            min-height: 20px;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+            transform: translateY(-5px);
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .pie-chart {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .line-graph {
+            position: relative;
+            height: 250px;
+            padding: 20px;
+        }
+
+        .line-graph svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
         }
 
         .exploit-list {
@@ -167,6 +325,120 @@
             color: #721c24;
         }
 
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 14px;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .positive-value {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .negative-value {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .neutral-value {
+            color: #6c757d;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-box h4 {
+            color: #6c757d;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .filter-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-controls label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .filter-controls select,
+        .filter-controls input {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-controls select:focus,
+        .filter-controls input:focus,
+        select:focus,
+        button:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        button:focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -199,8 +471,94 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
-        .refresh-btn {
-            margin: 20px 30px;
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #0c5460;
+        }
+
+        .info-box h4 {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .info-box p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -208,30 +566,253 @@
     <div class="container">
         <header>
             <h1>📊 Trading Dashboard</h1>
-            <p>Real-time metrics and performance monitoring</p>
+            <p>Comprehensive real-time metrics, analytics, and performance monitoring</p>
         </header>
 
         <nav>
-            <a href="/" >Demo UI</a>
-            <a href="/dashboard" class="active">Dashboard</a>
-            <a href="/monitoring">Monitoring</a>
+            <div class="nav-links">
+                <a href="/">Demo UI</a>
+                <a href="/dashboard" class="active">Dashboard</a>
+                <a href="/monitoring">Monitoring</a>
+            </div>
+            <div class="nav-controls">
+                <div class="refresh-control">
+                    <label for="refreshInterval">Auto-refresh:</label>
+                    <select id="refreshInterval" onchange="updateRefreshInterval()">
+                        <option value="0">Off</option>
+                        <option value="2000">2s</option>
+                        <option value="5000" selected>5s</option>
+                        <option value="10000">10s</option>
+                        <option value="30000">30s</option>
+                        <option value="60000">1m</option>
+                    </select>
+                </div>
+                <button onclick="loadDashboard()">🔄 Refresh</button>
+            </div>
         </nav>
 
         <div class="metrics-grid" id="metricsGrid">
             <div class="loading">Loading metrics...</div>
         </div>
 
-        <div class="section">
-            <h2>Active Exploits</h2>
-            <div class="exploit-list" id="exploitList">
-                <div class="loading">Loading exploits...</div>
+        <div class="tabs">
+            <button class="tab-button active" data-tab="overview" onclick="switchTab('overview', event)">📊 Overview</button>
+            <button class="tab-button" data-tab="charts" onclick="switchTab('charts', event)">📈 Charts</button>
+            <button class="tab-button" data-tab="trades" onclick="switchTab('trades', event)">💼 Trades</button>
+            <button class="tab-button" data-tab="exploits" onclick="switchTab('exploits', event)">🎯 Exploits</button>
+            <button class="tab-button" data-tab="analytics" onclick="switchTab('analytics', event)">📉 Analytics</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="section">
+                <h2>Capital Distribution</h2>
+                <div class="chart-container" id="capitalChart">
+                    <div class="chart-placeholder">Loading...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recent Performance</h2>
+                <div class="stats-grid" id="performanceStats">
+                    <div class="loading">Loading performance stats...</div>
+                </div>
             </div>
         </div>
 
-        <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh Dashboard</button>
+        <!-- Charts Tab -->
+        <div id="charts-tab" class="tab-content">
+            <div class="section">
+                <h2>Performance Charts</h2>
+                
+                <div class="chart-grid">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">PnL Over Time</h3>
+                        <div class="chart-container" id="pnlChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Capital Deployment</h3>
+                        <div class="chart-container" id="deploymentChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-grid">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Success Rate History</h3>
+                        <div class="chart-container" id="successRateChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Price Movement</h3>
+                        <div class="chart-container" id="priceChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trades Tab -->
+        <div id="trades-tab" class="tab-content">
+            <div class="section">
+                <h2>Trade History</h2>
+                
+                <div class="filter-controls">
+                    <label>Show:</label>
+                    <select id="tradeFilter" onchange="filterTrades()">
+                        <option value="all">All Trades</option>
+                        <option value="profitable">Profitable Only</option>
+                        <option value="losses">Losses Only</option>
+                    </select>
+                    
+                    <label>Limit:</label>
+                    <select id="tradeLimit" onchange="filterTrades()">
+                        <option value="10">Last 10</option>
+                        <option value="25" selected>Last 25</option>
+                        <option value="50">Last 50</option>
+                        <option value="100">Last 100</option>
+                        <option value="all">All</option>
+                    </select>
+
+                    <div style="margin-left: auto;">
+                        <button class="btn-success" onclick="exportData('csv')">📥 Export CSV</button>
+                        <button class="btn-secondary" onclick="exportData('json')">📥 Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="tradesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Size</th>
+                                <th>P&L</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesTableBody">
+                            <tr>
+                                <td colspan="8" class="loading">Loading trade history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exploits Tab -->
+        <div id="exploits-tab" class="tab-content">
+            <div class="section">
+                <h2>Active Exploits</h2>
+                <div class="exploit-list" id="exploitList">
+                    <div class="loading">Loading exploits...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Exploit Parameters</h2>
+                <div id="exploitParameters">
+                    <div class="loading">Loading parameters...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="section">
+                <h2>Performance Analytics</h2>
+                
+                <div class="stats-grid" id="analyticsStats">
+                    <div class="loading">Loading analytics...</div>
+                </div>
+
+                <div class="chart-grid" style="margin-top: 30px;">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Win Rate Distribution</h3>
+                        <div class="chart-container" id="winRateDistChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Trade Duration Analysis</h3>
+                        <div class="chart-container" id="durationChart">
+                            <div class="chart-placeholder">No data available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>DSPy Advisor Insights</h2>
+                <div id="dspyInsights">
+                    <div class="loading">Loading DSPy insights...</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Global state
+        let historyData = [];
+        let priceData = [];
+        let refreshInterval = 5000;
+        let refreshTimer = null;
+        let currentTab = 'overview';
+
+        // Initialize - no chart library needed
+        function initCharts() {
+            console.log('Dashboard initialized without external chart library');
+        }
+
+        // Tab switching
+        function switchTab(tabName, event) {
+            // Validate tabName to prevent XSS
+            const validTabs = ['overview', 'charts', 'trades', 'exploits', 'analytics'];
+            if (!validTabs.includes(tabName)) {
+                console.error('Invalid tab name:', tabName);
+                return;
+            }
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Fallback: find button by data attribute
+                const btn = document.querySelector(`button[data-tab="${tabName}"]`);
+                if (btn) btn.classList.add('active');
+            }
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            currentTab = tabName;
+
+            // Load tab-specific data
+            if (tabName === 'charts') {
+                updateCharts();
+            } else if (tabName === 'trades') {
+                loadTradeHistory();
+            } else if (tabName === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // Load dashboard data
         async function loadDashboard() {
             try {
                 // Load current state
@@ -242,9 +823,31 @@
                 const exploitsResponse = await fetch('/api/exploits/list');
                 const exploitsData = await exploitsResponse.json();
 
+                // Load history
+                const historyResponse = await fetch('/api/history');
+                const historyResponseData = await historyResponse.json();
+                historyData = historyResponseData.history || [];
+
+                // Load price data
+                try {
+                    const priceResponse = await fetch('/api/price-history');
+                    const priceResponseData = await priceResponse.json();
+                    priceData = priceResponseData.prices || [];
+                } catch (e) {
+                    console.log('Price history not available');
+                }
+
                 // Update metrics
                 updateMetrics(state);
                 updateExploits(exploitsData.exploits);
+                updatePerformanceStats(state, historyData);
+
+                // Update charts if on charts tab
+                if (currentTab === 'charts') {
+                    updateCharts();
+                } else if (currentTab === 'overview') {
+                    updateCapitalChart(state);
+                }
 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -259,55 +862,331 @@
             const successRate = state.total_actions > 0 
                 ? ((state.successful_actions / state.total_actions) * 100).toFixed(1)
                 : 0;
+            const deploymentRate = totalCapital > 0
+                ? ((state.capital.deployed / totalCapital) * 100).toFixed(1)
+                : 0;
 
             const metricsHTML = `
                 <div class="metric-card">
                     <h3>Total Capital</h3>
                     <div class="value">$${totalCapital.toFixed(2)}</div>
+                    <div class="change">Portfolio value</div>
                 </div>
                 <div class="metric-card">
                     <h3>Available Capital</h3>
                     <div class="value">$${state.capital.available.toFixed(2)}</div>
-                    <div class="change">${((state.capital.available / totalCapital) * 100).toFixed(1)}% of total</div>
+                    <div class="change">${((state.capital.available / totalCapital) * 100).toFixed(1)}% free to trade</div>
                 </div>
                 <div class="metric-card">
                     <h3>Deployed Capital</h3>
                     <div class="value">$${state.capital.deployed.toFixed(2)}</div>
-                    <div class="change">${((state.capital.deployed / totalCapital) * 100).toFixed(1)}% of total</div>
+                    <div class="change">${deploymentRate}% in positions</div>
                 </div>
                 <div class="metric-card ${totalPnL >= 0 ? 'positive' : 'negative'}">
                     <h3>Total P&L</h3>
                     <div class="value">${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}</div>
-                    <div class="change">Realized: $${state.capital.pnl_realized.toFixed(2)}</div>
+                    <div class="change">${totalCapital > 0 ? ((totalPnL / totalCapital) * 100).toFixed(2) : 0}% return</div>
                 </div>
                 <div class="metric-card ${state.capital.pnl_realized >= 0 ? 'positive' : 'negative'}">
                     <h3>Realized P&L</h3>
                     <div class="value">${state.capital.pnl_realized >= 0 ? '+' : ''}$${state.capital.pnl_realized.toFixed(2)}</div>
+                    <div class="change">Closed positions</div>
                 </div>
                 <div class="metric-card ${state.capital.pnl_unrealized >= 0 ? 'positive' : 'negative'}">
                     <h3>Unrealized P&L</h3>
                     <div class="value">${state.capital.pnl_unrealized >= 0 ? '+' : ''}$${state.capital.pnl_unrealized.toFixed(2)}</div>
+                    <div class="change">Open positions</div>
                 </div>
                 <div class="metric-card">
                     <h3>Open Trades</h3>
                     <div class="value">${state.open_trades}</div>
+                    <div class="change">Active positions</div>
                 </div>
                 <div class="metric-card">
                     <h3>Closed Trades</h3>
                     <div class="value">${state.closed_trades}</div>
+                    <div class="change">Completed</div>
                 </div>
                 <div class="metric-card">
                     <h3>Total Actions</h3>
                     <div class="value">${state.total_actions}</div>
-                    <div class="change">Success: ${state.successful_actions} | Failed: ${state.failed_actions}</div>
+                    <div class="change">✅ ${state.successful_actions} | ❌ ${state.failed_actions}</div>
                 </div>
                 <div class="metric-card ${successRate >= 50 ? 'positive' : 'negative'}">
                     <h3>Success Rate</h3>
                     <div class="value">${successRate}%</div>
+                    <div class="change">${state.successful_actions}/${state.total_actions} successful</div>
                 </div>
             `;
 
             document.getElementById('metricsGrid').innerHTML = metricsHTML;
+        }
+
+        function updateCapitalChart(state) {
+            const totalCapital = state.capital.available + state.capital.deployed;
+            const availablePct = totalCapital > 0 ? (state.capital.available / totalCapital) * 100 : 50;
+            const deployedPct = totalCapital > 0 ? (state.capital.deployed / totalCapital) * 100 : 50;
+
+            const chartContainer = document.getElementById('capitalChart');
+            if (!chartContainer) return;
+
+            // Calculate percentages and convert to degrees for conic-gradient
+            // Full circle = 360 degrees, so percentage * 3.6 = degrees
+            const availableDeg = availablePct * 3.6;
+
+            chartContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="display: inline-block; width: 300px;">
+                        <div style="background: conic-gradient(#28a745 0deg ${availableDeg}deg, #667eea ${availableDeg}deg 360deg); 
+                                    width: 250px; height: 250px; border-radius: 50%; margin: 0 auto 20px; 
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 14px;">
+                            <div>
+                                <span style="display: inline-block; width: 16px; height: 16px; background: #28a745; border-radius: 3px; margin-right: 8px;"></span>
+                                <strong>Available:</strong> $${state.capital.available.toFixed(2)} (${availablePct.toFixed(1)}%)
+                            </div>
+                            <div>
+                                <span style="display: inline-block; width: 16px; height: 16px; background: #667eea; border-radius: 3px; margin-right: 8px;"></span>
+                                <strong>Deployed:</strong> $${state.capital.deployed.toFixed(2)} (${deployedPct.toFixed(1)}%)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updatePerformanceStats(state, history) {
+            const statsHTML = `
+                <div class="stat-box">
+                    <h4>Total Actions</h4>
+                    <div class="value">${state.total_actions}</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Successful</h4>
+                    <div class="value positive-value">${state.successful_actions}</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Failed</h4>
+                    <div class="value negative-value">${state.failed_actions}</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Trade Events</h4>
+                    <div class="value">${history.length}</div>
+                </div>
+            `;
+
+            const perfElement = document.getElementById('performanceStats');
+            if (perfElement) {
+                perfElement.innerHTML = statsHTML;
+            }
+        }
+
+        function updateCharts() {
+            if (!historyData || historyData.length === 0) {
+                // Show empty state
+                updateChartPlaceholders();
+                return;
+            }
+
+            // Extract data from history
+            const pnlData = [];
+            const availableData = [];
+            const deployedData = [];
+
+            historyData.forEach((item, index) => {
+                const finalState = item.flow?.['6_final_state'] || {};
+                pnlData.push({
+                    step: item.step || index + 1,
+                    value: finalState.pnl_realized || 0
+                });
+                availableData.push({
+                    step: item.step || index + 1,
+                    value: finalState.available_capital || 0
+                });
+                deployedData.push({
+                    step: item.step || index + 1,
+                    value: finalState.deployed_capital || 0
+                });
+            });
+
+            // Update PnL chart with bars
+            updateBarChart('pnlChart', pnlData, 'Realized P&L', '$');
+
+            // Update deployment chart with bars
+            updateDualBarChart('deploymentChart', availableData, deployedData, 'Available', 'Deployed');
+
+            // Update price chart if available
+            if (priceData.length > 0) {
+                const priceChartData = priceData.slice(-20).map((p, i) => ({
+                    step: i + 1,
+                    value: p.price
+                }));
+                updateBarChart('priceChart', priceChartData, 'Price', '$');
+            }
+        }
+
+        function updateBarChart(elementId, data, label, prefix = '') {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="chart-placeholder">No data available</div>';
+                return;
+            }
+
+            const maxValue = Math.max(...data.map(d => Math.abs(d.value)));
+            const barsHTML = data.slice(-15).map(item => {
+                const height = maxValue > 0 ? (Math.abs(item.value) / maxValue) * 100 : 10;
+                const color = item.value >= 0 ? '#28a745' : '#dc3545';
+                return `
+                    <div class="bar" style="height: ${height}%; background: ${color};">
+                        <span class="bar-value">${prefix}${item.value.toFixed(2)}</span>
+                        <span class="bar-label">#${item.step}</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="bar-chart">${barsHTML}</div>`;
+        }
+
+        function updateDualBarChart(elementId, data1, data2, label1, label2) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            if (data1.length === 0 && data2.length === 0) {
+                container.innerHTML = '<div class="chart-placeholder">No data available</div>';
+                return;
+            }
+
+            const maxValue = Math.max(
+                ...data1.map(d => d.value),
+                ...data2.map(d => d.value)
+            );
+
+            const combinedHTML = data1.slice(-10).map((item, index) => {
+                const height1 = maxValue > 0 ? (item.value / maxValue) * 100 : 10;
+                // Safely access data2 with full validation
+                const data2Value = (index < data2.length && data2[index] && typeof data2[index].value === 'number') 
+                    ? data2[index].value 
+                    : 0;
+                const height2 = maxValue > 0 ? (data2Value / maxValue) * 100 : 10;
+                
+                return `
+                    <div style="flex: 1; display: flex; gap: 5px; align-items: flex-end; height: 250px; position: relative;">
+                        <div style="flex: 1; height: ${height1}%; background: #28a745; border-radius: 4px 4px 0 0;"></div>
+                        <div style="flex: 1; height: ${height2}%; background: #667eea; border-radius: 4px 4px 0 0;"></div>
+                        <span style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #6c757d;">#${item.step}</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px; font-size: 14px;">
+                    <div><span style="display: inline-block; width: 16px; height: 16px; background: #28a745; margin-right: 5px;"></span>${label1}</div>
+                    <div><span style="display: inline-block; width: 16px; height: 16px; background: #667eea; margin-right: 5px;"></span>${label2}</div>
+                </div>
+                <div style="display: flex; gap: 10px; padding: 20px; height: 250px; align-items: flex-end;">
+                    ${combinedHTML}
+                </div>
+            `;
+        }
+
+        function updateChartPlaceholders() {
+            const charts = ['pnlChart', 'deploymentChart', 'priceChart', 'successRateChart'];
+            charts.forEach(chartId => {
+                const elem = document.getElementById(chartId);
+                if (elem) {
+                    elem.innerHTML = '<div class="chart-placeholder">No trading data yet. Start trading to see charts.</div>';
+                }
+            });
+        }
+
+        function loadTradeHistory() {
+            if (!historyData || historyData.length === 0) {
+                document.getElementById('tradesTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div>No trade history available. Start trading to see data here.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filterTrades();
+        }
+
+        function filterTrades() {
+            const filter = document.getElementById('tradeFilter')?.value || 'all';
+            const limit = document.getElementById('tradeLimit')?.value || '25';
+
+            let trades = [];
+            
+            // Extract trades from history
+            historyData.forEach((item, index) => {
+                const execResults = item.flow?.['5_execution_results'] || [];
+                execResults.forEach(result => {
+                    const profit = result.profit || 0;
+                    trades.push({
+                        step: item.step || index + 1,
+                        timestamp: item.timestamp || Date.now() / 1000,
+                        action: result.action || 'Unknown',
+                        symbol: item.flow?.['2_execution_state']?.symbol || 'N/A',
+                        price: item.market_data?.price || item.flow?.['2_execution_state']?.current_price || 0,
+                        size: result.filled_size || 0,
+                        pnl: profit,
+                        success: result.success || false
+                    });
+                });
+            });
+
+            // Apply filter
+            if (filter === 'profitable') {
+                trades = trades.filter(t => t.pnl > 0);
+            } else if (filter === 'losses') {
+                trades = trades.filter(t => t.pnl < 0);
+            }
+
+            // Apply limit
+            if (limit !== 'all') {
+                trades = trades.slice(-parseInt(limit));
+            }
+
+            // Reverse to show newest first
+            trades.reverse();
+
+            // Build table
+            const tbody = document.getElementById('tradesTableBody');
+            if (trades.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div>No trades match the selected filter.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = trades.map((trade, index) => {
+                const pnlClass = trade.pnl > 0 ? 'positive-value' : trade.pnl < 0 ? 'negative-value' : 'neutral-value';
+                const statusBadge = trade.success ? 
+                    '<span class="status-badge active">Success</span>' : 
+                    '<span class="status-badge inactive">Failed</span>';
+                
+                return `
+                    <tr>
+                        <td>${trade.step}</td>
+                        <td>${new Date(trade.timestamp * 1000).toLocaleString()}</td>
+                        <td>${trade.action}</td>
+                        <td>${trade.symbol}</td>
+                        <td>$${trade.price.toFixed(2)}</td>
+                        <td>${sizePercent}%</td>
+                        <td class="${pnlClass}">${trade.pnl > 0 ? '+' : ''}$${trade.pnl.toFixed(2)}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function updateExploits(exploits) {
@@ -317,24 +1196,344 @@
                 return;
             }
 
-            const exploitsHTML = exploits.map(exploit => `
-                <div class="exploit-item">
-                    <h4>
-                        ${exploit.display_name || exploit.name}
-                        <span class="status-badge active">Active</span>
-                    </h4>
-                    <p>${exploit.description || 'No description available'}</p>
-                </div>
-            `).join('');
+            const exploitsHTML = exploits.map(exploit => {
+                // Sanitize exploit name to prevent XSS
+                const safeName = String(exploit.name || '').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+                const safeDisplayName = String(exploit.display_name || exploit.name || '').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+                const safeDescription = String(exploit.description || 'No description available').replace(/[<>"'&]/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                    return entities[char];
+                });
+
+                return `
+                    <div class="exploit-item">
+                        <h4>
+                            ${safeDisplayName}
+                            <span class="status-badge active">Active</span>
+                        </h4>
+                        <p>${safeDescription}</p>
+                        <button onclick="loadExploitParameters('${safeName}')" style="margin-top: 10px;">
+                            View Parameters
+                        </button>
+                    </div>
+                `;
+            }).join('');
 
             document.getElementById('exploitList').innerHTML = exploitsHTML;
         }
 
-        // Load dashboard on page load
-        loadDashboard();
+        async function loadExploitParameters(exploitName) {
+            try {
+                const response = await fetch(`/api/exploits/${exploitName}/parameters`);
+                const data = await response.json();
 
-        // Auto-refresh every 5 seconds
-        setInterval(loadDashboard, 5000);
+                const params = data.parameters || {};
+                const schema = data.schema || {};
+
+                let paramsHTML = '<div class="stats-grid">';
+                
+                for (const [key, value] of Object.entries(params)) {
+                    const schemaInfo = schema[key] || {};
+                    paramsHTML += `
+                        <div class="stat-box">
+                            <h4>${key}</h4>
+                            <div class="value">${typeof value === 'number' ? value.toFixed(4) : value}</div>
+                            ${schemaInfo.description ? `<p style="font-size: 12px; margin-top: 5px; color: #6c757d;">${schemaInfo.description}</p>` : ''}
+                        </div>
+                    `;
+                }
+                
+                paramsHTML += '</div>';
+
+                document.getElementById('exploitParameters').innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #667eea;">${exploitName}</h3>
+                    ${paramsHTML}
+                `;
+
+            } catch (error) {
+                console.error('Error loading exploit parameters:', error);
+                document.getElementById('exploitParameters').innerHTML = 
+                    '<div class="error">Failed to load parameters</div>';
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                // Calculate analytics from history
+                let wins = 0;
+                let losses = 0;
+                const durations = [];
+
+                historyData.forEach((item, index) => {
+                    const execResults = item.flow?.['5_execution_results'] || [];
+                    execResults.forEach(result => {
+                        if (result.profit !== undefined) {
+                            if (result.profit > 0) wins++;
+                            else if (result.profit < 0) losses++;
+                        }
+                        // Track step duration (simple approach)
+                        durations.push(index + 1);
+                    });
+                });
+
+                const totalTrades = wins + losses;
+                const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+                const avgDuration = durations.length > 0 
+                    ? (durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1) 
+                    : 0;
+
+                // Update analytics stats
+                const statsHTML = `
+                    <div class="stat-box">
+                        <h4>Total Trades</h4>
+                        <div class="value">${totalTrades}</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Winning Trades</h4>
+                        <div class="value positive-value">${wins}</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Losing Trades</h4>
+                        <div class="value negative-value">${losses}</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Win Rate</h4>
+                        <div class="value ${parseFloat(winRate) >= 50 ? 'positive-value' : 'negative-value'}">${winRate}%</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Avg Duration</h4>
+                        <div class="value">${avgDuration} steps</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Total Events</h4>
+                        <div class="value">${historyData.length}</div>
+                    </div>
+                `;
+
+                document.getElementById('analyticsStats').innerHTML = statsHTML;
+
+                // Update win rate chart
+                const winRateChart = document.getElementById('winRateDistChart');
+                if (winRateChart) {
+                    const maxCount = Math.max(wins, losses, 1);
+                    winRateChart.innerHTML = `
+                        <div class="bar-chart">
+                            <div class="bar" style="height: ${(wins / maxCount) * 100}%; background: #28a745;">
+                                <span class="bar-value">${wins}</span>
+                                <span class="bar-label">Wins</span>
+                            </div>
+                            <div class="bar" style="height: ${(losses / maxCount) * 100}%; background: #dc3545;">
+                                <span class="bar-value">${losses}</span>
+                                <span class="bar-label">Losses</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Update duration chart (last 10 trades)
+                const durationChart = document.getElementById('durationChart');
+                if (durationChart && durations.length > 0) {
+                    const recentDurations = durations.slice(-10);
+                    const maxDuration = Math.max(...recentDurations);
+                    
+                    const barsHTML = recentDurations.map((duration, i) => `
+                        <div class="bar" style="height: ${(duration / maxDuration) * 100}%; background: #667eea;">
+                            <span class="bar-value">${duration}</span>
+                            <span class="bar-label">T${i + 1}</span>
+                        </div>
+                    `).join('');
+                    
+                    durationChart.innerHTML = `<div class="bar-chart">${barsHTML}</div>`;
+                }
+
+                // Load DSPy insights
+                await loadDSPyInsights();
+
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        async function loadDSPyInsights() {
+            try {
+                const response = await fetch('/api/dspy/suggestions');
+                const data = await response.json();
+
+                const suggestions = data.suggestions || [];
+                const totalTrades = data.total_trades_observed || 0;
+
+                if (suggestions.length === 0) {
+                    document.getElementById('dspyInsights').innerHTML = `
+                        <div class="info-box">
+                            <h4>📊 DSPy Advisor</h4>
+                            <p>Not enough data yet. DSPy needs at least 5 trades to generate suggestions.</p>
+                            <p>Trades observed: ${totalTrades}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let insightsHTML = `
+                    <div class="info-box">
+                        <h4>📊 DSPy Advisor Suggestions</h4>
+                        <p>Based on ${totalTrades} observed trades</p>
+                    </div>
+                `;
+
+                suggestions.forEach(suggestion => {
+                    const confidencePercent = (suggestion.confidence * 100).toFixed(0);
+                    const confidenceClass = suggestion.confidence >= 0.7 ? 'positive-value' : 
+                                          suggestion.confidence >= 0.5 ? 'neutral-value' : 'negative-value';
+                    
+                    insightsHTML += `
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <h4>${suggestion.parameter_name}</h4>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                <div>
+                                    <div style="font-size: 14px; color: #6c757d;">Current: ${suggestion.current_value}</div>
+                                    <div style="font-size: 14px; color: #667eea; font-weight: 600;">Suggested: ${suggestion.suggested_value}</div>
+                                </div>
+                                <div class="value ${confidenceClass}" style="font-size: 18px;">
+                                    ${confidencePercent}%
+                                </div>
+                            </div>
+                            <p style="font-size: 13px; margin-top: 10px; color: #6c757d;">${suggestion.rationale}</p>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('dspyInsights').innerHTML = insightsHTML;
+
+            } catch (error) {
+                console.error('Error loading DSPy insights:', error);
+                document.getElementById('dspyInsights').innerHTML = 
+                    '<div class="info-box"><p>DSPy insights not available</p></div>';
+            }
+        }
+
+        function exportData(format) {
+            if (!historyData || historyData.length === 0) {
+                showNotification('No data to export', 'warning');
+                return;
+            }
+
+            if (format === 'csv') {
+                exportCSV();
+            } else if (format === 'json') {
+                exportJSON();
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create accessible notification toast
+            const notification = document.createElement('div');
+            notification.setAttribute('role', 'alert');
+            notification.setAttribute('aria-live', 'polite');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'warning' ? '#ffc107' : '#667eea'};
+                color: white;
+                border-radius: 5px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 10000;
+            `;
+            
+            // Respect prefers-reduced-motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!prefersReducedMotion) {
+                notification.style.animation = 'slideIn 0.3s ease-out';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (!prefersReducedMotion) {
+                    notification.style.animation = 'slideOut 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                } else {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        function exportCSV() {
+            // Build CSV from trade history with proper escaping
+            let csv = 'Step,Timestamp,Action,Symbol,Price,Size,PnL,Success\n';
+            
+            historyData.forEach((item, index) => {
+                const execResults = item.flow?.['5_execution_results'] || [];
+                execResults.forEach(result => {
+                    const timestamp = new Date(item.timestamp * 1000).toISOString();
+                    // Properly escape CSV fields that may contain commas
+                    const action = `"${(result.action || 'Unknown').replace(/"/g, '""')}"`;
+                    const symbol = item.flow?.['2_execution_state']?.symbol || 'N/A';
+                    const price = item.market_data?.price || item.flow?.['2_execution_state']?.current_price || 0;
+                    const size = result.filled_size || 0;
+                    // Validate size is in expected range (0-1 for percentage)
+                    const sizePercent = (typeof size === 'number' && size >= 0 && size <= 1) 
+                        ? (size * 100).toFixed(1) 
+                        : '0.0';
+                    const pnl = result.profit || 0;
+                    const success = result.success ? 'Yes' : 'No';
+                    
+                    csv += `${item.step || index + 1},${timestamp},${action},${symbol},${price},${size},${pnl},${success}\n`;
+                });
+            });
+
+            downloadFile('trade_history.csv', csv, 'text/csv');
+            showNotification('CSV exported successfully', 'info');
+        }
+
+        function exportJSON() {
+            const json = JSON.stringify(historyData, null, 2);
+            downloadFile('trade_history.json', json, 'application/json');
+            showNotification('JSON exported successfully', 'info');
+        }
+
+        function downloadFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function updateRefreshInterval() {
+            const interval = parseInt(document.getElementById('refreshInterval').value);
+            
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+
+            if (interval > 0) {
+                refreshInterval = interval;
+                refreshTimer = setInterval(loadDashboard, interval);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            loadDashboard();
+            
+            // Set up auto-refresh
+            updateRefreshInterval();
+        });
     </script>
 </body>
 </html>
