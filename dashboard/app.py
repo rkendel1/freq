@@ -16,13 +16,13 @@ import pandas as pd
 from pathlib import Path
 
 st.set_page_config(
-    page_title="Trading Engine Metrics Dashboard",
+    page_title="MYCELIUM - Metrics Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.title('📊 Trading Engine Metrics Dashboard')
+st.title('📊 MYCELIUM - Metrics Dashboard')
 
 # Sidebar configuration
 st.sidebar.header('Configuration')

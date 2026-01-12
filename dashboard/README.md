@@ -1,4 +1,4 @@
-# Trading Engine Metrics Dashboard
+# MYCELIUM - Metrics Dashboard
 
 A separate Streamlit application for visualizing and mapping trading metrics over time. This dashboard provides interactive charts for PnL trends, deployed capital heatmaps, and statistical analysis.
 

@@ -1,8 +1,8 @@
-# Architecture - Minimal Trading Execution Engine
+# Architecture - MYCELIUM Execution Engine
 
 ## Overview
 
-This repository has been stripped down to a **minimal, deterministic execution engine**. 
+MYCELIUM is a **minimal, deterministic execution engine** stripped down from Freqtrade. 
 It is **strategy-agnostic** and **infrastructure-focused**.
 
 **What this is:**
