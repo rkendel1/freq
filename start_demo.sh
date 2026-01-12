@@ -9,7 +9,7 @@
 set -e
 
 echo "=================================================="
-echo "  Execution Engine Demo - Quick Start"
+echo "  MYCELIUM - Execution Engine Demo"
 echo "=================================================="
 echo ""
 

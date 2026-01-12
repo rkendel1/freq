@@ -9,7 +9,7 @@
 set -e
 
 echo "=========================================================="
-echo "  Freq Platform - Unified Startup"
+echo "  MYCELIUM - Unified Startup"
 echo "=========================================================="
 echo ""
 

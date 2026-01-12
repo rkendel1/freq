@@ -1,4 +1,4 @@
-# Unified Startup Script for Freq Platform (Windows)
+# Unified Startup Script for MYCELIUM (Windows)
 #
 # This script provides a complete "pushbutton" setup and startup experience.
 # It handles dependency installation and starts the demo UI server.
@@ -8,7 +8,7 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  Freq Platform - Unified Startup" -ForegroundColor Cyan
+Write-Host "  MYCELIUM - Unified Startup" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
