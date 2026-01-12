@@ -1,10 +1,11 @@
-# Minimal requirements for Vercel deployment
+# Minimal requirements for Vercel/Render deployment
 # For full development dependencies, see requirements-full.txt or pyproject.toml
 
 # FastAPI server for demo UI
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-pydantic==2.5.0
+# Updated to version with Python 3.13 wheel support (avoids Rust compilation)
+pydantic>=2.10.0
 
 # Minimal scientific computing (only numpy for market simulator)
 numpy==2.4.0
@@ -34,7 +35,8 @@ joblib==1.3.2
 
 # Optional: DSPy for LM-based insights in external analysis script
 # To use DSPy insights: pip install dspy-ai ollama
-dspy-ai==2.4.0
+# Updated to version with Python 3.13 compatibility and newer pydantic support
+dspy-ai>=3.0.0
 ollama==0.1.0
 
 # Optional: Full stack for local development (commented out for Vercel)
