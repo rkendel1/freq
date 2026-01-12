@@ -39,7 +39,7 @@ WORKDIR /freqtrade
 # Build stage - install dependencies
 FROM base AS python-deps
 
-# Install build dependencies
+# Install build dependencies including Rust toolchain
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libssl-dev \
@@ -48,8 +48,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     cmake \
     gcc \
+    cargo \
+    rustc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Set CARGO_HOME to writable location for builds that need Rust
+ENV CARGO_HOME=/home/ftuser/.cargo \
+    PATH=/home/ftuser/.cargo/bin:$PATH
 
 # Copy requirements
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
