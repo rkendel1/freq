@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitoring - Freq Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        nav {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        nav a {
+            display: inline-block;
+            padding: 8px 16px;
+            margin-right: 10px;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        nav a:hover, nav a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-card.healthy {
+            border-left-color: #28a745;
+        }
+
+        .status-card.warning {
+            border-left-color: #ffc107;
+        }
+
+        .status-card.error {
+            border-left-color: #dc3545;
+        }
+
+        .status-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.green {
+            background: #28a745;
+            box-shadow: 0 0 8px #28a745;
+        }
+
+        .status-indicator.yellow {
+            background: #ffc107;
+            box-shadow: 0 0 8px #ffc107;
+        }
+
+        .status-indicator.red {
+            background: #dc3545;
+            box-shadow: 0 0 8px #dc3545;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .suggestions-list {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .suggestion-item {
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 3px solid #ffc107;
+        }
+
+        .suggestion-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .suggestion-item h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .suggestion-item p {
+            color: #6c757d;
+            font-size: 13px;
+            margin: 5px 0;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn {
+            margin: 20px 0;
+        }
+
+        .timestamp {
+            color: #6c757d;
+            font-size: 12px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 System Monitoring</h1>
+            <p>Real-time system health and DSPy advisory metrics</p>
+        </header>
+
+        <nav>
+            <a href="/">Demo UI</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/monitoring" class="active">Monitoring</a>
+        </nav>
+
+        <div class="section">
+            <h2>System Status</h2>
+            <div class="status-grid" id="systemStatus">
+                <div class="loading">Loading system status...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Automated Mode Status</h2>
+            <div id="automatedStatus">
+                <div class="loading">Loading automated mode status...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>DSPy Advisory Metrics</h2>
+            <div id="dspyMetrics">
+                <div class="loading">Loading DSPy metrics...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>DSPy Suggestions</h2>
+            <div id="dspySuggestions">
+                <div class="loading">Loading suggestions...</div>
+            </div>
+            <p class="timestamp" id="lastUpdate"></p>
+        </div>
+
+        <button class="refresh-btn" onclick="loadMonitoring()">🔄 Refresh Monitoring Data</button>
+    </div>
+
+    <script>
+        async function loadMonitoring() {
+            try {
+                // Load all monitoring data in parallel
+                const [stateRes, automatedRes, metricsRes, suggestionsRes] = await Promise.all([
+                    fetch('/api/state'),
+                    fetch('/api/automated/status'),
+                    fetch('/api/dspy/metrics'),
+                    fetch('/api/dspy/suggestions')
+                ]);
+
+                const state = await stateRes.json();
+                const automated = await automatedRes.json();
+                const metrics = await metricsRes.json();
+                const suggestions = await suggestionsRes.json();
+
+                // Update all sections
+                updateSystemStatus(state, automated);
+                updateAutomatedStatus(automated);
+                updateDspyMetrics(metrics);
+                updateDspySuggestions(suggestions);
+
+                // Update timestamp
+                document.getElementById('lastUpdate').textContent = 
+                    `Last updated: ${new Date().toLocaleString()}`;
+
+            } catch (error) {
+                console.error('Error loading monitoring data:', error);
+                showError('Failed to load monitoring data. Please try again.');
+            }
+        }
+
+        function updateSystemStatus(state, automated) {
+            const totalCapital = state.capital.available + state.capital.deployed;
+            const deploymentRatio = totalCapital > 0 ? (state.capital.deployed / totalCapital) * 100 : 0;
+            const successRate = state.total_actions > 0 
+                ? (state.successful_actions / state.total_actions) * 100 
+                : 100;
+
+            const statusHTML = `
+                <div class="status-card healthy">
+                    <h3><span class="status-indicator green"></span>Trading Engine</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Status</span>
+                        <span class="metric-value">Operational</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Actions</span>
+                        <span class="metric-value">${state.total_actions}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Success Rate</span>
+                        <span class="metric-value">${successRate.toFixed(1)}%</span>
+                    </div>
+                </div>
+
+                <div class="status-card ${deploymentRatio > 80 ? 'warning' : 'healthy'}">
+                    <h3><span class="status-indicator ${deploymentRatio > 80 ? 'yellow' : 'green'}"></span>Capital Management</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Capital</span>
+                        <span class="metric-value">$${totalCapital.toFixed(2)}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Deployed</span>
+                        <span class="metric-value">${deploymentRatio.toFixed(1)}%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Open Positions</span>
+                        <span class="metric-value">${state.open_trades}</span>
+                    </div>
+                </div>
+
+                <div class="status-card ${automated.active ? 'healthy' : 'warning'}">
+                    <h3><span class="status-indicator ${automated.active ? 'green' : 'yellow'}"></span>Automated Mode</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Status</span>
+                        <span class="metric-value">${automated.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Market Condition</span>
+                        <span class="metric-value">${automated.condition || 'N/A'}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Tick Count</span>
+                        <span class="metric-value">${automated.tick_count || 0}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('systemStatus').innerHTML = statusHTML;
+        }
+
+        function updateAutomatedStatus(automated) {
+            if (!automated.active) {
+                document.getElementById('automatedStatus').innerHTML = `
+                    <div class="status-card warning">
+                        <h3>Automated mode is not active</h3>
+                        <p>Start automated mode from the Demo UI to see detailed statistics.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const stats = automated.process_stats || {};
+            const statusHTML = `
+                <div class="status-grid">
+                    <div class="status-card healthy">
+                        <h3>Market Data</h3>
+                        <div class="metric-row">
+                            <span class="metric-label">Current Price</span>
+                            <span class="metric-value">$${automated.current_price?.toFixed(2) || 'N/A'}</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Price Change</span>
+                            <span class="metric-value ${automated.price_change_pct >= 0 ? 'positive' : 'negative'}">
+                                ${automated.price_change_pct >= 0 ? '+' : ''}${automated.price_change_pct?.toFixed(2) || 0}%
+                            </span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Condition</span>
+                            <span class="metric-value">${automated.condition}</span>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <h3>Processing Statistics</h3>
+                        <div class="metric-row">
+                            <span class="metric-label">Positions Opened</span>
+                            <span class="metric-value">${stats.positions_opened || 0}</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Positions Closed</span>
+                            <span class="metric-value">${stats.positions_closed || 0}</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Last Action</span>
+                            <span class="metric-value">${stats.last_action_tick || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('automatedStatus').innerHTML = statusHTML;
+        }
+
+        function updateDspyMetrics(data) {
+            const metrics = data.metrics || {};
+            
+            if (Object.keys(metrics).length === 0) {
+                document.getElementById('dspyMetrics').innerHTML = `
+                    <div class="status-card">
+                        <p>No DSPy metrics available yet. Metrics will appear after trades are executed.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const metricsHTML = Object.entries(metrics).map(([exploitId, m]) => `
+                <div class="status-card">
+                    <h3>Exploit: ${exploitId}</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Trades</span>
+                        <span class="metric-value">${m.total_trades || 0}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Win Rate</span>
+                        <span class="metric-value">${((m.win_rate || 0) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Sharpe Ratio</span>
+                        <span class="metric-value">${(m.sharpe_ratio || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Max Drawdown</span>
+                        <span class="metric-value">${((m.max_drawdown || 0) * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Avg Profit/Trade</span>
+                        <span class="metric-value">$${(m.avg_profit_per_trade || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Capital Efficiency</span>
+                        <span class="metric-value">${((m.capital_efficiency || 0) * 100).toFixed(1)}%</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('dspyMetrics').innerHTML = `
+                <div class="status-grid">${metricsHTML}</div>
+            `;
+        }
+
+        function updateDspySuggestions(data) {
+            const suggestions = data.suggestions || [];
+
+            if (suggestions.length === 0) {
+                document.getElementById('dspySuggestions').innerHTML = `
+                    <div class="status-card">
+                        <p>No DSPy suggestions available yet. Suggestions will appear after sufficient trades (minimum ${data.min_trades || 5} trades).</p>
+                        <p class="metric-label" style="margin-top: 10px;">Total trades observed: ${data.total_trades_observed || 0}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const suggestionsHTML = `
+                <div class="suggestions-list">
+                    <h3 style="margin-bottom: 15px; color: #856404;">
+                        ${suggestions.length} Suggestion${suggestions.length !== 1 ? 's' : ''} Available
+                    </h3>
+                    ${suggestions.map(s => `
+                        <div class="suggestion-item">
+                            <h4>
+                                ${s.parameter_name} 
+                                <span class="confidence-badge">
+                                    ${(s.confidence * 100).toFixed(0)}% confidence
+                                </span>
+                            </h4>
+                            <p><strong>Exploit:</strong> ${s.exploit_id}</p>
+                            <p><strong>Current Value:</strong> ${s.current_value} → <strong>Suggested:</strong> ${s.suggested_value} (${s.delta >= 0 ? '+' : ''}${s.delta})</p>
+                            <p><strong>Rationale:</strong> ${s.rationale}</p>
+                            <p class="timestamp">Generated: ${new Date(s.timestamp).toLocaleString()}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            document.getElementById('dspySuggestions').innerHTML = suggestionsHTML;
+        }
+
+        function showError(message) {
+            document.querySelectorAll('.section > div').forEach(div => {
+                div.innerHTML = `<div class="error-message">${message}</div>`;
+            });
+        }
+
+        // Load monitoring data on page load
+        loadMonitoring();
+
+        // Auto-refresh every 3 seconds
+        setInterval(loadMonitoring, 3000);
+    </script>
+</body>
+</html>

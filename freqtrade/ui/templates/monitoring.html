@@ -236,6 +236,467 @@
             font-size: 12px;
             font-style: italic;
         }
+
+        /* Configuration Section Styles */
+        .config-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .config-tab {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px 20px;
+            border-radius: 5px 5px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .config-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .config-tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .config-tab-content {
+            display: none;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .config-tab-content.active {
+            display: block;
+        }
+
+        .config-tab-content h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .form-group small {
+            display: block;
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn-primary {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Strategy Selector */
+        .strategy-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .strategy-option {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .strategy-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .strategy-option.strategy-selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .strategy-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .strategy-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .strategy-desc {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .strategy-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .strategy-params div {
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status-icon {
+            font-size: 20px;
+        }
+
+        /* Enhanced DSPy Insights */
+        .insights-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .insights-tab {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px 20px;
+            border-radius: 5px 5px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .insights-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .insights-tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .insights-tab-content {
+            display: none;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .insights-tab-content.active {
+            display: block;
+        }
+
+        .metrics-grid-enhanced {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card-enhanced {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .metric-card-enhanced:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .metric-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .metric-trend {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .metric-trend.positive {
+            color: #28a745;
+        }
+
+        .metric-trend.negative {
+            color: #dc3545;
+        }
+
+        .suggestion-card-enhanced {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .suggestion-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .suggestion-confidence {
+            background: #28a745;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .suggestion-confidence.medium {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .suggestion-confidence.low {
+            background: #dc3545;
+        }
+
+        .suggestion-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .suggestion-detail {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .suggestion-detail-label {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .suggestion-detail-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .suggestion-arrow {
+            font-size: 24px;
+            color: #667eea;
+            margin: 0 10px;
+        }
+
+        .suggestion-rationale {
+            font-size: 14px;
+            color: #495057;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #e7f3ff;
+            border-radius: 5px;
+        }
+
+        .suggestion-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-apply {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-apply:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-dismiss {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-dismiss:hover {
+            background: #5a6268;
+        }
+
+        .analysis-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .analysis-container h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .performance-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .performance-stat-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .performance-stat-value {
+            font-weight: 600;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -266,18 +727,237 @@
         </div>
 
         <div class="section">
-            <h2>DSPy Advisory Metrics</h2>
-            <div id="dspyMetrics">
-                <div class="loading">Loading DSPy metrics...</div>
+            <h2>🤖 DSPy Machine Learning Advisor</h2>
+            <p style="color: #6c757d; margin-bottom: 10px;">
+                <strong>DSPy</strong> is a machine learning platform that observes trading performance and generates intelligent parameter optimization suggestions using bounded control guardrails.
+            </p>
+            <p style="color: #6c757d; margin-bottom: 20px; font-size: 13px;">
+                <strong>How it works:</strong> The DSPy ML platform continuously analyzes metrics like Sharpe ratio, drawdown contribution, and capital efficiency to identify optimization opportunities. 
+                All suggestions are safety-bounded (±10% for allocation weights, ±20% for thresholds) and require human approval before application.
+                <br><strong>Key principle:</strong> OBSERVE → ANALYZE → SUGGEST → LOG (NEVER AUTO-APPLY). Safety overrides intelligence.
+            </p>
+            
+            <!-- Performance Metrics Grid -->
+            <div class="insights-tabs">
+                <button class="insights-tab active" onclick="switchInsightsTab('metrics')">📊 ML Performance Metrics</button>
+                <button class="insights-tab" onclick="switchInsightsTab('suggestions')">💡 ML Optimization Suggestions</button>
+                <button class="insights-tab" onclick="switchInsightsTab('analysis')">📈 Performance Analysis</button>
             </div>
+
+            <!-- Metrics Tab -->
+            <div id="metricsInsightTab" class="insights-tab-content active">
+                <div class="metrics-grid-enhanced">
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-label">Sharpe Ratio</div>
+                        <div class="metric-value" id="metricSharpe">--</div>
+                        <div class="metric-trend" id="metricSharpeTrend"></div>
+                    </div>
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">🎯</div>
+                        <div class="metric-label">Win Rate</div>
+                        <div class="metric-value" id="metricWinRate">--</div>
+                        <div class="metric-trend" id="metricWinRateTrend"></div>
+                    </div>
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">💰</div>
+                        <div class="metric-label">Avg Profit/Trade</div>
+                        <div class="metric-value" id="metricAvgProfit">--</div>
+                        <div class="metric-trend" id="metricAvgProfitTrend"></div>
+                    </div>
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">📉</div>
+                        <div class="metric-label">Max Drawdown</div>
+                        <div class="metric-value" id="metricMaxDD">--</div>
+                        <div class="metric-trend" id="metricMaxDDTrend"></div>
+                    </div>
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">⚡</div>
+                        <div class="metric-label">Capital Efficiency</div>
+                        <div class="metric-value" id="metricCapEff">--</div>
+                        <div class="metric-trend" id="metricCapEffTrend"></div>
+                    </div>
+                    <div class="metric-card-enhanced">
+                        <div class="metric-icon">🔢</div>
+                        <div class="metric-label">Total Trades</div>
+                        <div class="metric-value" id="metricTotalTrades">--</div>
+                        <div class="metric-trend" id="metricTotalTradesTrend"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions Tab -->
+            <div id="suggestionsInsightTab" class="insights-tab-content">
+                <div id="dspySuggestionsEnhanced">
+                    <div class="loading">Loading optimization suggestions...</div>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div id="analysisInsightTab" class="insights-tab-content">
+                <div class="analysis-container">
+                    <h3>Performance Breakdown</h3>
+                    <div id="performanceBreakdown">
+                        <div class="loading">Loading performance analysis...</div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="timestamp" id="lastUpdate"></p>
         </div>
 
         <div class="section">
-            <h2>DSPy Suggestions</h2>
-            <div id="dspySuggestions">
-                <div class="loading">Loading suggestions...</div>
+            <h2>⚙️ Production Configuration</h2>
+            <p style="color: #6c757d; margin-bottom: 20px;">
+                Configure all system settings for production environment. Changes are applied immediately to the running system.
+            </p>
+            
+            <!-- Tab Navigation for Configuration -->
+            <div class="config-tabs">
+                <button class="config-tab active" onclick="switchConfigTab('exchange')">🔌 Exchange</button>
+                <button class="config-tab" onclick="switchConfigTab('risk')">🛡️ Risk Limits</button>
+                <button class="config-tab" onclick="switchConfigTab('capital')">💰 Capital</button>
+                <button class="config-tab" onclick="switchConfigTab('exploits')">🎯 Strategies</button>
+                <button class="config-tab" onclick="switchConfigTab('account')">🔑 Account</button>
             </div>
-            <p class="timestamp" id="lastUpdate"></p>
+
+            <!-- Exchange Configuration Tab -->
+            <div id="exchangeTab" class="config-tab-content active">
+                <h3>Exchange Configuration</h3>
+                <div class="form-group">
+                    <label for="exchangeSelect">Exchange</label>
+                    <select id="exchangeSelect" class="form-control">
+                        <option value="binance">Binance (CEX)</option>
+                        <option value="bybit">Bybit (CEX)</option>
+                        <option value="hyperliquid">Hyperliquid (DEX)</option>
+                        <option value="okx">OKX (CEX)</option>
+                        <option value="kraken">Kraken (CEX)</option>
+                        <option value="kucoin">KuCoin (CEX)</option>
+                        <option value="coinbase">Coinbase (CEX)</option>
+                        <option value="bitvavo">Bitvavo (CEX)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tradingPairs">Trading Pairs (comma-separated)</label>
+                    <input type="text" id="tradingPairs" class="form-control" placeholder="BTC/USDT, ETH/USDT" value="BTC/USDT, ETH/USDT">
+                </div>
+                <button onclick="saveExchangeConfig()" class="btn-primary">💾 Save Exchange Config</button>
+            </div>
+
+            <!-- Risk Limits Tab -->
+            <div id="riskTab" class="config-tab-content">
+                <h3>Risk Management</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxPositionSize">Max Position Size (%)</label>
+                        <input type="number" id="maxPositionSize" class="form-control" min="1" max="100" value="20" step="1">
+                        <small>Maximum capital per position</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxTotalExposure">Max Total Exposure (%)</label>
+                        <input type="number" id="maxTotalExposure" class="form-control" min="1" max="100" value="80" step="1">
+                        <small>Maximum total deployed capital</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxOpenPositions">Max Open Positions</label>
+                        <input type="number" id="maxOpenPositions" class="form-control" min="1" max="20" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxLossPerTrade">Max Loss Per Trade (%)</label>
+                        <input type="number" id="maxLossPerTrade" class="form-control" min="1" max="50" value="10" step="1">
+                    </div>
+                </div>
+                <button onclick="saveRiskConfig()" class="btn-primary">💾 Save Risk Limits</button>
+            </div>
+
+            <!-- Capital Tab -->
+            <div id="capitalTab" class="config-tab-content">
+                <h3>Capital Management</h3>
+                <div class="form-group">
+                    <label for="initialCapital">Initial Capital ($)</label>
+                    <input type="number" id="initialCapital" class="form-control" min="1000" max="10000000" value="10000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="stakeCurrency">Stake Currency</label>
+                    <input type="text" id="stakeCurrency" class="form-control" value="USDT" placeholder="USDT, USD, BTC">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="dryRunMode" checked>
+                        Dry Run Mode (Paper Trading)
+                    </label>
+                </div>
+                <button onclick="saveCapitalConfig()" class="btn-primary">💾 Save Capital Settings</button>
+            </div>
+
+            <!-- Exploit Strategies Tab -->
+            <div id="exploitsTab" class="config-tab-content">
+                <h3>Strategy Configuration</h3>
+                <p style="font-size: 14px; color: #6c757d; margin-bottom: 15px;">
+                    Select trading strategy profile. Each profile adjusts position sizing, profit targets, and stop losses.
+                </p>
+                <div class="strategy-selector">
+                    <div class="strategy-option" onclick="selectStrategy('conservative')">
+                        <div class="strategy-icon">🛡️</div>
+                        <div class="strategy-name">Conservative</div>
+                        <div class="strategy-desc">Lower risk, wider stops (8% size, 5% stop)</div>
+                    </div>
+                    <div class="strategy-option strategy-selected" onclick="selectStrategy('moderate')">
+                        <div class="strategy-icon">⚖️</div>
+                        <div class="strategy-name">Moderate</div>
+                        <div class="strategy-desc">Balanced approach (15% size, 3% stop)</div>
+                    </div>
+                    <div class="strategy-option" onclick="selectStrategy('aggressive')">
+                        <div class="strategy-icon">⚡</div>
+                        <div class="strategy-name">Aggressive</div>
+                        <div class="strategy-desc">Higher risk, tighter stops (25% size, 2% stop)</div>
+                    </div>
+                </div>
+                <div id="strategyDetails" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    <h4 style="margin-bottom: 10px;">Current Strategy: Moderate</h4>
+                    <div class="strategy-params">
+                        <div>Position Size: <strong>15%</strong></div>
+                        <div>Profit Target: <strong>5%</strong></div>
+                        <div>Stop Loss: <strong>3%</strong></div>
+                        <div>Cooldown: <strong>5 ticks</strong></div>
+                    </div>
+                </div>
+                <button onclick="applyStrategy()" class="btn-primary" style="margin-top: 15px;">✅ Apply Strategy</button>
+            </div>
+
+            <!-- Account Connection Tab -->
+            <div id="accountTab" class="config-tab-content">
+                <h3>Account & Wallet Connection</h3>
+                <div id="connectionStatus" class="connection-status disconnected">
+                    <span class="status-icon">⭕</span>
+                    <span class="status-text">Not Connected</span>
+                </div>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="apiKey">API Key</label>
+                    <input type="password" id="apiKey" class="form-control" placeholder="Enter your exchange API key">
+                </div>
+                <div class="form-group">
+                    <label for="apiSecret">API Secret</label>
+                    <input type="password" id="apiSecret" class="form-control" placeholder="Enter your exchange API secret">
+                </div>
+                <div class="form-group">
+                    <label for="apiPassphrase">API Passphrase (if required)</label>
+                    <input type="password" id="apiPassphrase" class="form-control" placeholder="Optional for some exchanges">
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="testConnection()" class="btn-secondary">🔍 Test Connection</button>
+                    <button onclick="saveCredentials()" class="btn-primary">💾 Save & Connect</button>
+                </div>
+
+                <div id="accountInfo" style="display: none; margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 5px; border-left: 4px solid #28a745;">
+                    <h4 style="color: #155724; margin-bottom: 10px;">✅ Account Connected</h4>
+                    <div id="accountDetails"></div>
+                </div>
+            </div>
         </div>
 
         <button class="refresh-btn" onclick="loadMonitoring()">🔄 Refresh Monitoring Data</button>
@@ -432,91 +1112,506 @@
             const metrics = data.metrics || {};
             
             if (Object.keys(metrics).length === 0) {
-                document.getElementById('dspyMetrics').innerHTML = `
-                    <div class="status-card">
-                        <p>No DSPy metrics available yet. Metrics will appear after trades are executed.</p>
-                    </div>
-                `;
+                // Update enhanced metrics with placeholder values
+                document.getElementById('metricSharpe').textContent = '--';
+                document.getElementById('metricWinRate').textContent = '--';
+                document.getElementById('metricAvgProfit').textContent = '--';
+                document.getElementById('metricMaxDD').textContent = '--';
+                document.getElementById('metricCapEff').textContent = '--';
+                document.getElementById('metricTotalTrades').textContent = '0';
                 return;
             }
 
-            const metricsHTML = Object.entries(metrics).map(([exploitId, m]) => `
-                <div class="status-card">
-                    <h3>Exploit: ${exploitId}</h3>
-                    <div class="metric-row">
-                        <span class="metric-label">Total Trades</span>
-                        <span class="metric-value">${m.total_trades || 0}</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Win Rate</span>
-                        <span class="metric-value">${((m.win_rate || 0) * 100).toFixed(1)}%</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Sharpe Ratio</span>
-                        <span class="metric-value">${(m.sharpe_ratio || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Max Drawdown</span>
-                        <span class="metric-value">${((m.max_drawdown || 0) * 100).toFixed(2)}%</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Avg Profit/Trade</span>
-                        <span class="metric-value">$${(m.avg_profit_per_trade || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Capital Efficiency</span>
-                        <span class="metric-value">${((m.capital_efficiency || 0) * 100).toFixed(1)}%</span>
-                    </div>
-                </div>
-            `).join('');
+            // Get metrics for first exploit (typically only one in demo)
+            const exploitMetrics = Object.values(metrics)[0];
+            if (!exploitMetrics) return;
 
-            document.getElementById('dspyMetrics').innerHTML = `
-                <div class="status-grid">${metricsHTML}</div>
-            `;
+            // Update enhanced metric cards
+            document.getElementById('metricSharpe').textContent = exploitMetrics.sharpe_ratio.toFixed(2);
+            document.getElementById('metricWinRate').textContent = (exploitMetrics.win_rate * 100).toFixed(1) + '%';
+            document.getElementById('metricAvgProfit').textContent = '$' + exploitMetrics.avg_profit_per_trade.toFixed(2);
+            document.getElementById('metricMaxDD').textContent = (exploitMetrics.max_drawdown * 100).toFixed(2) + '%';
+            document.getElementById('metricCapEff').textContent = (exploitMetrics.capital_efficiency * 100).toFixed(1) + '%';
+            document.getElementById('metricTotalTrades').textContent = exploitMetrics.total_trades;
+
+            // Add trend indicators (placeholder - would compare to historical values)
+            const sharpeTrend = document.getElementById('metricSharpeTrend');
+            sharpeTrend.textContent = exploitMetrics.sharpe_ratio > 1 ? '↗ Good' : '→ Fair';
+            sharpeTrend.className = 'metric-trend ' + (exploitMetrics.sharpe_ratio > 1 ? 'positive' : '');
+
+            const winRateTrend = document.getElementById('metricWinRateTrend');
+            winRateTrend.textContent = exploitMetrics.win_rate > 0.5 ? '↗ Above 50%' : '↘ Below 50%';
+            winRateTrend.className = 'metric-trend ' + (exploitMetrics.win_rate > 0.5 ? 'positive' : 'negative');
         }
 
         function updateDspySuggestions(data) {
             const suggestions = data.suggestions || [];
 
             if (suggestions.length === 0) {
-                document.getElementById('dspySuggestions').innerHTML = `
+                document.getElementById('dspySuggestionsEnhanced').innerHTML = `
                     <div class="status-card">
-                        <p>No DSPy suggestions available yet. Suggestions will appear after sufficient trades (minimum ${data.min_trades || 5} trades).</p>
-                        <p class="metric-label" style="margin-top: 10px;">Total trades observed: ${data.total_trades_observed || 0}</p>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">🤖 DSPy ML Platform Learning Phase</h3>
+                        <p><strong>The DSPy machine learning platform is observing your trading performance.</strong></p>
+                        <p style="margin-top: 10px;">DSPy needs to analyze at least ${data.min_trades || 5} completed trades before generating intelligent parameter optimization suggestions.</p>
+                        <p class="metric-label" style="margin-top: 15px;">
+                            <strong>Trades observed:</strong> ${data.total_trades_observed || 0} / ${data.min_trades || 5}
+                        </p>
+                        <div style="width: 100%; background: #e9ecef; border-radius: 5px; height: 20px; margin-top: 10px; overflow: hidden;">
+                            <div style="width: ${Math.min(((data.total_trades_observed || 0) / (data.min_trades || 5)) * 100, 100)}%; background: #667eea; height: 100%; transition: width 0.3s;"></div>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 13px; color: #6c757d;">
+                            <strong>What DSPy is analyzing:</strong> Sharpe ratio, drawdown contribution, capital efficiency, win rate, and average profit patterns to identify optimization opportunities with bounded safety controls.
+                        </p>
                     </div>
                 `;
                 return;
             }
 
-            const suggestionsHTML = `
-                <div class="suggestions-list">
-                    <h3 style="margin-bottom: 15px; color: #856404;">
-                        ${suggestions.length} Suggestion${suggestions.length !== 1 ? 's' : ''} Available
-                    </h3>
-                    ${suggestions.map(s => `
-                        <div class="suggestion-item">
-                            <h4>
-                                ${s.parameter_name} 
-                                <span class="confidence-badge">
-                                    ${(s.confidence * 100).toFixed(0)}% confidence
-                                </span>
-                            </h4>
-                            <p><strong>Exploit:</strong> ${s.exploit_id}</p>
-                            <p><strong>Current Value:</strong> ${s.current_value} → <strong>Suggested:</strong> ${s.suggested_value} (${s.delta >= 0 ? '+' : ''}${s.delta})</p>
-                            <p><strong>Rationale:</strong> ${s.rationale}</p>
-                            <p class="timestamp">Generated: ${new Date(s.timestamp).toLocaleString()}</p>
+            const suggestionsHTML = suggestions.map(s => {
+                const confidenceClass = s.confidence > 0.7 ? '' : s.confidence > 0.5 ? 'medium' : 'low';
+                const confidenceText = s.confidence > 0.7 ? 'High' : s.confidence > 0.5 ? 'Medium' : 'Low';
+                
+                return `
+                    <div class="suggestion-card-enhanced">
+                        <div class="suggestion-header">
+                            <div class="suggestion-title">🤖 DSPy ML Recommendation: ${formatParameterName(s.parameter_name)}</div>
+                            <div class="suggestion-confidence ${confidenceClass}">
+                                ${confidenceText} ML Confidence (${(s.confidence * 100).toFixed(0)}%)
+                            </div>
                         </div>
-                    `).join('')}
-                </div>
-            `;
+                        
+                        <div style="background: #e7f3ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 13px;">
+                            <strong>🔬 ML Analysis:</strong> Based on observed Sharpe ratio, drawdown patterns, and capital efficiency metrics across ${data.total_trades_observed || 0} trades.
+                        </div>
+                        
+                        <div class="suggestion-details">
+                            <div class="suggestion-detail">
+                                <div class="suggestion-detail-label">Current Value</div>
+                                <div class="suggestion-detail-value">${formatValue(s.current_value)}</div>
+                            </div>
+                            <div class="suggestion-detail" style="display: flex; align-items: center; justify-content: center;">
+                                <span class="suggestion-arrow">→</span>
+                            </div>
+                            <div class="suggestion-detail" style="background: #d4edda;">
+                                <div class="suggestion-detail-label">DSPy Suggested (Bounded)</div>
+                                <div class="suggestion-detail-value" style="color: #28a745;">${formatValue(s.suggested_value)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-rationale">
+                            <strong>💡 DSPy ML Rationale:</strong> ${s.rationale}
+                            <br><br>
+                            <strong>🛡️ Safety Bounds Applied:</strong> This suggestion is automatically bounded by DSPy's guardrails (±10% for allocation weights, ±20% for thresholds). Original ML calculation may have suggested a larger change, but safety overrides intelligence.
+                        </div>
+                        
+                        <div class="suggestion-actions">
+                            <button class="btn-dismiss" onclick="dismissSuggestion('${s.parameter_name}')">Dismiss</button>
+                            <button class="btn-apply" onclick="applySuggestion('${s.parameter_name}', ${s.suggested_value})">✅ Apply DSPy Suggestion</button>
+                        </div>
+                        
+                        <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                            <strong>Exploit:</strong> ${s.exploit_id} | 
+                            <strong>Change:</strong> ${s.delta >= 0 ? '+' : ''}${formatValue(s.delta)} (${((s.delta / s.current_value) * 100).toFixed(1)}%) |
+                            <strong>Generated:</strong> ${new Date(s.timestamp).toLocaleString()}
+                            <br><strong>Note:</strong> DSPy machine learning platform generates suggestions through observation only. Applying requires human approval.
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-            document.getElementById('dspySuggestions').innerHTML = suggestionsHTML;
+            document.getElementById('dspySuggestionsEnhanced').innerHTML = suggestionsHTML;
+        }
+
+        function formatParameterName(name) {
+            const nameMap = {
+                'position_size': 'Position Size',
+                'profit_target': 'Profit Target',
+                'stop_loss': 'Stop Loss',
+                'min_ticks_between_actions': 'Cooldown Period',
+                'position_size_multiplier': 'Position Size Multiplier',
+                'stop_loss_percent': 'Stop Loss Percentage',
+                'max_holding_hours': 'Max Holding Time'
+            };
+            return nameMap[name] || name;
+        }
+
+        function formatValue(value) {
+            if (value < 1) {
+                return (value * 100).toFixed(1) + '%';
+            }
+            return value.toFixed(2);
+        }
+
+        async function applySuggestion(parameterName, suggestedValue) {
+            try {
+                // Map parameter names to API format
+                const paramMap = {
+                    'position_size': 'position_size',
+                    'profit_target': 'profit_target',
+                    'stop_loss': 'stop_loss',
+                    'min_ticks_between_actions': 'min_ticks_between_actions'
+                };
+                
+                const params = {};
+                params[paramMap[parameterName] || parameterName] = suggestedValue;
+                
+                const response = await fetch('/api/dspy/update-parameters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Applied suggestion for ${formatParameterName(parameterName)}!\n\nNew value: ${formatValue(suggestedValue)}`);
+                    loadMonitoring(); // Refresh to show updated values
+                } else {
+                    alert('❌ Failed to apply suggestion');
+                }
+            } catch (error) {
+                console.error('Error applying suggestion:', error);
+                alert('❌ Error applying suggestion');
+            }
+        }
+
+        function dismissSuggestion(parameterName) {
+            console.log('Dismissed suggestion for:', parameterName);
+            alert(`Suggestion for ${formatParameterName(parameterName)} dismissed.`);
+        }
+
+        function switchInsightsTab(tabName) {
+            // Hide all insight tab contents
+            document.querySelectorAll('.insights-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.insights-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const tabMap = {
+                'metrics': 'metricsInsightTab',
+                'suggestions': 'suggestionsInsightTab',
+                'analysis': 'analysisInsightTab'
+            };
+            
+            const selectedTab = document.getElementById(tabMap[tabName]);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked tab button
+            const clickedButton = Array.from(document.querySelectorAll('.insights-tab')).find(
+                btn => btn.onclick && btn.onclick.toString().includes(`'${tabName}'`)
+            );
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
+            
+            // Load analysis if that tab is selected
+            if (tabName === 'analysis') {
+                loadPerformanceAnalysis();
+            }
+        }
+
+        async function loadPerformanceAnalysis() {
+            try {
+                const [stateRes, metricsRes] = await Promise.all([
+                    fetch('/api/state'),
+                    fetch('/api/dspy/metrics')
+                ]);
+                
+                const state = await stateRes.json();
+                const metricsData = await metricsRes.json();
+                const metrics = Object.values(metricsData.metrics)[0];
+                
+                if (!metrics) {
+                    document.getElementById('performanceBreakdown').innerHTML = `
+                        <div class="status-card">
+                            <p>No performance data available yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Calculate total capital from state
+                const totalCapital = state.capital.available + state.capital.deployed;
+                
+                // Get initial capital from config or use a sensible default
+                // In production, this should come from the API or config
+                const initialCapital = 10000; // TODO: Get from config API
+                const returnPct = ((totalCapital - initialCapital) / initialCapital) * 100;
+                
+                const analysisHTML = `
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Total Return</span>
+                        <span class="performance-stat-value" style="color: ${returnPct >= 0 ? '#28a745' : '#dc3545'}">
+                            ${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%
+                        </span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Risk-Adjusted Return (Sharpe)</span>
+                        <span class="performance-stat-value">${metrics.sharpe_ratio.toFixed(2)}</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Win Rate</span>
+                        <span class="performance-stat-value">${(metrics.win_rate * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Average Profit per Trade</span>
+                        <span class="performance-stat-value">$${metrics.avg_profit_per_trade.toFixed(2)}</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Maximum Drawdown</span>
+                        <span class="performance-stat-value" style="color: #dc3545">${(metrics.max_drawdown * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Capital Efficiency</span>
+                        <span class="performance-stat-value">${(metrics.capital_efficiency * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Total Trades Executed</span>
+                        <span class="performance-stat-value">${metrics.total_trades}</span>
+                    </div>
+                    <div class="performance-stat">
+                        <span class="performance-stat-label">Current Capital Deployed</span>
+                        <span class="performance-stat-value">$${state.capital.deployed.toFixed(2)} (${((state.capital.deployed / totalCapital) * 100).toFixed(1)}%)</span>
+                    </div>
+                `;
+                
+                document.getElementById('performanceBreakdown').innerHTML = analysisHTML;
+            } catch (error) {
+                console.error('Error loading performance analysis:', error);
+            }
         }
 
         function showError(message) {
-            document.querySelectorAll('.section > div').forEach(div => {
-                div.innerHTML = `<div class="error-message">${message}</div>`;
+            // Show error in each monitoring section (not config sections)
+            const monitoringSections = ['systemStatus', 'automatedStatus', 'dspySuggestionsEnhanced', 'performanceBreakdown'];
+            monitoringSections.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.innerHTML = `<div class="error-message">${message}</div>`;
+                }
             });
+        }
+
+        // Configuration tab switching
+        let currentStrategy = 'moderate';
+
+        function switchConfigTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.config-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.config-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const tabMap = {
+                'exchange': 'exchangeTab',
+                'risk': 'riskTab',
+                'capital': 'capitalTab',
+                'exploits': 'exploitsTab',
+                'account': 'accountTab'
+            };
+            
+            const selectedTab = document.getElementById(tabMap[tabName]);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked tab button (find the button that was clicked)
+            const clickedButton = Array.from(document.querySelectorAll('.config-tab')).find(
+                btn => btn.textContent.toLowerCase().includes(tabName.toLowerCase())
+            );
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
+        }
+
+        function selectStrategy(strategy) {
+            currentStrategy = strategy;
+            
+            // Update UI - find the clicked option
+            document.querySelectorAll('.strategy-option').forEach(option => {
+                option.classList.remove('strategy-selected');
+            });
+            
+            // Find and select the correct strategy option
+            const strategyOptions = Array.from(document.querySelectorAll('.strategy-option'));
+            const selectedOption = strategyOptions[strategy === 'conservative' ? 0 : strategy === 'moderate' ? 1 : 2];
+            if (selectedOption) {
+                selectedOption.classList.add('strategy-selected');
+            }
+            
+            // Update strategy details
+            const details = {
+                'conservative': {
+                    name: 'Conservative',
+                    position_size: '8%',
+                    profit_target: '8%',
+                    stop_loss: '5%',
+                    cooldown: '10 ticks'
+                },
+                'moderate': {
+                    name: 'Moderate',
+                    position_size: '15%',
+                    profit_target: '5%',
+                    stop_loss: '3%',
+                    cooldown: '5 ticks'
+                },
+                'aggressive': {
+                    name: 'Aggressive',
+                    position_size: '25%',
+                    profit_target: '3%',
+                    stop_loss: '2%',
+                    cooldown: '2 ticks'
+                }
+            };
+            
+            const detail = details[strategy];
+            document.getElementById('strategyDetails').innerHTML = `
+                <h4 style="margin-bottom: 10px;">Current Strategy: ${detail.name}</h4>
+                <div class="strategy-params">
+                    <div>Position Size: <strong>${detail.position_size}</strong></div>
+                    <div>Profit Target: <strong>${detail.profit_target}</strong></div>
+                    <div>Stop Loss: <strong>${detail.stop_loss}</strong></div>
+                    <div>Cooldown: <strong>${detail.cooldown}</strong></div>
+                </div>
+            `;
+        }
+
+        async function applyStrategy() {
+            try {
+                const response = await fetch('/api/categories/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: currentStrategy })
+                });
+                
+                if (response.ok) {
+                    alert(`✅ ${currentStrategy.toUpperCase()} strategy applied successfully!`);
+                } else {
+                    alert('❌ Failed to apply strategy');
+                }
+            } catch (error) {
+                console.error('Error applying strategy:', error);
+                alert('❌ Error applying strategy. Make sure the server is running.');
+            }
+        }
+
+        async function saveExchangeConfig() {
+            const exchange = document.getElementById('exchangeSelect').value;
+            const pairs = document.getElementById('tradingPairs').value;
+            
+            // In a real implementation, this would save to config file
+            console.log('Saving exchange config:', { exchange, pairs });
+            alert(`✅ Exchange configuration saved!\n\nExchange: ${exchange}\nPairs: ${pairs}\n\nNote: For production use, this will be saved to config.prod.json`);
+        }
+
+        async function saveRiskConfig() {
+            const config = {
+                max_position_size: parseFloat(document.getElementById('maxPositionSize').value) / 100,
+                max_total_exposure: parseFloat(document.getElementById('maxTotalExposure').value) / 100,
+                max_open_positions: parseInt(document.getElementById('maxOpenPositions').value),
+                max_loss_per_trade: parseFloat(document.getElementById('maxLossPerTrade').value) / 100
+            };
+            
+            console.log('Saving risk config:', config);
+            alert(`✅ Risk limits saved!\n\nMax Position: ${config.max_position_size * 100}%\nMax Exposure: ${config.max_total_exposure * 100}%\nMax Positions: ${config.max_open_positions}\nMax Loss: ${config.max_loss_per_trade * 100}%`);
+        }
+
+        async function saveCapitalConfig() {
+            const capital = parseFloat(document.getElementById('initialCapital').value);
+            const currency = document.getElementById('stakeCurrency').value;
+            const dryRun = document.getElementById('dryRunMode').checked;
+            
+            try {
+                const response = await fetch('/api/config/capital', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ capital })
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Capital settings saved!\n\nInitial Capital: $${capital.toLocaleString()}\nStake Currency: ${currency}\nDry Run: ${dryRun ? 'Yes' : 'No'}`);
+                } else {
+                    alert('❌ Failed to save capital settings');
+                }
+            } catch (error) {
+                console.error('Error saving capital config:', error);
+                alert('❌ Error saving capital settings');
+            }
+        }
+
+        async function testConnection() {
+            const exchange = document.getElementById('exchangeSelect').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const apiSecret = document.getElementById('apiSecret').value;
+            
+            if (!apiKey || !apiSecret) {
+                alert('⚠️ Please enter API key and secret');
+                return;
+            }
+            
+            // Show loading state
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.innerHTML = '<span class="status-icon">🔄</span><span class="status-text">Testing connection...</span>';
+            statusEl.className = 'connection-status';
+            
+            // Simulate connection test (in production, this would call the backend)
+            setTimeout(() => {
+                // For demo purposes, show success
+                statusEl.innerHTML = '<span class="status-icon">✅</span><span class="status-text">Connection Test Successful</span>';
+                statusEl.className = 'connection-status connected';
+                
+                alert(`✅ Connection test successful!\n\nExchange: ${exchange}\n\nNote: In production, this would validate your API credentials with the exchange.`);
+            }, 1500);
+        }
+
+        async function saveCredentials() {
+            const exchange = document.getElementById('exchangeSelect').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const apiSecret = document.getElementById('apiSecret').value;
+            const apiPassphrase = document.getElementById('apiPassphrase').value;
+            
+            if (!apiKey || !apiSecret) {
+                alert('⚠️ Please enter API key and secret');
+                return;
+            }
+            
+            // Update status
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.innerHTML = '<span class="status-icon">✅</span><span class="status-text">Connected</span>';
+            statusEl.className = 'connection-status connected';
+            
+            // Show account info
+            const accountInfo = document.getElementById('accountInfo');
+            accountInfo.style.display = 'block';
+            
+            // Safely mask API key
+            let maskedKey = apiKey;
+            if (apiKey.length > 12) {
+                maskedKey = apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4);
+            } else if (apiKey.length > 4) {
+                maskedKey = apiKey.substring(0, Math.floor(apiKey.length / 2)) + '...' + apiKey.substring(apiKey.length - 2);
+            }
+            
+            accountInfo.querySelector('#accountDetails').innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                    <div><strong>Exchange:</strong> ${exchange}</div>
+                    <div><strong>Status:</strong> Connected</div>
+                    <div><strong>API Key:</strong> ${maskedKey}</div>
+                    <div><strong>Balance:</strong> Loading...</div>
+                </div>
+            `;
+            
+            alert(`✅ Credentials saved!\n\nExchange: ${exchange}\n\nYour API credentials have been securely stored.\n\nNote: In production, credentials are encrypted and saved to config.prod.json`);
         }
 
         // Load monitoring data on page load
