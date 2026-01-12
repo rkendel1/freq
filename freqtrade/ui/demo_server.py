@@ -127,6 +127,24 @@ class DemoServer:
                 logger.error(f"Error rendering demo.html: {e}", exc_info=True)
                 return f"Error rendering page: {e}", 500
         
+        @self.app.route("/dashboard")
+        def dashboard():
+            """Render the dashboard page."""
+            try:
+                return render_template("dashboard.html")
+            except Exception as e:
+                logger.error(f"Error rendering dashboard.html: {e}", exc_info=True)
+                return f"Error rendering page: {e}", 500
+        
+        @self.app.route("/monitoring")
+        def monitoring():
+            """Render the monitoring page."""
+            try:
+                return render_template("monitoring.html")
+            except Exception as e:
+                logger.error(f"Error rendering monitoring.html: {e}", exc_info=True)
+                return f"Error rendering page: {e}", 500
+        
         @self.app.route("/health")
         def health():
             """Health check endpoint."""
