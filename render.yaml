@@ -34,6 +34,9 @@ services:
       # No need to define it here - Render assigns it dynamically
       
       # Security - IMPORTANT: Set this in Render dashboard!
+      # Render's generateValue creates a secure random password
+      # For production: Set a custom strong password via Render dashboard
+      # Requirements: Minimum 12 characters, mix of letters, numbers, symbols
       - key: STREAMLIT_PASSWORD
         generateValue: true
       

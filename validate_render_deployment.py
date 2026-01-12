@@ -24,31 +24,63 @@ def validate_render_yaml() -> bool:
         with open('render.yaml', 'r') as f:
             config = yaml.safe_load(f)
         
+        # Validate basic structure
+        if not config or 'services' not in config:
+            print("✗ render.yaml missing 'services' key")
+            return False
+        
+        if not isinstance(config['services'], list) or len(config['services']) == 0:
+            print("✗ render.yaml has no services defined")
+            return False
+        
         service = config['services'][0]
         
-        # Check required fields
-        checks = [
-            service['type'] == 'web',
-            service['env'] == 'docker',
-            service['dockerfilePath'] == './Dockerfile.dev',
-            service.get('healthCheckPath') == '/health',
-            'disk' in service,
-            service['disk']['mountPath'] == '/freqtrade/user_data',
-        ]
+        # Check required fields exist
+        if service.get('type') != 'web':
+            print("✗ Service type must be 'web'")
+            return False
+        
+        if service.get('env') != 'docker':
+            print("✗ Service environment must be 'docker'")
+            return False
+        
+        if service.get('dockerfilePath') != './Dockerfile.dev':
+            print("✗ Dockerfile path must be './Dockerfile.dev'")
+            return False
+        
+        if service.get('healthCheckPath') != '/health':
+            print("✗ Health check path must be '/health'")
+            return False
+        
+        if 'disk' not in service:
+            print("✗ Persistent disk configuration missing")
+            return False
+        
+        if service['disk'].get('mountPath') != '/freqtrade/user_data':
+            print("✗ Disk mount path must be '/freqtrade/user_data'")
+            return False
         
         # Check that PORT is NOT explicitly defined (Render provides it automatically)
-        env_var_keys = [var['key'] for var in service.get('envVars', [])]
-        if 'PORT' in env_var_keys:
-            print("✗ render.yaml should not define PORT (Render provides it automatically)")
+        env_vars = service.get('envVars', [])
+        if not isinstance(env_vars, list):
+            print("✗ envVars must be a list")
             return False
         
-        if all(checks):
-            print("✓ render.yaml configuration is valid")
-            print("✓ PORT is not explicitly defined (Render will provide it)")
-            return True
-        else:
-            print("✗ render.yaml configuration has issues")
-            return False
+        for var in env_vars:
+            if not isinstance(var, dict) or 'key' not in var:
+                print("✗ Invalid environment variable entry (missing 'key')")
+                return False
+            if var['key'] == 'PORT':
+                print("✗ render.yaml should not define PORT (Render provides it automatically)")
+                return False
+        
+        print("✓ render.yaml configuration is valid")
+        print("✓ PORT is not explicitly defined (Render will provide it)")
+        return True
+        
+    except yaml.YAMLError as e:
+        print(f"✗ YAML syntax error in render.yaml: {e}")
+        return False
     except Exception as e:
         print(f"✗ Error validating render.yaml: {e}")
         return False
