@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Dashboard - Freq Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        nav {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        nav a {
+            display: inline-block;
+            padding: 8px 16px;
+            margin-right: 10px;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        nav a:hover, nav a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .metric-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-card.positive .value {
+            color: #28a745;
+        }
+
+        .metric-card.negative .value {
+            color: #dc3545;
+        }
+
+        .metric-card .change {
+            font-size: 14px;
+            margin-top: 8px;
+            color: #6c757d;
+        }
+
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .exploit-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .exploit-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .exploit-item h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .exploit-item p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 30px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn {
+            margin: 20px 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Trading Dashboard</h1>
+            <p>Real-time metrics and performance monitoring</p>
+        </header>
+
+        <nav>
+            <a href="/" >Demo UI</a>
+            <a href="/dashboard" class="active">Dashboard</a>
+            <a href="/monitoring">Monitoring</a>
+        </nav>
+
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="loading">Loading metrics...</div>
+        </div>
+
+        <div class="section">
+            <h2>Active Exploits</h2>
+            <div class="exploit-list" id="exploitList">
+                <div class="loading">Loading exploits...</div>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh Dashboard</button>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                // Load current state
+                const stateResponse = await fetch('/api/state');
+                const state = await stateResponse.json();
+
+                // Load exploits
+                const exploitsResponse = await fetch('/api/exploits/list');
+                const exploitsData = await exploitsResponse.json();
+
+                // Update metrics
+                updateMetrics(state);
+                updateExploits(exploitsData.exploits);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('metricsGrid').innerHTML = 
+                    '<div class="error">Failed to load dashboard data. Please try again.</div>';
+            }
+        }
+
+        function updateMetrics(state) {
+            const totalCapital = state.capital.available + state.capital.deployed;
+            const totalPnL = state.capital.pnl_realized + state.capital.pnl_unrealized;
+            const successRate = state.total_actions > 0 
+                ? ((state.successful_actions / state.total_actions) * 100).toFixed(1)
+                : 0;
+
+            const metricsHTML = `
+                <div class="metric-card">
+                    <h3>Total Capital</h3>
+                    <div class="value">$${totalCapital.toFixed(2)}</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Available Capital</h3>
+                    <div class="value">$${state.capital.available.toFixed(2)}</div>
+                    <div class="change">${((state.capital.available / totalCapital) * 100).toFixed(1)}% of total</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Deployed Capital</h3>
+                    <div class="value">$${state.capital.deployed.toFixed(2)}</div>
+                    <div class="change">${((state.capital.deployed / totalCapital) * 100).toFixed(1)}% of total</div>
+                </div>
+                <div class="metric-card ${totalPnL >= 0 ? 'positive' : 'negative'}">
+                    <h3>Total P&L</h3>
+                    <div class="value">${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}</div>
+                    <div class="change">Realized: $${state.capital.pnl_realized.toFixed(2)}</div>
+                </div>
+                <div class="metric-card ${state.capital.pnl_realized >= 0 ? 'positive' : 'negative'}">
+                    <h3>Realized P&L</h3>
+                    <div class="value">${state.capital.pnl_realized >= 0 ? '+' : ''}$${state.capital.pnl_realized.toFixed(2)}</div>
+                </div>
+                <div class="metric-card ${state.capital.pnl_unrealized >= 0 ? 'positive' : 'negative'}">
+                    <h3>Unrealized P&L</h3>
+                    <div class="value">${state.capital.pnl_unrealized >= 0 ? '+' : ''}$${state.capital.pnl_unrealized.toFixed(2)}</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Open Trades</h3>
+                    <div class="value">${state.open_trades}</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Closed Trades</h3>
+                    <div class="value">${state.closed_trades}</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Actions</h3>
+                    <div class="value">${state.total_actions}</div>
+                    <div class="change">Success: ${state.successful_actions} | Failed: ${state.failed_actions}</div>
+                </div>
+                <div class="metric-card ${successRate >= 50 ? 'positive' : 'negative'}">
+                    <h3>Success Rate</h3>
+                    <div class="value">${successRate}%</div>
+                </div>
+            `;
+
+            document.getElementById('metricsGrid').innerHTML = metricsHTML;
+        }
+
+        function updateExploits(exploits) {
+            if (!exploits || exploits.length === 0) {
+                document.getElementById('exploitList').innerHTML = 
+                    '<div class="exploit-item"><p>No exploits configured</p></div>';
+                return;
+            }
+
+            const exploitsHTML = exploits.map(exploit => `
+                <div class="exploit-item">
+                    <h4>
+                        ${exploit.display_name || exploit.name}
+                        <span class="status-badge active">Active</span>
+                    </h4>
+                    <p>${exploit.description || 'No description available'}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('exploitList').innerHTML = exploitsHTML;
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+
+        // Auto-refresh every 5 seconds
+        setInterval(loadDashboard, 5000);
+    </script>
+</body>
+</html>
