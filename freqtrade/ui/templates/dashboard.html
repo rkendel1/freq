@@ -525,6 +525,28 @@
             font-size: 14px;
             line-height: 1.5;
         }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -561,11 +583,11 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('overview')">📊 Overview</button>
-            <button class="tab-button" onclick="switchTab('charts')">📈 Charts</button>
-            <button class="tab-button" onclick="switchTab('trades')">💼 Trades</button>
-            <button class="tab-button" onclick="switchTab('exploits')">🎯 Exploits</button>
-            <button class="tab-button" onclick="switchTab('analytics')">📉 Analytics</button>
+            <button class="tab-button active" onclick="switchTab('overview', event)">📊 Overview</button>
+            <button class="tab-button" onclick="switchTab('charts', event)">📈 Charts</button>
+            <button class="tab-button" onclick="switchTab('trades', event)">💼 Trades</button>
+            <button class="tab-button" onclick="switchTab('exploits', event)">🎯 Exploits</button>
+            <button class="tab-button" onclick="switchTab('analytics', event)">📉 Analytics</button>
         </div>
 
         <!-- Overview Tab -->
@@ -739,12 +761,17 @@
         }
 
         // Tab switching
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Fallback: find button by tab name
+                document.querySelector(`.tab-button[onclick*="${tabName}"]`)?.classList.add('active');
+            }
 
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -882,10 +909,14 @@
             const chartContainer = document.getElementById('capitalChart');
             if (!chartContainer) return;
 
+            // Calculate percentages and convert to degrees for conic-gradient
+            // Full circle = 360 degrees, so percentage * 3.6 = degrees
+            const availableDeg = availablePct * 3.6;
+
             chartContainer.innerHTML = `
                 <div style="text-align: center; padding: 20px;">
                     <div style="display: inline-block; width: 300px;">
-                        <div style="background: conic-gradient(#28a745 0deg ${availablePct * 3.6}deg, #667eea ${availablePct * 3.6}deg 360deg); 
+                        <div style="background: conic-gradient(#28a745 0deg ${availableDeg}deg, #667eea ${availableDeg}deg 360deg); 
                                     width: 250px; height: 250px; border-radius: 50%; margin: 0 auto 20px; 
                                     box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
                         <div style="display: flex; justify-content: center; gap: 30px; font-size: 14px;">
@@ -1013,7 +1044,10 @@
 
             const combinedHTML = data1.slice(-10).map((item, index) => {
                 const height1 = maxValue > 0 ? (item.value / maxValue) * 100 : 10;
-                const height2 = data2[index] && maxValue > 0 ? (data2[index].value / maxValue) * 100 : 10;
+                // Safely access data2 with bounds checking
+                const height2 = (index < data2.length && data2[index] && maxValue > 0) 
+                    ? (data2[index].value / maxValue) * 100 
+                    : 10;
                 
                 return `
                     <div style="flex: 1; display: flex; gap: 5px; align-items: flex-end; height: 250px; position: relative;">
@@ -1347,7 +1381,7 @@
 
         function exportData(format) {
             if (!historyData || historyData.length === 0) {
-                alert('No data to export');
+                showNotification('No data to export', 'warning');
                 return;
             }
 
@@ -1358,15 +1392,40 @@
             }
         }
 
+        function showNotification(message, type = 'info') {
+            // Create simple notification without using alert()
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'warning' ? '#ffc107' : '#667eea'};
+                color: white;
+                border-radius: 5px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
         function exportCSV() {
-            // Build CSV from trade history
+            // Build CSV from trade history with proper escaping
             let csv = 'Step,Timestamp,Action,Symbol,Price,Size,PnL,Success\n';
             
             historyData.forEach((item, index) => {
                 const execResults = item.flow?.['5_execution_results'] || [];
                 execResults.forEach(result => {
                     const timestamp = new Date(item.timestamp * 1000).toISOString();
-                    const action = (result.action || 'Unknown').replace(/,/g, ' ');
+                    // Properly escape CSV fields that may contain commas
+                    const action = `"${(result.action || 'Unknown').replace(/"/g, '""')}"`;
                     const symbol = item.flow?.['2_execution_state']?.symbol || 'N/A';
                     const price = item.market_data?.price || item.flow?.['2_execution_state']?.current_price || 0;
                     const size = result.filled_size || 0;
@@ -1378,11 +1437,13 @@
             });
 
             downloadFile('trade_history.csv', csv, 'text/csv');
+            showNotification('CSV exported successfully', 'info');
         }
 
         function exportJSON() {
             const json = JSON.stringify(historyData, null, 2);
             downloadFile('trade_history.json', json, 'application/json');
+            showNotification('JSON exported successfully', 'info');
         }
 
         function downloadFile(filename, content, mimeType) {
