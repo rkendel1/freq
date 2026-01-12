@@ -1302,7 +1302,12 @@
             }
             
             // Add active class to clicked tab button
-            event.target.classList.add('active');
+            const clickedButton = Array.from(document.querySelectorAll('.insights-tab')).find(
+                btn => btn.onclick && btn.onclick.toString().includes(`'${tabName}'`)
+            );
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
             
             // Load analysis if that tab is selected
             if (tabName === 'analysis') {
@@ -1330,8 +1335,13 @@
                     return;
                 }
                 
+                // Calculate total capital from state
                 const totalCapital = state.capital.available + state.capital.deployed;
-                const returnPct = ((totalCapital - 10000) / 10000) * 100; // Assuming 10k initial
+                
+                // Get initial capital from config or use a sensible default
+                // In production, this should come from the API or config
+                const initialCapital = 10000; // TODO: Get from config API
+                const returnPct = ((totalCapital - initialCapital) / initialCapital) * 100;
                 
                 const analysisHTML = `
                     <div class="performance-stat">
@@ -1377,8 +1387,13 @@
         }
 
         function showError(message) {
-            document.querySelectorAll('.section > div').forEach(div => {
-                div.innerHTML = `<div class="error-message">${message}</div>`;
+            // Show error in each monitoring section (not config sections)
+            const monitoringSections = ['systemStatus', 'automatedStatus', 'dspySuggestionsEnhanced', 'performanceBreakdown'];
+            monitoringSections.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.innerHTML = `<div class="error-message">${message}</div>`;
+                }
             });
         }
 
@@ -1410,18 +1425,29 @@
                 selectedTab.classList.add('active');
             }
             
-            // Add active class to clicked tab button
-            event.target.classList.add('active');
+            // Add active class to clicked tab button (find the button that was clicked)
+            const clickedButton = Array.from(document.querySelectorAll('.config-tab')).find(
+                btn => btn.textContent.toLowerCase().includes(tabName.toLowerCase())
+            );
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
         }
 
         function selectStrategy(strategy) {
             currentStrategy = strategy;
             
-            // Update UI
+            // Update UI - find the clicked option
             document.querySelectorAll('.strategy-option').forEach(option => {
                 option.classList.remove('strategy-selected');
             });
-            event.target.closest('.strategy-option').classList.add('strategy-selected');
+            
+            // Find and select the correct strategy option
+            const strategyOptions = Array.from(document.querySelectorAll('.strategy-option'));
+            const selectedOption = strategyOptions[strategy === 'conservative' ? 0 : strategy === 'moderate' ? 1 : 2];
+            if (selectedOption) {
+                selectedOption.classList.add('strategy-selected');
+            }
             
             // Update strategy details
             const details = {
@@ -1567,11 +1593,20 @@
             // Show account info
             const accountInfo = document.getElementById('accountInfo');
             accountInfo.style.display = 'block';
+            
+            // Safely mask API key
+            let maskedKey = apiKey;
+            if (apiKey.length > 12) {
+                maskedKey = apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4);
+            } else if (apiKey.length > 4) {
+                maskedKey = apiKey.substring(0, Math.floor(apiKey.length / 2)) + '...' + apiKey.substring(apiKey.length - 2);
+            }
+            
             accountInfo.querySelector('#accountDetails').innerHTML = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
                     <div><strong>Exchange:</strong> ${exchange}</div>
                     <div><strong>Status:</strong> Connected</div>
-                    <div><strong>API Key:</strong> ${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}</div>
+                    <div><strong>API Key:</strong> ${maskedKey}</div>
                     <div><strong>Balance:</strong> Loading...</div>
                 </div>
             `;
