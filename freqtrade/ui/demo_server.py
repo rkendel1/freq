@@ -1110,7 +1110,16 @@ def main():
     # FLASK_RUN_HOST defaults to 0.0.0.0 for production deployment
     # For local development, can override with FLASK_RUN_HOST=127.0.0.1
     host = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
-    port = int(os.environ.get("PORT", os.environ.get("FLASK_RUN_PORT", "5000")))
+    
+    # Parse port with validation
+    try:
+        port = int(os.environ.get("PORT", os.environ.get("FLASK_RUN_PORT", "5000")))
+        if not (1 <= port <= 65535):
+            logger.warning(f"Port {port} is out of valid range (1-65535), using default 5000")
+            port = 5000
+    except ValueError as e:
+        logger.warning(f"Invalid port value in environment variable, using default 5000: {e}")
+        port = 5000
     
     server = DemoServer()
     server.run(host=host, port=port, debug=debug_mode)
