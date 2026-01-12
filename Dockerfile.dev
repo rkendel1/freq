@@ -1,0 +1,115 @@
+# Modern single-container Docker development & demo environment
+# Purpose: Quick demo playground with auto-initialization, Streamlit dashboards, and QuestDB-ready
+FROM python:3.12-slim AS base
+
+# Setup environment
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH=/home/ftuser/.local/bin:$PATH \
+    FT_APP_ENV="docker"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core utilities
+    sudo \
+    curl \
+    git \
+    # Database
+    sqlite3 \
+    # Math libraries
+    libatlas3-base \
+    libgomp1 \
+    # Process management
+    supervisor \
+    # Cleanup
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user and directories
+RUN useradd -u 1000 -G sudo -U -m -s /bin/bash ftuser && \
+    echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers && \
+    mkdir -p /freqtrade /freqtrade/user_data /var/log/supervisor && \
+    chown -R ftuser:ftuser /freqtrade /var/log/supervisor
+
+WORKDIR /freqtrade
+
+# Build stage - install dependencies
+FROM base AS python-deps
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    libgfortran5 \
+    pkg-config \
+    cmake \
+    gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
+COPY --chown=ftuser:ftuser pyproject.toml /freqtrade/
+
+USER ftuser
+
+# Install Python dependencies
+# Core dependencies from pyproject.toml
+RUN pip install --user --no-cache-dir --upgrade pip && \
+    pip install --user --no-cache-dir -e . && \
+    # Streamlit dashboards
+    pip install --user --no-cache-dir \
+        streamlit>=1.31.0 \
+        plotly>=5.18.0 \
+        pandas>=2.2.0 && \
+    # QuestDB client (future-ready)
+    pip install --user --no-cache-dir questdb>=4.1.0 && \
+    # Flask for demo UI
+    pip install --user --no-cache-dir \
+        flask>=3.0.0 \
+        werkzeug>=3.0.0
+
+# Runtime stage - create final image
+FROM base AS runtime
+
+# Copy Python dependencies from build stage
+COPY --from=python-deps /home/ftuser/.local /home/ftuser/.local
+
+# Copy application code
+COPY --chown=ftuser:ftuser . /freqtrade/
+
+USER ftuser
+
+# Install application in development mode
+RUN pip install --user --no-cache-dir -e .
+
+USER root
+
+# Copy supervisor configuration files
+COPY docker/supervisord-base.conf /etc/supervisor/supervisord.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/freqtrade.conf
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER ftuser
+
+# Expose ports
+# 5000  - Demo UI
+# 8501  - Configuration Dashboard (Streamlit)
+# 8502  - Monitoring Dashboard (Streamlit)
+EXPOSE 5000 8501 8502
+
+# Volume for persistent data
+VOLUME ["/freqtrade/user_data"]
+
+# Entrypoint handles initialization and starts supervisor
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Default: run all services via supervisor
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
