@@ -1105,8 +1105,15 @@ def main():
     # Default to False for production-like usage, can be enabled via environment variable
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
     
+    # Configure host and port from environment variables
+    # Render and other cloud platforms set PORT environment variable
+    # FLASK_RUN_HOST defaults to 0.0.0.0 for production deployment
+    # For local development, can override with FLASK_RUN_HOST=127.0.0.1
+    host = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", os.environ.get("FLASK_RUN_PORT", "5000")))
+    
     server = DemoServer()
-    server.run(debug=debug_mode)
+    server.run(host=host, port=port, debug=debug_mode)
 
 
 if __name__ == "__main__":
