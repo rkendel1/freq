@@ -444,105 +444,197 @@ Exchanges confirmed working by the community:
 - [X] [Bitvavo](https://bitvavo.com/)
 - [X] [Kucoin](https://www.kucoin.com/)
 
-## Documentation
+---
 
-We invite you to read the bot documentation to ensure you understand how the bot is working.
+## 🐳 Docker Quick Start - All-in-One Development Environment
 
-Please find the complete documentation on the [freqtrade website](https://www.freqtrade.io).
+**Single-container setup with demo UI, configuration dashboard, and monitoring dashboard.**
 
-## Features
+### Quick Start (One Command)
 
-- [x] **Based on Python 3.11+**: For botting on any operating system - Windows, macOS and Linux.
-- [x] **Persistence**: Persistence is achieved through sqlite.
-- [x] **Dry-run**: Run the bot without paying money.
-- [x] **Backtesting**: Run a simulation of your buy/sell strategy.
-- [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
-- [X] **Adaptive prediction modeling**: Build a smart strategy with FreqAI that self-trains to the market via adaptive machine learning methods. [Learn more](https://www.freqtrade.io/en/stable/freqai/)
-- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
-- [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
-- [x] **Builtin WebUI**: Builtin web UI to manage your bot.
-- [x] **Manageable via Telegram**: Manage the bot with Telegram.
-- [x] **Display profit/loss in fiat**: Display your profit/loss in fiat currency.
-- [x] **Performance status report**: Provide a performance status of your current trades.
+```bash
+# Clone repository
+git clone https://github.com/rkendel1/freq.git
+cd freq
 
-## Quick start
+# Start everything with Docker Compose
+docker compose -f docker-compose.dev.yml up
 
-Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/) on how to get started quickly.
-
-For further (native) installation methods, please refer to the [Installation documentation page](https://www.freqtrade.io/en/stable/installation/).
-
-## Basic Usage
-
-### Bot commands
-
-```
-usage: freqtrade [-h] [-V]
-                 {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis}
-                 ...
-
-Free, open source crypto trading bot
-
-positional arguments:
-  {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis}
-    trade               Trade module.
-    create-userdir      Create user-data directory.
-    new-config          Create new config
-    show-config         Show resolved config
-    new-strategy        Create new strategy
-    download-data       Download backtesting data.
-    convert-data        Convert candle (OHLCV) data from one format to
-                        another.
-    convert-trade-data  Convert trade data from one format to another.
-    trades-to-ohlcv     Convert trade data to OHLCV data.
-    list-data           List downloaded data.
-    backtesting         Backtesting module.
-    backtesting-show    Show past Backtest results
-    backtesting-analysis
-                        Backtest Analysis module.
-    hyperopt            Hyperopt module.
-    hyperopt-list       List Hyperopt results
-    hyperopt-show       Show details of Hyperopt results
-    list-exchanges      Print available exchanges.
-    list-markets        Print markets on exchange.
-    list-pairs          Print pairs on exchange.
-    list-strategies     Print available strategies.
-    list-hyperoptloss   Print available hyperopt loss functions.
-    list-freqaimodels   Print available freqAI models.
-    list-timeframes     Print available timeframes for the exchange.
-    show-trades         Show trades.
-    test-pairlist       Test your pairlist configuration.
-    convert-db          Migrate database to different system
-    install-ui          Install FreqUI
-    plot-dataframe      Plot candles with indicators.
-    plot-profit         Generate plot showing profits.
-    webserver           Webserver module.
-    strategy-updater    updates outdated strategy files to the current version
-    lookahead-analysis  Check for potential look ahead bias.
-    recursive-analysis  Check for potential recursive formula issue.
-
-options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
+# Or build and start in one command
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-### Telegram RPC commands
+**That's it!** After a few moments, you'll have:
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on the [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
+- **Demo UI**: http://localhost:5000 - Interactive execution engine demo
+- **Configuration Dashboard**: http://localhost:8501 - Manage configs, ExploitModules, exchanges
+- **Monitoring Dashboard**: http://localhost:8502 - Real-time position tracking, PnL, logs
 
-- `/start`: Starts the trader.
-- `/stop`: Stops the trader.
-- `/stopentry`: Stop entering new trades.
-- `/status <trade_id>|[table]`: Lists all or specific open trades.
-- `/profit [<n>]`: Lists cumulative profit from all finished trades, over the last n days.
-- `/profit_long [<n>]`: Lists cumulative profit from all finished long trades, over the last n days.
-- `/profit_short [<n>]`: Lists cumulative profit from all finished short trades, over the last n days.
-- `/forceexit <trade_id>|all`: Instantly exits the given trade (Ignoring `minimum_roi`).
-- `/fx <trade_id>|all`: Alias to `/forceexit`
-- `/performance`: Show performance of each finished trade grouped by pair
-- `/balance`: Show account balance per currency.
-- `/daily <n>`: Shows profit or loss per day, over the last n days.
-- `/help`: Show help message.
-- `/version`: Show version.
+### What You Get
+
+✅ **Auto-initialization** - Directories, config, and database created automatically  
+✅ **No manual setup** - Everything configured out-of-the-box  
+✅ **Persistent data** - Volume-mounted `user_data/` directory  
+✅ **Multi-process** - All services running via supervisor  
+✅ **QuestDB-ready** - Prepared for time-series metrics (optional)  
+
+### Environment Variables
+
+Set these in `docker/.env` or pass via `-e`:
+
+```bash
+# Security (RECOMMENDED)
+STREAMLIT_PASSWORD=your_secure_password
+
+# Configuration
+DRY_RUN=true                    # Safe mode (default)
+INITIAL_CAPITAL=10000.0         # Starting capital
+EXCHANGE_NAME=binance           # Any CCXT exchange
+LOG_LEVEL=INFO                  # DEBUG, INFO, WARNING, ERROR
+```
+
+### Custom ExploitModules
+
+Mount your custom modules:
+
+```yaml
+# In docker-compose.dev.yml, add volume:
+volumes:
+  - ./user_data:/freqtrade/user_data
+  - ./my_exploits:/freqtrade/custom_exploits:ro
+```
+
+Or copy them to `user_data/exploits/` - they'll be auto-discovered by the config dashboard.
+
+### Docker Commands Reference
+
+```bash
+# Start services
+docker compose -f docker-compose.dev.yml up
+
+# Start in background
+docker compose -f docker-compose.dev.yml up -d
+
+# View logs
+docker compose -f docker-compose.dev.yml logs -f
+
+# Stop services
+docker compose -f docker-compose.dev.yml down
+
+# Rebuild after code changes
+docker compose -f docker-compose.dev.yml up --build
+
+# Access shell in container
+docker compose -f docker-compose.dev.yml exec freqtrade-dev /bin/bash
+```
+
+### Data Persistence
+
+All data is stored in `./user_data/`:
+- `config.prod.json` - Configuration
+- `tradesv3.sqlite` - Trade database
+- `logs/` - Application logs
+- `exploits/` - Custom ExploitModules
+- `strategies/` - Custom strategies (if using)
+
+The directory is created automatically on first run with sensible defaults.
+
+### Troubleshooting
+
+**Q: Port already in use?**  
+Change ports in `docker-compose.dev.yml` under the `ports:` section.
+
+**Q: How to enable QuestDB?**  
+Uncomment the `questdb` service in `docker-compose.dev.yml`.
+
+**Q: Services not starting?**  
+Check logs: `docker compose -f docker-compose.dev.yml logs`
+
+**Q: Need to run a single service?**  
+See supervisor logs inside container: `docker compose -f docker-compose.dev.yml exec freqtrade-dev tail -f /var/log/supervisor/*.log`
+
+### Development Mode
+
+For active development, mount source code:
+
+```yaml
+volumes:
+  - ./user_data:/freqtrade/user_data
+  - ./freqtrade:/freqtrade/freqtrade:ro  # Read-only source mount
+```
+
+Then use `docker compose restart` to pick up changes.
+
+📖 **More details**: See [docker/README.md](docker/README.md) for advanced Docker usage.
+
+---
+## Available Commands
+
+### Core Commands (Functional)
+
+```bash
+# Trading
+freqtrade trade --config config.prod.json         # Run trading engine
+
+# Configuration
+freqtrade create-userdir --userdir user_data      # Create user directory structure
+freqtrade new-config --config config.json         # Interactive config generator
+freqtrade show-config --config config.json        # Display resolved configuration
+
+# Data Management
+freqtrade download-data --exchange binance --pairs BTC/USDT ETH/USDT
+freqtrade list-data --datadir user_data/data
+freqtrade convert-data --format-from json --format-to feather
+
+# Exchange Information
+freqtrade list-exchanges                          # Show supported exchanges
+freqtrade list-markets --exchange binance         # Show available markets
+freqtrade list-pairs --exchange binance           # Show tradable pairs
+freqtrade list-timeframes --exchange binance      # Show available timeframes
+
+# Database
+freqtrade show-trades --db-url sqlite:///tradesv3.sqlite
+freqtrade convert-db --from-url sqlite:///old.db --to-url sqlite:///new.db
+
+# Backtesting (Price Replay Only)
+freqtrade backtesting --config config.json --strategy-path exploits/
+freqtrade backtesting-show                        # Show backtest results
+freqtrade backtesting-analysis                    # Analyze backtest results
+```
+
+### Legacy Commands (Not Functional - Raise NotImplementedError)
+
+These commands still appear in help but are **removed** and will fail:
+
+- ❌ `hyperopt` / `hyperopt-list` / `hyperopt-show` - Optimization removed
+- ❌ `list-hyperoptloss` - Hyperopt removed
+- ❌ `list-freqaimodels` - FreqAI removed
+- ❌ `install-ui` - FreqUI removed (use Streamlit dashboards instead)
+- ❌ `plot-dataframe` / `plot-profit` - Plotting removed
+- ❌ `webserver` - API server removed
+- ❌ `test-pairlist` - Pairlist testing removed
+- ❌ `lookahead-analysis` / `recursive-analysis` - Analysis tools removed
+- ❌ `edge` - Edge module removed
+
+### Recommended Workflow
+
+**Local Development:**
+```bash
+./start.sh              # Demo UI at http://localhost:5000
+```
+
+**Production Dashboards:**
+```bash
+streamlit run freqtrade/ui/prod_config.py     # Port 8501
+streamlit run freqtrade/ui/prod_monitor.py    # Port 8502
+```
+
+**Docker (All-in-One):**
+```bash
+docker compose -f docker-compose.dev.yml up   # All services
+```
+
+---
 
 
 ## Development branches
