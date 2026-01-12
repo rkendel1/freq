@@ -54,8 +54,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set CARGO_HOME to writable location for builds that need Rust
-ENV CARGO_HOME=/tmp/cargo \
-    PATH=/tmp/cargo/bin:$PATH
+ENV CARGO_HOME=/home/ftuser/.cargo \
+    PATH=/home/ftuser/.cargo/bin:$PATH
 
 # Copy requirements
 COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
