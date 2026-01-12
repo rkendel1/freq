@@ -370,11 +370,36 @@
             margin-bottom: 20px;
         }
 
+        /* Horizontal scrolling container for history items */
+        .history-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-behavior: smooth;
+        }
+
+        .history-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .history-container::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+
+        .history-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
         .history-item {
             background: white;
             padding: 12px 20px;
             border-radius: 8px;
-            margin-bottom: 8px;
+            min-width: 300px;
+            max-width: 350px;
+            flex-shrink: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             cursor: pointer;
@@ -383,39 +408,57 @@
         
         .history-item:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateX(2px);
+            transform: translateY(-2px);
         }
         
         .history-item.expanded {
             padding: 20px;
+            max-width: 450px;
         }
 
         .history-item-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
+            flex-direction: column;
+            gap: 10px;
         }
         
         .history-item-title {
             display: flex;
-            align-items: center;
-            gap: 15px;
-            flex: 1;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .history-item-title strong {
+            font-size: 13px;
+        }
+
+        .history-item-title .timestamp {
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        .history-item-title .transaction-number {
+            font-size: 10px;
+            color: #667eea;
+            font-weight: 600;
+            background: #e7f3ff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            width: fit-content;
         }
         
         .history-item-metrics {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            font-size: 13px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
         }
         
         .history-metric {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-width: 80px;
+            align-items: flex-start;
         }
         
         .history-metric-label {
@@ -441,12 +484,14 @@
         
         .history-expand-icon {
             transition: transform 0.3s ease;
-            font-size: 18px;
+            font-size: 14px;
             color: #667eea;
+            text-align: center;
+            margin-top: 8px;
         }
         
         .history-item.expanded .history-expand-icon {
-            transform: rotate(90deg);
+            transform: rotate(180deg);
         }
         
         .history-item-details {
@@ -515,6 +560,75 @@
         .trade-field .value {
             font-weight: 600;
             font-size: 13px;
+        }
+
+        /* Decision Criteria Section in History */
+        .decision-criteria-section {
+            background: #f0f4ff;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .decision-criteria-section h4 {
+            font-size: 12px;
+            color: #667eea;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .criteria-item {
+            background: white;
+            padding: 6px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .criteria-item label {
+            display: inline-block;
+            color: #6c757d;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-right: 5px;
+        }
+
+        .criteria-item .value {
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .criteria-item .value.positive {
+            color: #28a745;
+        }
+
+        .criteria-item .value.negative {
+            color: #dc3545;
+        }
+
+        .exit-conditions-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 5px 0 0 0;
+        }
+
+        .exit-conditions-list li {
+            font-size: 10px;
+            padding: 3px 0;
+            color: #495057;
+        }
+
+        .exit-conditions-list li::before {
+            content: '• ';
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 5px;
         }
         
         /* Chart-like visualization */
@@ -1315,10 +1429,13 @@
                 <canvas id="transactionChart" width="800" height="200"></canvas>
             </div>
             
-            <!-- Individual trades -->
-            <div id="history" style="margin-top: 30px;">
-                <div class="empty-state">
-                    <p>No executions yet. Start executing scenarios to build history.</p>
+            <!-- Individual trades - Horizontal Scrolling -->
+            <div style="margin-top: 30px;">
+                <h3 style="margin-bottom: 15px; color: #667eea;">Transactions Timeline (Scroll Left/Right)</h3>
+                <div id="history" class="history-container">
+                    <div class="empty-state" style="flex: 1; text-align: center;">
+                        <p>No executions yet. Start executing scenarios to build history.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2177,6 +2294,62 @@
                     `;
                 }
             });
+
+            // Add Decision Criteria section if available
+            let decisionCriteriaHTML = '';
+            if (trace.decision_criteria && trace.decision_criteria.status !== 'insufficient_data') {
+                const criteria = trace.decision_criteria;
+                decisionCriteriaHTML = `
+                    <div class="decision-criteria-section">
+                        <h4>🔍 Decision Criteria</h4>
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <label>Fast MA (5)</label>
+                                <span class="value">$${criteria.fast_ma ? criteria.fast_ma.toFixed(2) : 'N/A'}</span>
+                            </div>
+                            <div class="criteria-item">
+                                <label>Slow MA (10)</label>
+                                <span class="value">$${criteria.slow_ma ? criteria.slow_ma.toFixed(2) : 'N/A'}</span>
+                            </div>
+                            <div class="criteria-item">
+                                <label>Momentum</label>
+                                <span class="value ${criteria.momentum > 0 ? 'positive' : criteria.momentum < 0 ? 'negative' : ''}">
+                                    ${criteria.momentum ? (criteria.momentum * 100).toFixed(2) + '%' : 'N/A'}
+                                </span>
+                            </div>
+                            ${criteria.has_position && criteria.position_pnl !== null ? `
+                                <div class="criteria-item">
+                                    <label>Position P&L</label>
+                                    <span class="value ${criteria.position_pnl > 0 ? 'positive' : 'negative'}">
+                                        ${(criteria.position_pnl * 100).toFixed(2)}%
+                                    </span>
+                                </div>
+                            ` : ''}
+                            ${criteria.exit_thresholds ? `
+                                <div class="criteria-item">
+                                    <label>Exit Conditions</label>
+                                    <ul class="exit-conditions-list">
+                                        <li>${criteria.exit_thresholds.profit_target_hit ? '✅' : '❌'} Profit Target (+${(criteria.exit_thresholds.profit_target * 100).toFixed(0)}%)</li>
+                                        <li>${criteria.exit_thresholds.stop_loss_hit ? '⚠️' : '✅'} Stop Loss (-${(criteria.exit_thresholds.stop_loss * 100).toFixed(0)}%)</li>
+                                        ${criteria.exit_thresholds.profit_target_hit || criteria.exit_thresholds.stop_loss_hit ? 
+                                            '<li><strong>✅ SIGNAL: EXIT POSITION</strong></li>' : 
+                                            '<li>⏸️ Hold position</li>'}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            ${!criteria.has_position && criteria.entry_thresholds ? `
+                                <div class="criteria-item">
+                                    <label>Entry Signals</label>
+                                    <ul class="exit-conditions-list">
+                                        <li><strong>LONG:</strong> ${criteria.entry_thresholds.long.all_conditions_met ? '✅ All met' : '❌ Not met'}</li>
+                                        <li><strong>SHORT:</strong> ${criteria.entry_thresholds.short.all_conditions_met ? '✅ All met' : '❌ Not met'}</li>
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
             
             // Determine border class based on profit
             let borderClass = 'border-neutral';
@@ -2188,8 +2361,9 @@
                 <div class="history-item fade-in ${borderClass}" data-step="${trace.step}">
                     <div class="history-item-header">
                         <div class="history-item-title">
-                            <strong style="font-size: 14px;">Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
-                            <span style="font-size: 12px; color: #6c757d;">${timestamp}</span>
+                            <strong>Step ${trace.step}: ${trace.scenario.replace(/_/g, ' ').toUpperCase()}</strong>
+                            <span class="timestamp">${timestamp}</span>
+                            <span class="transaction-number">Transaction #${trace.step}</span>
                         </div>
                         <div class="history-item-metrics">
                             <div class="history-metric">
@@ -2210,10 +2384,11 @@
                                     ${trace.state_changes.capital_change >= 0 ? '+' : ''}$${trace.state_changes.capital_change.toFixed(2)}
                                 </div>
                             </div>
-                            <div class="history-expand-icon">▶</div>
                         </div>
                     </div>
+                    <div class="history-expand-icon">▼</div>
                     <div class="history-item-details">
+                        ${decisionCriteriaHTML}
                         ${tradeDetailsHTML}
                     </div>
                 </div>
@@ -2223,15 +2398,21 @@
                 history.innerHTML = '';
             }
             
+            // Insert at the beginning (newest on the left)
             history.insertAdjacentHTML('afterbegin', historyHTML);
             
-            // Add event listener to the new history item using event delegation
+            // Add event listener to the new history item
             const newItem = history.firstElementChild;
             if (newItem && newItem.classList.contains('history-item')) {
-                newItem.addEventListener('click', function() {
+                newItem.addEventListener('click', function(e) {
+                    // Don't toggle if clicking on a link or button
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
                     this.classList.toggle('expanded');
                 });
             }
+            
+            // Auto-scroll to show the newest item (on the left)
+            history.scrollLeft = 0;
             
             // Update metrics and chart
             updateTransactionMetrics();
@@ -2277,7 +2458,7 @@
                 `;
                 
                 document.getElementById('history').innerHTML = `
-                    <div class="empty-state">
+                    <div class="empty-state" style="flex: 1; text-align: center;">
                         <p>No executions yet. Start executing scenarios to build history.</p>
                     </div>
                 `;
