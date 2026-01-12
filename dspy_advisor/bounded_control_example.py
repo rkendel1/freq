@@ -8,7 +8,7 @@ This example shows how the DSPy advisor enforces safety constraints:
 """
 
 from datetime import datetime, timezone, timedelta
-from dspy.advisor import DSPyAdvisor
+from dspy_advisor.advisor import DSPyAdvisor
 from freqtrade.metrics.attribution import TradeAttribution
 
 

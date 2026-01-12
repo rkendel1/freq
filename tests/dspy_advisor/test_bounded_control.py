@@ -11,7 +11,7 @@ These tests verify that the DSPy advisor properly uses guardrails to:
 from datetime import datetime, timezone, timedelta
 import pytest
 
-from dspy.advisor import DSPyAdvisor
+from dspy_advisor.advisor import DSPyAdvisor
 from freqtrade.metrics.attribution import TradeAttribution
 
 
@@ -217,7 +217,7 @@ class TestBoundedControlScenarios:
         advisor = DSPyAdvisor(enable_guardrails=True)
         
         # Manually test the bounded suggestion creation
-        from dspy.advisor import (
+        from dspy_advisor.advisor import (
             DEFAULT_POSITION_SIZE,
             SHARPE_LOW_THRESHOLD,
             MetricsSnapshot,

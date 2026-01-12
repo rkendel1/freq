@@ -24,7 +24,7 @@ from freqtrade.ui.demo_exploit import DemoExploit
 from freqtrade.ui.automated_exploit import AutomatedExploit
 from freqtrade.ui.market_simulator import MarketSimulator, MarketCondition
 from freqtrade.exploits.parameter_manager import ExploitParameterManager
-from dspy.advisor import DSPyAdvisor
+from dspy_advisor.advisor import DSPyAdvisor
 from freqtrade.metrics.attribution import TradeAttribution
 
 

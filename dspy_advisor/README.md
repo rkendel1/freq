@@ -239,7 +239,7 @@ Freqtrade Execution Engine
     ↓
 Trade Attribution (metrics/attribution.py)
     ↓
-DSPy Advisor (dspy/advisor.py)
+DSPy Advisor (dspy_advisor/advisor.py)
     ↓
 Suggestions (logged to stdout/file)
     ↓
@@ -264,7 +264,7 @@ See example demonstrations:
 
 ```bash
 cd /home/runner/work/freq/freq
-PYTHONPATH=/home/runner/work/freq/freq python dspy/example_usage.py
+PYTHONPATH=/home/runner/work/freq/freq python dspy_advisor/example_usage.py
 ```
 
 This will run 4 example scenarios showing different suggestion types.
@@ -275,7 +275,7 @@ See bounded control in action:
 
 ```bash
 cd /home/runner/work/freq/freq
-PYTHONPATH=/home/runner/work/freq/freq python dspy/bounded_control_example.py
+PYTHONPATH=/home/runner/work/freq/freq python dspy_advisor/bounded_control_example.py
 ```
 
 This demonstrates:
@@ -291,13 +291,13 @@ Run the test suite:
 cd /home/runner/work/freq/freq
 
 # Test advisor functionality
-PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy/test_advisor.py -v
+PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy_advisor/test_advisor.py -v
 
 # Test guardrails
-PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy/test_guardrails.py -v
+PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy_advisor/test_guardrails.py -v
 
 # Test bounded control integration
-PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy/test_bounded_control.py -v
+PYTHONPATH=/home/runner/work/freq/freq python -m pytest tests/dspy_advisor/test_bounded_control.py -v
 ```
 
 All tests verify:
@@ -309,13 +309,13 @@ All tests verify:
 
 ## Files
 
-- `dspy/advisor.py` - Main advisor implementation
-- `dspy/guardrails.py` - **Bounded control guardrails**
-- `dspy/example_usage.py` - Example demonstrations
-- `dspy/bounded_control_example.py` - **Bounded control examples**
-- `tests/dspy/test_advisor.py` - Advisor test suite
-- `tests/dspy/test_guardrails.py` - **Guardrails test suite**
-- `tests/dspy/test_bounded_control.py` - **Bounded control integration tests**
+- `dspy_advisor/advisor.py` - Main advisor implementation
+- `dspy_advisor/guardrails.py` - **Bounded control guardrails**
+- `dspy_advisor/example_usage.py` - Example demonstrations
+- `dspy_advisor/bounded_control_example.py` - **Bounded control examples**
+- `tests/dspy_advisor/test_advisor.py` - Advisor test suite
+- `tests/dspy_advisor/test_guardrails.py` - **Guardrails test suite**
+- `tests/dspy_advisor/test_bounded_control.py` - **Bounded control integration tests**
 
 ## Design Philosophy
 

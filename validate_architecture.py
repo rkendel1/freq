@@ -469,7 +469,7 @@ class ArchitectureValidator:
         check_name = "DSPy has guardrails (bounded parameter changes)"
         
         try:
-            from dspy.guardrails import DSPyGuardrails
+            from dspy_advisor.guardrails import DSPyGuardrails
             
             if hasattr(DSPyGuardrails, 'validate_suggestion'):
                 self.log_pass(check_name, "DSPyGuardrails.validate_suggestion() exists")

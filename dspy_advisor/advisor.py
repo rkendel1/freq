@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from dspy.guardrails import DSPyGuardrails
+from dspy_advisor.guardrails import DSPyGuardrails
 
 if TYPE_CHECKING:
     from freqtrade.metrics.attribution import TradeAttribution
