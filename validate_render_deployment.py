@@ -36,8 +36,15 @@ def validate_render_yaml() -> bool:
             service['disk']['mountPath'] == '/freqtrade/user_data',
         ]
         
+        # Check that PORT is NOT explicitly defined (Render provides it automatically)
+        env_var_keys = [var['key'] for var in service.get('envVars', [])]
+        if 'PORT' in env_var_keys:
+            print("✗ render.yaml should not define PORT (Render provides it automatically)")
+            return False
+        
         if all(checks):
             print("✓ render.yaml configuration is valid")
+            print("✓ PORT is not explicitly defined (Render will provide it)")
             return True
         else:
             print("✗ render.yaml configuration has issues")

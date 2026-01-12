@@ -30,10 +30,8 @@ services:
       - key: LOG_LEVEL
         value: INFO
       
-      # PORT is automatically provided by Render
-      # We'll use this for the main demo UI service
-      - key: PORT
-        value: 5000
+      # Note: PORT is automatically provided by Render
+      # No need to define it here - Render assigns it dynamically
       
       # Security - IMPORTANT: Set this in Render dashboard!
       - key: STREAMLIT_PASSWORD
