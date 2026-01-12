@@ -23,7 +23,7 @@ The `analysis/dspy_insights.py` script:
 ### Step 1: Install Dependencies
 
 ```bash
-pip install dspy-ai==2.6.27 ollama==0.1.0
+pip install dspy-ai==2.4.0 ollama==0.1.0
 ```
 
 Or install from requirements.txt (includes DSPy dependencies):
@@ -310,7 +310,7 @@ The analysis script is completely isolated from the core trading engine:
 ### "ERROR: dspy-ai not installed"
 
 ```bash
-pip install dspy-ai==2.6.27
+pip install dspy-ai==2.4.0
 ```
 
 ### "ERROR: Failed to configure Ollama"
