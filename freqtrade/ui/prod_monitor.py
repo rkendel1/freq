@@ -196,12 +196,12 @@ def get_log_tail(log_path: Path, lines: int = 50) -> str:
 def main():
     """Main Streamlit app."""
     st.set_page_config(
-        page_title="Production Monitor",
+        page_title="MYCELIUM - Production Monitor",
         page_icon="📊",
         layout="wide"
     )
     
-    st.title("📊 Production Monitoring Dashboard")
+    st.title("📊 MYCELIUM - Production Monitor")
     st.markdown("---")
     
     # Auto-refresh setting in sidebar

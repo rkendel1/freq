@@ -7,11 +7,11 @@ name = "freqtrade"
 dynamic = ["version"]
 
 authors = [
-  {name = "Freqtrade Team"},
+  {name = "MYCELIUM Team"},
   {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
 ]
 
-description = "Minimal Trading Execution Engine - Infrastructure Core"
+description = "MYCELIUM - Minimal Trading Execution Engine - Infrastructure Core"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "GPLv3"}

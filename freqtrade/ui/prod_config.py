@@ -172,7 +172,7 @@ def validate_config(config: dict[str, Any]) -> list[str]:
 def main():
     """Main Streamlit app."""
     st.set_page_config(
-        page_title="Production Config Dashboard",
+        page_title="MYCELIUM - Production Config",
         page_icon="⚙️",
         layout="wide"
     )
@@ -181,7 +181,7 @@ def main():
     if not check_password():
         return
     
-    st.title("⚙️ Production Configuration Dashboard")
+    st.title("⚙️ MYCELIUM - Production Configuration")
     st.markdown("---")
     
     # Config file path

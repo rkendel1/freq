@@ -1,11 +1,11 @@
-# Quick Start Script for Demo UI (Windows)
+# Quick Start Script for MYCELIUM Demo UI (Windows)
 #
 # This script checks dependencies and starts the demo server.
 # It works with or without a virtual environment.
 #
 
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "  Execution Engine Demo - Quick Start" -ForegroundColor Cyan
+Write-Host "  MYCELIUM - Execution Engine Demo" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""
 

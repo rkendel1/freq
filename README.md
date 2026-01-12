@@ -1,8 +1,18 @@
-# Minimal Trading Execution Engine
+# MYCELIUM - Minimal Trading Execution Engine
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/82696df2-524e-47de-b1e6-5048aa4e8199">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/1ba7fff2-994f-49fb-be50-5eb1d941082d">
+    <img alt="MYCELIUM Logo" src="https://github.com/user-attachments/assets/1ba7fff2-994f-49fb-be50-5eb1d941082d" width="400">
+  </picture>
+</div>
+
+<br/>
 
 **This is infrastructure, not a trading bot.**
 
-This repository has been stripped down from Freqtrade into a minimal, deterministic execution engine.
+MYCELIUM is a minimal, deterministic execution engine stripped down from Freqtrade.
 It provides the core infrastructure for order execution, position tracking, and PnL attribution,
 but contains **no trading logic** or signal generation.
 
