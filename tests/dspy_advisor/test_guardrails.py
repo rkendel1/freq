@@ -11,7 +11,7 @@ These tests verify that:
 
 import pytest
 
-from dspy.guardrails import (
+from dspy_advisor.guardrails import (
     DSPyGuardrails,
     ParameterType,
     GuardrailViolation,

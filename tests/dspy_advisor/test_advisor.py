@@ -11,7 +11,7 @@ These tests verify that the DSPy advisor:
 from datetime import datetime, timezone, timedelta
 import pytest
 
-from dspy.advisor import DSPyAdvisor, MetricsSnapshot, ParameterSuggestion
+from dspy_advisor.advisor import DSPyAdvisor, MetricsSnapshot, ParameterSuggestion
 from freqtrade.metrics.attribution import TradeAttribution
 
 

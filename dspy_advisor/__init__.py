@@ -7,6 +7,6 @@ and suggests parameter adjustments without influencing execution.
 All suggestions are logged only and never applied to the trading system.
 """
 
-from dspy.advisor import DSPyAdvisor, MetricsSnapshot, ParameterSuggestion
+from dspy_advisor.advisor import DSPyAdvisor, MetricsSnapshot, ParameterSuggestion
 
 __all__ = ["DSPyAdvisor", "MetricsSnapshot", "ParameterSuggestion"]
