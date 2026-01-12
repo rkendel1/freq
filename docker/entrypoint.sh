@@ -172,6 +172,18 @@ For more information, see:
 EOF
 fi
 
+# Detect environment and configure ports
+# Render provides a PORT environment variable for the main service
+# Default to 5000 for local development
+DEMO_UI_PORT="${PORT:-5000}"
+CONFIG_DASHBOARD_PORT="${CONFIG_PORT:-8501}"
+MONITOR_DASHBOARD_PORT="${MONITOR_PORT:-8502}"
+
+# Export ports for supervisor to use
+export DEMO_UI_PORT
+export CONFIG_DASHBOARD_PORT
+export MONITOR_DASHBOARD_PORT
+
 # Display environment info
 echo ""
 echo "🌍 Environment Configuration:"
@@ -181,11 +193,24 @@ echo "   - Exchange: ${EXCHANGE_NAME:-binance}"
 echo "   - Log Level: ${LOG_LEVEL:-INFO}"
 [ -n "$STREAMLIT_PASSWORD" ] && echo "   - Config Dashboard Password: ✅ Set" || echo "   - Config Dashboard Password: ⚠️  Not set (recommended)"
 
+# Detect deployment environment
+if [ -n "$RENDER" ]; then
+    echo "   - Platform: Render.com"
+    echo "   - Service URL: ${RENDER_EXTERNAL_URL:-Not available}"
+fi
+
 echo ""
 echo "📊 Services will be available at:"
-echo "   - Demo UI:              http://localhost:5000"
-echo "   - Configuration Panel:  http://localhost:8501"
-echo "   - Monitoring Dashboard: http://localhost:8502"
+if [ -n "$RENDER" ]; then
+    # On Render, services are available via the external URL
+    echo "   - Main Application:     ${RENDER_EXTERNAL_URL:-http://localhost:${DEMO_UI_PORT}}"
+    echo "   - Note: All dashboards accessible through main URL"
+else
+    # Local development - show localhost URLs
+    echo "   - Demo UI:              http://localhost:${DEMO_UI_PORT}"
+    echo "   - Configuration Panel:  http://localhost:${CONFIG_DASHBOARD_PORT}"
+    echo "   - Monitoring Dashboard: http://localhost:${MONITOR_DASHBOARD_PORT}"
+fi
 echo ""
 echo "📁 Data directory: ${USER_DATA_DIR}"
 echo ""

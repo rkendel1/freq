@@ -1,0 +1,68 @@
+# Render deployment ignore file
+# Excludes files that don't need to be deployed
+
+# Test files
+tests/
+.pytest_cache/
+.coverage
+.hypothesis/
+
+# Documentation (except deployment guides)
+docs/
+*.md
+!README.md
+!RENDER_DEPLOYMENT.md
+!ARCHITECTURE.md
+
+# Development tools
+.git/
+.github/
+.vscode/
+.idea/
+.aider/
+.devcontainer/
+
+# Build artifacts
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.so
+
+# Local data (will be on persistent disk)
+user_data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Config files with secrets
+config*.json
+!config.prod.json.example
+
+# Logs
+*.log
+logfile.txt
+
+# Development scripts
+setup.sh
+setup.ps1
+start.sh
+start.ps1
+start_demo.sh
+start_demo.ps1
+
+# Analysis and exports
+analysis/
+exports/
+ml/
+
+# Verification scripts
+validate_*.py
+
+# Docker files not needed (using Dockerfile.dev)
+Dockerfile
+docker-compose.yml
+docker/docker-compose*.yml
+docker/Dockerfile.*
+!docker/Dockerfile.dev

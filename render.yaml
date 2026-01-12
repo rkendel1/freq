@@ -1,0 +1,102 @@
+# Render Blueprint for Freqtrade Execution Engine
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Main application service - Docker container with all services
+  - type: web
+    name: freqtrade-app
+    env: docker
+    dockerfilePath: ./Dockerfile.dev
+    dockerContext: .
+    
+    # Auto-deploy from main branch
+    branch: main
+    
+    # Health check endpoint
+    healthCheckPath: /health
+    
+    # Environment variables
+    envVars:
+      # Core settings
+      - key: DRY_RUN
+        value: true
+      
+      - key: INITIAL_CAPITAL
+        value: 10000.0
+      
+      - key: EXCHANGE_NAME
+        value: binance
+      
+      - key: LOG_LEVEL
+        value: INFO
+      
+      # PORT is automatically provided by Render
+      # We'll use this for the main demo UI service
+      - key: PORT
+        value: 5000
+      
+      # Security - IMPORTANT: Set this in Render dashboard!
+      - key: STREAMLIT_PASSWORD
+        generateValue: true
+      
+      # Process settings
+      - key: PROCESS_THROTTLE_SECS
+        value: 5
+      
+      # QuestDB integration (disabled by default)
+      - key: QUESTDB_ENABLED
+        value: false
+      
+      # Monitor refresh settings
+      - key: MONITOR_REFRESH_INTERVAL
+        value: 10
+      
+      - key: MAX_LOG_LINES
+        value: 500
+    
+    # Persistent disk for user data, database, logs
+    disk:
+      name: user-data
+      mountPath: /freqtrade/user_data
+      sizeGB: 1
+    
+    # Resource allocation
+    # Free tier: 512MB RAM, 0.1 CPU
+    # Starter: 2GB RAM, 1 CPU (recommended)
+    plan: starter
+    
+    # Region
+    region: oregon
+    
+    # Build settings
+    dockerCommand: supervisord -c /etc/supervisor/supervisord.conf
+    
+    # Auto-deploy on push
+    autoDeploy: true
+
+# Optional: QuestDB service for time-series metrics
+# Uncomment to enable QuestDB alongside the main app
+#
+#  - type: pserv
+#    name: freqtrade-questdb
+#    env: docker
+#    dockerfilePath: ./docker/Dockerfile.questdb
+#    dockerContext: .
+#    
+#    disk:
+#      name: questdb-data
+#      mountPath: /var/lib/questdb
+#      sizeGB: 5
+#    
+#    envVars:
+#      - key: QDB_CAIRO_COMMIT_LAG
+#        value: 1000
+#      
+#      - key: QDB_PG_ENABLED
+#        value: true
+#      
+#      - key: QDB_HTTP_ENABLED
+#        value: true
+#    
+#    plan: starter
+#    region: oregon

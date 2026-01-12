@@ -568,6 +568,86 @@ Then use `docker compose restart` to pick up changes.
 📖 **More details**: See [docker/README.md](docker/README.md) for advanced Docker usage.
 
 ---
+
+## ☁️ Deploy to Render.com - One-Click Cloud Deployment
+
+**Deploy the entire Docker environment to the cloud with persistent storage and automatic scaling.**
+
+### Quick Deploy to Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+**Or deploy manually:**
+
+1. **Fork this repository** to your GitHub account
+
+2. **Create Blueprint on Render**:
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New" → "Blueprint"
+   - Connect your GitHub repo
+   - Render auto-detects `render.yaml`
+
+3. **Configure & Deploy**:
+   - Set `STREAMLIT_PASSWORD` for security
+   - Review other environment variables
+   - Click "Apply" to deploy
+
+4. **Access Your App**:
+   - Find your URL: `https://your-app.onrender.com`
+   - All dashboards accessible through this URL
+
+### What You Get on Render
+
+✅ **Auto-deployed Docker container** - Same environment as local  
+✅ **Persistent disk** - 1GB storage for database, configs, logs  
+✅ **Automatic SSL/HTTPS** - Secure by default  
+✅ **Health monitoring** - Auto-restart on failures  
+✅ **Zero-downtime deploys** - Updates without interruption  
+✅ **Free tier available** - Start for $0, scale as needed  
+
+### Pricing
+
+- **Free Tier**: $0/month (512MB RAM, sleeps after 15min inactivity)
+- **Starter**: $7/month (2GB RAM, always on, recommended)
+- **Standard**: $25/month (4GB RAM, production-ready)
+- **Disk**: $0.25/GB/month (1GB recommended)
+
+**Recommended**: Starter + 1GB disk = **$7.25/month total**
+
+### Environment Variables for Render
+
+Set these in Render dashboard under "Environment":
+
+```bash
+# Security (REQUIRED)
+STREAMLIT_PASSWORD=your_secure_password_here
+
+# Core Settings
+DRY_RUN=true                    # Keep true for testing
+INITIAL_CAPITAL=10000.0         # Starting capital
+EXCHANGE_NAME=binance           # Any CCXT exchange
+LOG_LEVEL=INFO                  # Logging level
+```
+
+For live trading (be careful!):
+```bash
+DRY_RUN=false
+EXCHANGE_API_KEY=your_key
+EXCHANGE_API_SECRET=your_secret
+```
+
+### Render Deployment Features
+
+- **Auto-deploy on Git push** - Changes go live automatically
+- **Persistent data** - Trades, configs, logs survive restarts
+- **Health checks** - `/health` endpoint monitored
+- **Live logs** - Stream logs in Render dashboard
+- **Shell access** - Debug via Render shell
+- **Custom domains** - Use your own domain
+
+📚 **[Complete Render Deployment Guide](RENDER_DEPLOYMENT.md)** - Detailed setup, troubleshooting, and best practices
+
+---
 ## Available Commands
 
 ### Core Commands (Functional)
