@@ -3,7 +3,6 @@
 Dockerfile
 Dockerfile.armhf
 .dockerignore
-docker/
 .coveragerc
 .eggs
 .github
@@ -11,7 +10,6 @@ docker/
 .travis.yml
 CONTRIBUTING.md
 MANIFEST.in
-README.md
 freqtrade.service
 freqtrade.egg-info
 .venv/
@@ -24,3 +22,15 @@ user_data/
 .vscode
 .mypy_cache
 .ipynb_checkpoints
+
+# Temporary/build artifacts
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+htmlcov/
+dist/
+build/
+
+# Keep docker configs needed for build
+# docker/ directory is now included

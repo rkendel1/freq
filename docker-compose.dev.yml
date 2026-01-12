@@ -1,0 +1,108 @@
+---
+# Docker Compose configuration for Freqtrade Development Environment
+# Single-container setup with all services included
+#
+# Quick start:
+#   docker compose -f docker-compose.dev.yml up
+#
+# With custom environment:
+#   docker compose -f docker-compose.dev.yml --env-file docker/.env up
+#
+# Build and run:
+#   docker compose -f docker-compose.dev.yml up --build
+
+services:
+  freqtrade-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: freqtrade-dev
+    restart: unless-stopped
+    
+    # Port mappings
+    ports:
+      - "5000:5000"   # Demo UI
+      - "8501:8501"   # Configuration Dashboard (Streamlit)
+      - "8502:8502"   # Monitoring Dashboard (Streamlit)
+    
+    # Persistent data volume
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      # Optional: Mount custom ExploitModules
+      # - ./custom_exploits:/freqtrade/custom_exploits:ro
+      # Optional: Mount custom strategies
+      # - ./custom_strategies:/freqtrade/user_data/strategies:ro
+    
+    # Environment variables
+    environment:
+      # Core settings
+      - DRY_RUN=${DRY_RUN:-true}
+      - INITIAL_CAPITAL=${INITIAL_CAPITAL:-10000.0}
+      - EXCHANGE_NAME=${EXCHANGE_NAME:-binance}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Security - IMPORTANT: Set this in production!
+      - STREAMLIT_PASSWORD=${STREAMLIT_PASSWORD:-}
+      
+      # Optional: QuestDB connection (for future use)
+      # - QUESTDB_HOST=${QUESTDB_HOST:-questdb}
+      # - QUESTDB_PORT=${QUESTDB_PORT:-9000}
+      # - QUESTDB_ENABLED=${QUESTDB_ENABLED:-false}
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# Optional: Add QuestDB for time-series metrics (future enhancement)
+# Uncomment to enable QuestDB alongside the main container
+#
+#  questdb:
+#    image: questdb/questdb:latest
+#    container_name: freqtrade-questdb
+#    restart: unless-stopped
+#    ports:
+#      - "9000:9000"   # REST API
+#      - "9009:9009"   # InfluxDB line protocol
+#      - "8812:8812"   # PostgreSQL wire protocol
+#      - "9003:9003"   # Health check
+#    volumes:
+#      - questdb-data:/var/lib/questdb
+#    environment:
+#      - QDB_CAIRO_COMMIT_LAG=1000
+#      - QDB_PG_ENABLED=true
+#      - QDB_HTTP_ENABLED=true
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:9003"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 10s
+
+# Volumes
+volumes:
+  # Main data volume (created automatically if using bind mount above)
+  # user_data:
+  #   driver: local
+  
+  # QuestDB data volume (if enabled)
+  # questdb-data:
+  #   driver: local
+
+# Networks (optional - use default)
+# networks:
+#   freqtrade-net:
+#     driver: bridge

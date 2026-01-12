@@ -59,49 +59,16 @@ function updateenv() {
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
     ${PIP} install --upgrade pip wheel setuptools
-    REQUIREMENTS_HYPEROPT=""
-    REQUIREMENTS_PLOT=""
-    REQUIREMENTS_FREQAI=""
-    REQUIREMENTS_FREQAI_RL=""
     REQUIREMENTS=requirements.txt
 
-    read -p "Do you want to install dependencies for development (Performs a full install with all dependencies) [y/N]? "
+    read -p "Do you want to install dependencies for development (includes testing and linting tools) [y/N]? "
     dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
-    else
-        # requirements-dev.txt includes all the below requirements already, so further questions are pointless.
-        read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
-        if [[ $REPLY =~ ^[Yy]$ ]]
-        then
-            REQUIREMENTS_PLOT="-r requirements-plot.txt"
-        fi
-        if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
-            echo "Detected Raspberry, installing cython, skipping hyperopt installation."
-            ${PIP} install --upgrade cython
-        else
-            # Is not Raspberry
-            read -p "Do you want to install hyperopt dependencies [y/N]? "
-            if [[ $REPLY =~ ^[Yy]$ ]]
-            then
-                REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
-            fi
-        fi
-
-        read -p "Do you want to install dependencies for freqai [y/N]? "
-        if [[ $REPLY =~ ^[Yy]$ ]]
-        then
-            REQUIREMENTS_FREQAI="-r requirements-freqai.txt"
-            read -p "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]? "
-            if [[ $REPLY =~ ^[Yy]$ ]]
-            then
-                REQUIREMENTS_FREQAI="-r requirements-freqai-rl.txt"
-            fi
-        fi
     fi
 
-    ${PIP} install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT} ${REQUIREMENTS_FREQAI} ${REQUIREMENTS_FREQAI_RL}
+    ${PIP} install --upgrade -r ${REQUIREMENTS}
     if [ $? -ne 0 ]; then
         echo "Failed installing dependencies"
         exit 1
@@ -111,9 +78,6 @@ function updateenv() {
         echo "Failed installing Freqtrade"
         exit 1
     fi
-
-    echo "Installing freqUI"
-    freqtrade install-ui
 
     echo "pip install completed"
     echo
@@ -264,18 +228,12 @@ function install() {
     echo "You verify that freqtrade is installed successfully by running 'source .venv/bin/activate; freqtrade --version'."
 }
 
-function plot() {
-    echo_block "Installing dependencies for Plotting scripts"
-    ${PIP} install plotly --upgrade
-}
-
 function help() {
     echo "usage:"
     echo "	-i,--install    Install freqtrade from scratch"
     echo "	-u,--update     Command git pull to update."
     echo "	-r,--reset      Hard reset your develop/stable branch."
     echo "	-c,--config     Easy config generator (Will override your existing file)."
-    echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
 # Verify if 3.11+ is installed
@@ -293,9 +251,6 @@ update
 ;;
 --reset|-r)
 reset
-;;
---plot|-p)
-plot
 ;;
 *)
 help
