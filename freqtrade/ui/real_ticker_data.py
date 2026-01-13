@@ -14,9 +14,10 @@ Features:
 import logging
 import time
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import ccxt
+if TYPE_CHECKING:
+    import ccxt
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class RealTickerDataSource:
         self._cache: dict[str, tuple[TickerData, float]] = {}
         
         # Exchange instances (created lazily)
-        self._exchanges: dict[str, ccxt.Exchange | None] = {
+        self._exchanges: dict[str, object | None] = {
             "binance": None,
             "bybit": None,
             "kraken": None,
@@ -75,7 +76,7 @@ class RealTickerDataSource:
             f"RealTickerDataSource initialized with {cache_duration_seconds}s cache duration"
         )
     
-    def _get_exchange(self, exchange_name: str) -> ccxt.Exchange | None:
+    def _get_exchange(self, exchange_name: str) -> object | None:
         """
         Get or create an exchange instance.
         
@@ -90,6 +91,9 @@ class RealTickerDataSource:
             return self._exchanges[exchange_name]
         
         try:
+            # Import ccxt only when needed
+            import ccxt
+            
             # Create exchange instance
             exchange_class = getattr(ccxt, exchange_name)
             exchange = exchange_class({
