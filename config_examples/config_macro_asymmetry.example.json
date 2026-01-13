@@ -1,0 +1,165 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": true,
+  "cancel_open_orders_on_exit": false,
+  
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  
+  "pairlists": [
+    {"method": "StaticPairList"}
+  ],
+  
+  "telegram": {
+    "enabled": false
+  },
+  
+  "api_server": {
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "",
+    "ws_token": "",
+    "CORS_origins": [],
+    "username": "",
+    "password": ""
+  },
+  
+  "bot_name": "macro_asymmetry_overlay_bot",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  
+  "macro_asymmetry_overlay": {
+    "_comment": "Macro Asymmetry Overlay - Biases exploits toward longs in underpriced regimes",
+    
+    "_wrapper_config": "--- WRAPPER CONFIGURATION ---",
+    "wrapped_exploit": "convexity_seeding",
+    "_wrapped_comment": "Can be: convexity_seeding, flow_pressure, funding_capture, funding_decay",
+    
+    "_macro_bias": "--- MACRO BIAS PARAMETERS ---",
+    "macro_bias_threshold": 0.5,
+    "_threshold_comment": "0.5 = neutral, >0.5 = underpriced/bullish regime",
+    
+    "sizing_multiplier_long": 1.5,
+    "_long_multiplier_comment": "1.5 = increase long position sizes by 50% in bull regime",
+    
+    "sizing_multiplier_short": 0.5,
+    "_short_multiplier_comment": "0.5 = reduce short position sizes by 50% in bull regime",
+    
+    "_sentiment_params": "--- SENTIMENT & MOMENTUM ---",
+    "sentiment_lookback_periods": 20,
+    "_sentiment_comment": "Periods to calculate price momentum and volume trend",
+    
+    "momentum_threshold": 0.02,
+    "_momentum_comment": "2% momentum threshold - above = bullish bias",
+    
+    "_btc_dominance": "--- BTC DOMINANCE (OPTIONAL) ---",
+    "_btc_dom_comment_1": "Requires external data feed - disable if not available",
+    "use_btc_dominance": false,
+    "btc_dominance_threshold": 50.0,
+    "_btc_dom_comment_2": "Below 50% = alt season, Above 50% = BTC season",
+    
+    "_regret_awareness": "--- DSPY REGRET AWARENESS ---",
+    "use_dspy_regret": true,
+    "_regret_comment": "Prevents overtrading longs in overbought conditions",
+    
+    "dspy_model": "gpt-3.5-turbo",
+    "_model_comment": "DSPy model for regret analysis",
+    
+    "max_repeated_longs": 5,
+    "_max_longs_comment": "Trigger DSPy check after 5 consecutive longs",
+    
+    "overbought_threshold": 0.8,
+    "_overbought_comment": "80% price increase = overbought signal",
+    
+    "_filtering": "--- POSITION FILTERING ---",
+    "filter_shorts_in_bull_regime": true,
+    "_filter_comment": "Block short positions when macro score > threshold",
+    
+    "min_macro_score": 0.3,
+    "_min_score_comment": "Minimum macro score (0-1) to allow any trades",
+    
+    "_expected_performance": "--- EXPECTED OUTCOMES ---",
+    "_perf_comment_1": "Long Bias Multiplier: 1.5× in favorable regimes",
+    "_perf_comment_2": "Short Filtering: Reduces counter-trend losses",
+    "_perf_comment_3": "Asymmetry: 3:1+ upside skew in 2026 recovery phase",
+    "_perf_comment_4": "Regret Control: DSPy prevents FOMO longs in overbought",
+    "_perf_comment_5": "Use Case: BTC/ETH recovery trades, institutional inflows"
+  },
+  
+  "convexity_seeding": {
+    "_comment": "Wrapped exploit - Convexity Seeding configuration",
+    "_note": "This config is used by the wrapped exploit instance",
+    
+    "position_size": 0.02,
+    "max_positions": 3,
+    "volatility_threshold": 0.01,
+    "max_entry_capital": 0.10,
+    "asymmetric_profit_target": 0.20,
+    "stop_loss": 0.03,
+    "max_hold_hours": 168,
+    "min_hold_minutes": 60,
+    "range_lookback_periods": 20,
+    "range_threshold": 0.015,
+    "use_vol_regime_filter": false
+  },
+  
+  "dspy": {
+    "enabled": false,
+    "_comment": "DSPy for regret awareness is configured in macro_asymmetry_overlay section",
+    "use_kg_context": true,
+    "kg_query_limit": 4,
+    "kg_pattern_types": [
+      "early exit",
+      "missed breakout",
+      "over-sizing",
+      "stop loss failure"
+    ],
+    "model": "gpt-3.5-turbo",
+    "min_conviction_threshold": 0.6,
+    "base_position_size": 0.1
+  }
+}
