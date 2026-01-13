@@ -75,7 +75,15 @@ class DemoServer:
         # Initial state
         self.initial_capital = 10000.0
         self.current_symbol = "BTC/USDT"
-        self.current_price = 50000.0  # Default fallback, will be updated with real price
+        
+        # Shared RealTickerDataSource instance for caching (created early for initialization)
+        self._real_ticker_source = None
+        
+        # Fetch real price at startup since "real" is the default condition
+        # This ensures the initial display shows current market price (~$100k for BTC)
+        # instead of the fallback price (~$50k)
+        initial_price = self._fetch_initial_real_price(self.current_symbol)
+        self.current_price = initial_price
         
         self.engine_state = create_initial_state(self.initial_capital)
         self.risk_limits = RiskLimits(
@@ -118,9 +126,38 @@ class DemoServer:
         
         # Exploit Parameter Manager for all exploits
         self.exploit_manager = ExploitParameterManager({})
+    
+    def _fetch_initial_real_price(self, symbol: str) -> float:
+        """
+        Fetch real price at initialization for accurate initial display.
         
-        # Shared RealTickerDataSource instance for caching (lazy initialization)
-        self._real_ticker_source = None
+        Args:
+            symbol: Trading pair symbol (e.g., "BTC/USDT")
+            
+        Returns:
+            Real price if available, otherwise fallback to 50000.0
+        """
+        try:
+            real_ticker_source = self._get_real_ticker_source()
+            ticker_data = real_ticker_source.fetch_ticker(symbol)
+            
+            if ticker_data:
+                logger.info(
+                    f"Initialized with real price for {symbol}: ${ticker_data.price:,.2f} "
+                    f"from {ticker_data.exchange}"
+                )
+                return ticker_data.price
+            else:
+                logger.warning(
+                    f"Failed to fetch real price for {symbol} at initialization, "
+                    f"using fallback $50,000"
+                )
+                return 50000.0
+        except Exception as e:
+            logger.warning(
+                f"Error fetching real price at initialization: {e}, using fallback $50,000"
+            )
+            return 50000.0
     
     def _get_real_ticker_source(self):
         """Get or create shared RealTickerDataSource instance."""
