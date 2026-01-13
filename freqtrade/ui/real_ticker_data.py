@@ -14,9 +14,10 @@ Features:
 import logging
 import time
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import ccxt
+if TYPE_CHECKING:
+    import ccxt
 
 
 logger = logging.getLogger(__name__)
@@ -65,17 +66,21 @@ class RealTickerDataSource:
         self._cache: dict[str, tuple[TickerData, float]] = {}
         
         # Exchange instances (created lazily)
-        self._exchanges: dict[str, ccxt.Exchange | None] = {
+        # Type is object for runtime compatibility, represents ccxt.Exchange | None
+        self._exchanges: dict[str, object | None] = {
             "binance": None,
             "bybit": None,
             "kraken": None,
         }
         
+        # Cache ccxt module after first import to avoid repeated imports
+        self._ccxt_module = None
+        
         logger.info(
             f"RealTickerDataSource initialized with {cache_duration_seconds}s cache duration"
         )
     
-    def _get_exchange(self, exchange_name: str) -> ccxt.Exchange | None:
+    def _get_exchange(self, exchange_name: str) -> object | None:
         """
         Get or create an exchange instance.
         
@@ -83,13 +88,21 @@ class RealTickerDataSource:
             exchange_name: Name of exchange (binance, bybit, kraken)
             
         Returns:
-            Exchange instance or None if creation failed
+            Exchange instance (ccxt.Exchange) or None if creation failed
         """
         # Return cached instance if available
         if self._exchanges.get(exchange_name) is not None:
             return self._exchanges[exchange_name]
         
         try:
+            # Import ccxt only when needed (lazy loading)
+            # Cache the module to avoid repeated imports
+            if self._ccxt_module is None:
+                import ccxt
+                self._ccxt_module = ccxt
+            else:
+                ccxt = self._ccxt_module
+            
             # Create exchange instance
             exchange_class = getattr(ccxt, exchange_name)
             exchange = exchange_class({
