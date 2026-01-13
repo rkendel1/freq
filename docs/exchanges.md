@@ -72,7 +72,7 @@ Fidelity Crypto (Fidelity Digital Assets) is not currently available through CCX
 - **coinbaseadvanced:** Advanced trading API (lower fees, more features)
 - **coinbaseinternational:** For international users
 
-For most trading use cases, we recommend using `coinbaseadvanced`.
+For most trading use cases, we recommend using **Coinbase Advanced** (exchange name: `coinbaseadvanced`).
 
 ### DEX Support
 
@@ -85,7 +85,7 @@ MYCELIUM supports decentralized exchanges through CCXT's DEX connectors:
 
 MYCELIUM automatically supports any exchange added to CCXT. To request support for a new exchange:
 
-1. Check if it's already in CCXT: https://github.com/ccxt/ccxt/wiki/Exchange-Markets
+1. Check if it's already in CCXT: https://github.com/ccxt/ccxt#supported-cryptocurrency-exchange-markets
 2. If not, request it in the CCXT repository: https://github.com/ccxt/ccxt/issues
 3. Once added to CCXT, it will work with MYCELIUM immediately
 
