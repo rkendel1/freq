@@ -5,7 +5,8 @@ This module provides real-time ticker data for the demo UI, making it more
 realistic and useful for testing strategies with current market prices.
 
 Features:
-- Fetches live ticker data from multiple exchanges (Binance, Bybit, Kraken)
+- Fetches live ticker data from CoinPaprika (free, no API key needed)
+- Fallback to CCXT exchanges (Binance, Bybit, Kraken) if CoinPaprika fails
 - Automatic fallback between exchanges if one fails
 - Caching to avoid API rate limits
 - Graceful degradation to simulated data if all APIs fail
@@ -18,6 +19,12 @@ from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     import ccxt
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -38,11 +45,12 @@ class RealTickerDataSource:
     """
     Fetches real ticker data from cryptocurrency exchanges.
     
-    Uses CCXT to connect to multiple exchanges with automatic fallback:
-    1. Try Binance (most liquid, reliable)
-    2. Try Bybit (backup)
-    3. Try Kraken (backup)
-    4. Return None if all fail (caller should use simulated data)
+    Uses multiple data sources with automatic fallback:
+    1. Try CoinPaprika (free API, no key required)
+    2. Try Binance (via CCXT)
+    3. Try Bybit (via CCXT)
+    4. Try Kraken (via CCXT)
+    5. Return None if all fail (caller should use simulated data)
     
     Implements caching to avoid hitting API rate limits.
     """
@@ -144,6 +152,112 @@ class RealTickerDataSource:
         
         return symbol
     
+    def _convert_symbol_to_coinpaprika_id(self, symbol: str) -> str | None:
+        """
+        Convert trading pair symbol to CoinPaprika ticker ID.
+        
+        Args:
+            symbol: Symbol in format "BTC/USDT" or "ETH/USD"
+            
+        Returns:
+            CoinPaprika ticker ID (e.g., "btc-bitcoin") or None if not supported
+        """
+        # Extract base currency (e.g., BTC from BTC/USDT)
+        base = symbol.split("/")[0].lower()
+        
+        # Map common symbols to CoinPaprika IDs
+        # CoinPaprika uses format: {id}-{name}, e.g., btc-bitcoin
+        symbol_map = {
+            "btc": "btc-bitcoin",
+            "eth": "eth-ethereum",
+            "usdt": "usdt-tether",
+            "bnb": "bnb-binance-coin",
+            "sol": "sol-solana",
+            "xrp": "xrp-xrp",
+            "ada": "ada-cardano",
+            "doge": "doge-dogecoin",
+            "matic": "matic-polygon",
+            "dot": "dot-polkadot",
+            "ltc": "ltc-litecoin",
+            "avax": "avax-avalanche",
+            "link": "link-chainlink",
+            "atom": "atom-cosmos",
+            "uni": "uni-uniswap",
+        }
+        
+        return symbol_map.get(base)
+    
+    def _fetch_from_coinpaprika(self, symbol: str) -> TickerData | None:
+        """
+        Fetch ticker from CoinPaprika API (free, no API key required).
+        
+        Args:
+            symbol: Trading pair symbol (e.g., "BTC/USDT")
+            
+        Returns:
+            TickerData if successful, None otherwise
+        """
+        if not REQUESTS_AVAILABLE:
+            logger.debug("requests library not available, skipping CoinPaprika")
+            return None
+        
+        try:
+            # Get CoinPaprika ticker ID
+            ticker_id = self._convert_symbol_to_coinpaprika_id(symbol)
+            if not ticker_id:
+                logger.debug(f"Symbol {symbol} not supported by CoinPaprika")
+                return None
+            
+            # Import requests only when needed
+            import requests
+            
+            # Fetch from CoinPaprika
+            url = f"https://api.coinpaprika.com/v1/tickers/{ticker_id}"
+            response = requests.get(url, timeout=self.timeout_ms / 1000.0)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extract quote currency (USD or USDT)
+            quote = symbol.split("/")[1].upper()
+            quotes = data.get("quotes", {})
+            
+            # Try to get the matching quote currency
+            quote_data = None
+            if quote == "USDT":
+                # For USDT pairs, use USD as they're typically very close
+                quote_data = quotes.get("USD")
+            else:
+                quote_data = quotes.get(quote)
+            
+            if not quote_data or "price" not in quote_data:
+                logger.warning(f"No price data from CoinPaprika for {symbol}")
+                return None
+            
+            price = quote_data["price"]
+            volume = quote_data.get("volume_24h", 0.0)
+            timestamp = int(time.time() * 1000)
+            
+            ticker_data = TickerData(
+                symbol=symbol,
+                price=float(price),
+                volume=float(volume),
+                timestamp=timestamp,
+                exchange="coinpaprika",
+            )
+            
+            logger.info(
+                f"Fetched {symbol} from CoinPaprika: "
+                f"${ticker_data.price:,.2f}, volume: {ticker_data.volume:,.0f}"
+            )
+            
+            return ticker_data
+            
+        except Exception as e:
+            error_type = type(e).__name__
+            logger.debug(f"Failed to fetch {symbol} from CoinPaprika: {error_type}")
+            return None
+    
     def _fetch_from_exchange(
         self, symbol: str, exchange_name: str
     ) -> TickerData | None:
@@ -205,12 +319,19 @@ class RealTickerDataSource:
         """
         Fetch ticker data with caching and fallback.
         
+        Tries data sources in this order:
+        1. CoinPaprika (free, no API key needed)
+        2. Binance (CCXT)
+        3. Bybit (CCXT)
+        4. Kraken (CCXT)
+        
         Args:
             symbol: Trading pair symbol (e.g., "BTC/USDT")
             prefer_exchange: Preferred exchange to try first (optional)
+                           Can be "coinpaprika", "binance", "bybit", or "kraken"
             
         Returns:
-            TickerData if successful, None if all exchanges fail
+            TickerData if successful, None if all sources fail
         """
         # Check cache first
         current_time = time.time()
@@ -223,24 +344,28 @@ class RealTickerDataSource:
                 )
                 return cached_data
         
-        # Try exchanges in order
-        exchanges = ["binance", "bybit", "kraken"]
+        # Build list of data sources to try
+        sources = ["coinpaprika", "binance", "bybit", "kraken"]
         
-        # Prefer specific exchange if requested
-        if prefer_exchange and prefer_exchange in exchanges:
-            exchanges.remove(prefer_exchange)
-            exchanges.insert(0, prefer_exchange)
+        # Prefer specific source if requested
+        if prefer_exchange and prefer_exchange in sources:
+            sources.remove(prefer_exchange)
+            sources.insert(0, prefer_exchange)
         
-        # Try each exchange until one succeeds
-        for exchange_name in exchanges:
-            ticker_data = self._fetch_from_exchange(symbol, exchange_name)
+        # Try each source until one succeeds
+        for source_name in sources:
+            if source_name == "coinpaprika":
+                ticker_data = self._fetch_from_coinpaprika(symbol)
+            else:
+                ticker_data = self._fetch_from_exchange(symbol, source_name)
+            
             if ticker_data is not None:
                 # Cache successful result
                 self._cache[symbol] = (ticker_data, current_time)
                 return ticker_data
         
-        # All exchanges failed
-        logger.error(f"Failed to fetch {symbol} from all exchanges")
+        # All sources failed
+        logger.error(f"Failed to fetch {symbol} from all data sources")
         return None
     
     def get_current_price(self, symbol: str) -> float | None:
