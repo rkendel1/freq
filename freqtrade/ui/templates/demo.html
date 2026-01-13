@@ -881,37 +881,44 @@
             text-align: center;
         }
 
+        .visualizer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
         .balance-slider-container {
-            margin: 20px 0;
+            margin: 0;
         }
 
         .balance-slider-row {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .balance-slider-label {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
+            margin-bottom: 4px;
+            font-size: 11px;
             font-weight: 600;
             color: #495057;
         }
 
         .balance-slider-track {
             position: relative;
-            height: 30px;
+            height: 20px;
             background: linear-gradient(90deg, #28a745 0%, #ffc107 50%, #dc3545 100%);
-            border-radius: 15px;
+            border-radius: 10px;
             overflow: visible;
         }
 
         .balance-slider-marker {
             position: absolute;
-            top: -5px;
-            width: 40px;
-            height: 40px;
-            margin-left: -20px;
+            top: -8px;
+            width: 36px;
+            height: 36px;
+            margin-left: -18px;
             background: white;
             border: 3px solid #667eea;
             border-radius: 50%;
@@ -920,7 +927,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
 
@@ -931,8 +938,8 @@
         .balance-slider-labels {
             display: flex;
             justify-content: space-between;
-            margin-top: 5px;
-            font-size: 11px;
+            margin-top: 3px;
+            font-size: 9px;
             color: #6c757d;
         }
 
@@ -940,34 +947,40 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 300px;
+            min-height: 250px;
             position: relative;
         }
 
         .radar-chart {
-            width: 300px;
-            height: 300px;
+            width: 250px;
+            height: 250px;
+        }
+        
+        .radar-chart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .category-legend {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 10px;
             flex-wrap: wrap;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 13px;
+            gap: 5px;
+            font-size: 10px;
         }
 
         .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
         }
 
         .legend-color.conservative {
@@ -989,20 +1002,20 @@
 
         .overall-balance-indicator {
             text-align: center;
-            padding: 15px;
+            padding: 10px;
             background: #f8f9fa;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
         .overall-balance-label {
-            font-size: 14px;
+            font-size: 11px;
             color: #6c757d;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
         .overall-balance-value {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             color: #667eea;
         }
@@ -1293,100 +1306,105 @@
         <div id="categoryVisualizer" class="category-visualizer" style="display: none; margin: 20px 30px;">
             <h3>📊 Configuration Balance Visualizer</h3>
             
-            <!-- Slider-based visualization for each parameter -->
-            <div class="balance-slider-container">
-                <div class="balance-slider-row">
-                    <div class="balance-slider-label">
-                        <span>Position Size</span>
-                        <span id="positionSizeValue">15%</span>
+            <!-- Grid layout for side-by-side display -->
+            <div class="visualizer-grid">
+                <!-- Left: Slider-based visualization -->
+                <div class="balance-slider-container">
+                    <div class="balance-slider-row">
+                        <div class="balance-slider-label">
+                            <span>Position Size</span>
+                            <span id="positionSizeValue">15%</span>
+                        </div>
+                        <div class="balance-slider-track">
+                            <div class="balance-slider-marker" id="positionSizeMarker">📊</div>
+                        </div>
+                        <div class="balance-slider-labels">
+                            <span>🛡️ Conservative (8%)</span>
+                            <span>⚖️ Moderate (15%)</span>
+                            <span>⚡ Aggressive (25%)</span>
+                        </div>
                     </div>
-                    <div class="balance-slider-track">
-                        <div class="balance-slider-marker" id="positionSizeMarker">📊</div>
+
+                    <div class="balance-slider-row">
+                        <div class="balance-slider-label">
+                            <span>Profit Target</span>
+                            <span id="profitTargetValue">5%</span>
+                        </div>
+                        <div class="balance-slider-track">
+                            <div class="balance-slider-marker" id="profitTargetMarker">🎯</div>
+                        </div>
+                        <div class="balance-slider-labels">
+                            <span>⚡ Aggressive (3%)</span>
+                            <span>⚖️ Moderate (5%)</span>
+                            <span>🛡️ Conservative (8%)</span>
+                        </div>
                     </div>
-                    <div class="balance-slider-labels">
-                        <span>🛡️ Conservative (8%)</span>
-                        <span>⚖️ Moderate (15%)</span>
-                        <span>⚡ Aggressive (25%)</span>
+
+                    <div class="balance-slider-row">
+                        <div class="balance-slider-label">
+                            <span>Stop Loss</span>
+                            <span id="stopLossValue">3%</span>
+                        </div>
+                        <div class="balance-slider-track">
+                            <div class="balance-slider-marker" id="stopLossMarker">🛑</div>
+                        </div>
+                        <div class="balance-slider-labels">
+                            <span>⚡ Aggressive (2%)</span>
+                            <span>⚖️ Moderate (3%)</span>
+                            <span>🛡️ Conservative (5%)</span>
+                        </div>
+                    </div>
+
+                    <div class="balance-slider-row">
+                        <div class="balance-slider-label">
+                            <span>Trade Frequency (Cooldown)</span>
+                            <span id="cooldownValue">5 ticks</span>
+                        </div>
+                        <div class="balance-slider-track">
+                            <div class="balance-slider-marker" id="cooldownMarker">⏱️</div>
+                        </div>
+                        <div class="balance-slider-labels">
+                            <span>⚡ Aggressive (2)</span>
+                            <span>⚖️ Moderate (5)</span>
+                            <span>🛡️ Conservative (10)</span>
+                        </div>
+                    </div>
+
+                    <!-- Overall balance indicator -->
+                    <div class="overall-balance-indicator">
+                        <div class="overall-balance-label">Overall Strategy Profile</div>
+                        <div class="overall-balance-value" id="overallBalance">⚖️ MODERATE</div>
+                        <div style="font-size: 10px; color: #6c757d; margin-top: 5px;" id="balanceDescription">
+                            Balanced approach with moderate capital usage
+                        </div>
                     </div>
                 </div>
 
-                <div class="balance-slider-row">
-                    <div class="balance-slider-label">
-                        <span>Profit Target</span>
-                        <span id="profitTargetValue">5%</span>
+                <!-- Right: Radar chart -->
+                <div class="radar-chart-section">
+                    <div class="radar-chart-container">
+                        <canvas id="radarChart" class="radar-chart"></canvas>
                     </div>
-                    <div class="balance-slider-track">
-                        <div class="balance-slider-marker" id="profitTargetMarker">🎯</div>
-                    </div>
-                    <div class="balance-slider-labels">
-                        <span>⚡ Aggressive (3%)</span>
-                        <span>⚖️ Moderate (5%)</span>
-                        <span>🛡️ Conservative (8%)</span>
-                    </div>
-                </div>
 
-                <div class="balance-slider-row">
-                    <div class="balance-slider-label">
-                        <span>Stop Loss</span>
-                        <span id="stopLossValue">3%</span>
+                    <!-- Legend -->
+                    <div class="category-legend">
+                        <div class="legend-item">
+                            <div class="legend-color current"></div>
+                            <span>Current Settings</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color conservative"></div>
+                            <span>Conservative</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color moderate"></div>
+                            <span>Moderate</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color aggressive"></div>
+                            <span>Aggressive</span>
+                        </div>
                     </div>
-                    <div class="balance-slider-track">
-                        <div class="balance-slider-marker" id="stopLossMarker">🛑</div>
-                    </div>
-                    <div class="balance-slider-labels">
-                        <span>⚡ Aggressive (2%)</span>
-                        <span>⚖️ Moderate (3%)</span>
-                        <span>🛡️ Conservative (5%)</span>
-                    </div>
-                </div>
-
-                <div class="balance-slider-row">
-                    <div class="balance-slider-label">
-                        <span>Trade Frequency (Cooldown)</span>
-                        <span id="cooldownValue">5 ticks</span>
-                    </div>
-                    <div class="balance-slider-track">
-                        <div class="balance-slider-marker" id="cooldownMarker">⏱️</div>
-                    </div>
-                    <div class="balance-slider-labels">
-                        <span>⚡ Aggressive (2)</span>
-                        <span>⚖️ Moderate (5)</span>
-                        <span>🛡️ Conservative (10)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Overall balance indicator -->
-            <div class="overall-balance-indicator">
-                <div class="overall-balance-label">Overall Strategy Profile</div>
-                <div class="overall-balance-value" id="overallBalance">⚖️ MODERATE</div>
-                <div style="font-size: 12px; color: #6c757d; margin-top: 8px;" id="balanceDescription">
-                    Balanced approach with moderate capital usage
-                </div>
-            </div>
-
-            <!-- Radar chart canvas -->
-            <div class="radar-chart-container">
-                <canvas id="radarChart" class="radar-chart"></canvas>
-            </div>
-
-            <!-- Legend -->
-            <div class="category-legend">
-                <div class="legend-item">
-                    <div class="legend-color current"></div>
-                    <span>Current Settings</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color conservative"></div>
-                    <span>Conservative</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color moderate"></div>
-                    <span>Moderate</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color aggressive"></div>
-                    <span>Aggressive</span>
                 </div>
             </div>
         </div>
@@ -2399,11 +2417,11 @@
                 history.innerHTML = '';
             }
             
-            // Insert at the beginning (newest on the left)
-            history.insertAdjacentHTML('afterbegin', historyHTML);
+            // Insert at the end (newest on the right)
+            history.insertAdjacentHTML('beforeend', historyHTML);
             
             // Add event listener to the new history item
-            const newItem = history.firstElementChild;
+            const newItem = history.lastElementChild;
             if (newItem && newItem.classList.contains('history-item')) {
                 newItem.addEventListener('click', function(e) {
                     // Don't toggle if clicking on a link or button
@@ -2412,8 +2430,8 @@
                 });
             }
             
-            // Auto-scroll to show the newest item (on the left)
-            history.scrollLeft = 0;
+            // Auto-scroll to show the newest item (on the right)
+            history.scrollLeft = history.scrollWidth;
             
             // Update metrics and chart
             updateTransactionMetrics();
@@ -2697,11 +2715,11 @@
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
-            const width = canvas.width = 300;
-            const height = canvas.height = 300;
+            const width = canvas.width = 250;
+            const height = canvas.height = 250;
             const centerX = width / 2;
             const centerY = height / 2;
-            const radius = 100;
+            const radius = 80;
             
             // Clear canvas
             ctx.clearRect(0, 0, width, height);
