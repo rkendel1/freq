@@ -140,8 +140,10 @@ class MarketSimulator:
             MarketTick with real price data or simulated fallback
         """
         # Create real ticker source if not exists
+        # Use shorter cache duration (2 seconds) for demo mode to get more frequent price updates
+        # while still avoiding excessive API calls
         if self._real_ticker_source is None:
-            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=30)
+            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=2)
         
         # Try to fetch real ticker data
         ticker_data = self._real_ticker_source.fetch_ticker(self.symbol)

@@ -327,7 +327,7 @@ class RealTickerDataSource:
             return None
     
     def fetch_ticker(
-        self, symbol: str, prefer_exchange: str | None = None
+        self, symbol: str, prefer_exchange: str | None = None, force_refresh: bool = False
     ) -> TickerData | None:
         """
         Fetch ticker data with caching and fallback.
@@ -342,13 +342,15 @@ class RealTickerDataSource:
             symbol: Trading pair symbol (e.g., "BTC/USDT")
             prefer_exchange: Preferred exchange to try first (optional)
                            Can be "coinpaprika", "binance", "bybit", or "kraken"
+            force_refresh: If True, bypass cache and fetch fresh data (default: False)
+                          Useful for demo/testing when you need live price updates
             
         Returns:
             TickerData if successful, None if all sources fail
         """
-        # Check cache first
+        # Check cache first (unless force_refresh is True)
         current_time = time.time()
-        if symbol in self._cache:
+        if not force_refresh and symbol in self._cache:
             cached_data, cache_time = self._cache[symbol]
             if current_time - cache_time < self.cache_duration_seconds:
                 logger.debug(

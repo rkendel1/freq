@@ -110,6 +110,47 @@ class TestRealTickerDataSource:
         assert result.price == 98500.00
         assert result.exchange == "test_exchange"
     
+    def test_force_refresh_bypasses_cache(self):
+        """Test that force_refresh parameter bypasses cache."""
+        from unittest.mock import patch
+        from freqtrade.ui.real_ticker_data import TickerData
+        import time
+        
+        source = RealTickerDataSource(cache_duration_seconds=60)
+        
+        # Manually populate cache with old price
+        cached_ticker = TickerData(
+            symbol="BTC/USDT",
+            price=98500.00,
+            volume=12345.67,
+            timestamp=int(time.time() * 1000),
+            exchange="test_exchange",
+        )
+        
+        current_time = time.time()
+        source._cache["BTC/USDT"] = (cached_ticker, current_time)
+        
+        # Create a new ticker with different price
+        fresh_ticker = TickerData(
+            symbol="BTC/USDT",
+            price=99999.00,
+            volume=54321.98,
+            timestamp=int(time.time() * 1000),
+            exchange="coinpaprika",
+        )
+        
+        # Mock the CoinPaprika fetch to return fresh data
+        with patch.object(source, '_fetch_from_coinpaprika', return_value=fresh_ticker):
+            # Regular fetch should use cache
+            result_cached = source.fetch_ticker("BTC/USDT")
+            assert result_cached.price == 98500.00
+            assert result_cached.exchange == "test_exchange"
+            
+            # Force refresh should bypass cache and fetch new data
+            result_fresh = source.fetch_ticker("BTC/USDT", force_refresh=True)
+            assert result_fresh.price == 99999.00
+            assert result_fresh.exchange == "coinpaprika"
+    
     def test_coinpaprika_tried_first(self):
         """Test that CoinPaprika is tried before CCXT exchanges."""
         from unittest.mock import patch, MagicMock
