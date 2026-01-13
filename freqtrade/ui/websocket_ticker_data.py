@@ -191,7 +191,8 @@ class WebSocketTickerSource:
                             
                             self._update_price(price, quantity * price)
                             
-            except websockets.exceptions.WebSocketException as e:
+            except (websockets.exceptions.WebSocketException, ConnectionRefusedError, 
+                    OSError, asyncio.TimeoutError) as e:
                 logger.warning(f"Binance WebSocket disconnected: {e}")
                 if self._running:
                     await asyncio.sleep(1)  # Wait before reconnecting
@@ -203,7 +204,16 @@ class WebSocketTickerSource:
     async def _connect_coinbase(self):
         """Connect to Coinbase WebSocket."""
         # Convert BTC/USDT -> BTC-USD (Coinbase uses USD)
-        ws_symbol = self.symbol.replace("/", "-").replace("USDT", "USD")
+        parts = self.symbol.split("/")
+        if len(parts) == 2:
+            base, quote = parts
+            # Replace USDT with USD for Coinbase
+            if quote == "USDT":
+                quote = "USD"
+            ws_symbol = f"{base}-{quote}"
+        else:
+            ws_symbol = self.symbol.replace("/", "-")
+        
         url = "wss://ws-feed.exchange.coinbase.com"
         
         logger.info(f"Connecting to Coinbase WebSocket: {url}")
@@ -233,7 +243,8 @@ class WebSocketTickerSource:
                             
                             self._update_price(price, volume)
                             
-            except websockets.exceptions.WebSocketException as e:
+            except (websockets.exceptions.WebSocketException, ConnectionRefusedError,
+                    OSError, asyncio.TimeoutError) as e:
                 logger.warning(f"Coinbase WebSocket disconnected: {e}")
                 if self._running:
                     await asyncio.sleep(1)
@@ -245,7 +256,19 @@ class WebSocketTickerSource:
     async def _connect_kraken(self):
         """Connect to Kraken WebSocket."""
         # Convert BTC/USDT -> XBT/USD (Kraken uses XBT and USD)
-        ws_symbol = self.symbol.replace("BTC", "XBT").replace("USDT", "USD")
+        parts = self.symbol.split("/")
+        if len(parts) == 2:
+            base, quote = parts
+            # Kraken uses XBT instead of BTC
+            if base == "BTC":
+                base = "XBT"
+            # Kraken prefers USD over USDT
+            if quote == "USDT":
+                quote = "USD"
+            ws_symbol = f"{base}/{quote}"
+        else:
+            ws_symbol = self.symbol
+        
         url = "wss://ws.kraken.com"
         
         logger.info(f"Connecting to Kraken WebSocket: {url}")
@@ -277,7 +300,8 @@ class WebSocketTickerSource:
                                 
                                 self._update_price(price, volume)
                                 
-            except websockets.exceptions.WebSocketException as e:
+            except (websockets.exceptions.WebSocketException, ConnectionRefusedError,
+                    OSError, asyncio.TimeoutError) as e:
                 logger.warning(f"Kraken WebSocket disconnected: {e}")
                 if self._running:
                     await asyncio.sleep(1)
@@ -356,8 +380,8 @@ class WebSocketTickerManager:
                 )
                 self._source.start()
                 
-                # Wait a bit to see if connection succeeds
-                time.sleep(2)
+                # Wait briefly to see if connection succeeds (non-blocking for UI)
+                time.sleep(0.5)  # Reduced from 2s to avoid UI freezes
                 
                 # Check if we got a price
                 if self._source.get_current_price() is not None:
