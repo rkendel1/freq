@@ -7,6 +7,10 @@ uvicorn[standard]==0.34.0
 # Updated to version with Python 3.13 wheel support (avoids Rust compilation)
 pydantic>=2.10.0,<3.0.0
 
+# Flask for demo UI server
+flask>=3.0.0
+werkzeug>=3.0.0
+
 # Minimal scientific computing (only numpy for market simulator)
 numpy==2.4.0
 
