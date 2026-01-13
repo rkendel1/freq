@@ -6,6 +6,7 @@ This module simulates realistic price movements for different market conditions:
 - Volatile/choppy markets
 - Range-bound markets
 - Mixed conditions
+- Real ticker data from exchanges (NEW!)
 
 Used by the automated demo to show how the bot behaves in real market scenarios.
 """
@@ -18,11 +19,13 @@ from typing import Literal
 
 import numpy as np
 
+from freqtrade.ui.real_ticker_data import RealTickerDataSource
+
 
 logger = logging.getLogger(__name__)
 
 
-MarketCondition = Literal["trending_up", "trending_down", "volatile", "ranging", "mixed"]
+MarketCondition = Literal["trending_up", "trending_down", "volatile", "ranging", "mixed", "real"]
 
 
 @dataclass
@@ -44,6 +47,7 @@ class MarketSimulator:
     - Volatility (price fluctuation)
     - Mean reversion (ranging behavior)
     - Random noise (market inefficiency)
+    - Real ticker data from exchanges (NEW!)
     """
     
     def __init__(
@@ -52,15 +56,17 @@ class MarketSimulator:
         condition: MarketCondition = "mixed",
         volatility: float = 0.02,  # 2% typical volatility
         tick_interval_ms: int = 1000,  # 1 second between ticks
+        symbol: str = "BTC/USDT",  # Trading pair for real data
     ):
         """
         Initialize market simulator.
         
         Args:
             initial_price: Starting price for the asset
-            condition: Market condition to simulate
+            condition: Market condition to simulate (use "real" for live data)
             volatility: Price volatility (as fraction, e.g., 0.02 = 2%)
             tick_interval_ms: Milliseconds between price ticks
+            symbol: Trading pair symbol for real ticker data (e.g., "BTC/USDT")
         """
         self.current_price = initial_price
         self.initial_price = initial_price
@@ -68,6 +74,10 @@ class MarketSimulator:
         self.volatility = volatility
         self.tick_interval_ms = tick_interval_ms
         self.tick_count = 0
+        self.symbol = symbol
+        
+        # Real ticker data source (created only if needed)
+        self._real_ticker_source: RealTickerDataSource | None = None
         
         # Market condition parameters
         self._setup_condition_params()
@@ -100,11 +110,67 @@ class MarketSimulator:
         """
         Generate next market tick with realistic price movement.
         
+        If condition is "real", fetches live data from exchanges.
+        Otherwise, generates simulated data.
+        
         Returns:
             MarketTick with timestamp, price, volume, and condition
         """
         self.tick_count += 1
         
+        # Handle real ticker data
+        if self.condition == "real":
+            return self._generate_real_tick()
+        
+        # Otherwise, generate simulated tick
+        return self._generate_simulated_tick()
+    
+    def _generate_real_tick(self) -> MarketTick:
+        """
+        Generate tick from real exchange data.
+        
+        Returns:
+            MarketTick with real price data or simulated fallback
+        """
+        # Create real ticker source if not exists
+        if self._real_ticker_source is None:
+            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=30)
+        
+        # Try to fetch real ticker data
+        ticker_data = self._real_ticker_source.fetch_ticker(self.symbol)
+        
+        if ticker_data is not None:
+            # Successfully got real data
+            self.current_price = ticker_data.price
+            
+            tick = MarketTick(
+                timestamp=ticker_data.timestamp,
+                price=round(ticker_data.price, 2),
+                volume=round(ticker_data.volume, 2),
+                condition="real",
+            )
+            
+            logger.info(
+                f"Real tick #{self.tick_count}: ${tick.price:,.2f} "
+                f"from {ticker_data.exchange}"
+            )
+            
+            return tick
+        else:
+            # Failed to get real data, fallback to simulation
+            logger.warning(
+                f"Failed to fetch real ticker data for {self.symbol}, "
+                f"using simulated fallback"
+            )
+            return self._generate_simulated_tick()
+    
+    def _generate_simulated_tick(self) -> MarketTick:
+        """
+        Generate simulated market tick.
+        
+        Returns:
+            MarketTick with simulated price data
+        """
         # For mixed condition, occasionally change sub-condition
         if self.condition == "mixed" and self.tick_count % 50 == 0:
             self._randomize_mixed_condition()
