@@ -35,6 +35,10 @@ from freqtrade.metrics.attribution import TradeAttribution
 logger = logging.getLogger(__name__)
 
 
+# Default fallback price when real ticker data is unavailable
+DEFAULT_FALLBACK_PRICE = 50000.0
+
+
 # Category presets for exploit configuration
 CATEGORY_PRESETS = {
     "conservative": {
@@ -80,8 +84,8 @@ class DemoServer:
         self._real_ticker_source = None
         
         # Fetch real price at startup since "real" is the default condition
-        # This ensures the initial display shows current market price (~$100k for BTC)
-        # instead of the fallback price (~$50k)
+        # This ensures the initial display shows current market price
+        # instead of the fallback price
         initial_price = self._fetch_initial_real_price(self.current_symbol)
         self.current_price = initial_price
         
@@ -135,7 +139,7 @@ class DemoServer:
             symbol: Trading pair symbol (e.g., "BTC/USDT")
             
         Returns:
-            Real price if available, otherwise fallback to 50000.0
+            Real price if available, otherwise DEFAULT_FALLBACK_PRICE
         """
         try:
             real_ticker_source = self._get_real_ticker_source()
@@ -150,14 +154,15 @@ class DemoServer:
             else:
                 logger.warning(
                     f"Failed to fetch real price for {symbol} at initialization, "
-                    f"using fallback $50,000"
+                    f"using fallback ${DEFAULT_FALLBACK_PRICE:,.0f}"
                 )
-                return 50000.0
+                return DEFAULT_FALLBACK_PRICE
         except Exception as e:
             logger.warning(
-                f"Error fetching real price at initialization: {e}, using fallback $50,000"
+                f"Error fetching real price at initialization: {e}, "
+                f"using fallback ${DEFAULT_FALLBACK_PRICE:,.0f}"
             )
-            return 50000.0
+            return DEFAULT_FALLBACK_PRICE
     
     def _get_real_ticker_source(self):
         """Get or create shared RealTickerDataSource instance."""
@@ -282,10 +287,13 @@ class DemoServer:
                     logger.info(f"Fetched real price for {symbol}: ${initial_price:,.2f}")
                 else:
                     # Fallback to default if real price fetch fails
-                    initial_price = 50000.0
-                    logger.warning(f"Failed to fetch real price for {symbol}, using default ${initial_price}")
+                    initial_price = DEFAULT_FALLBACK_PRICE
+                    logger.warning(
+                        f"Failed to fetch real price for {symbol}, "
+                        f"using default ${initial_price:,.0f}"
+                    )
             elif initial_price is None:
-                initial_price = 50000.0
+                initial_price = DEFAULT_FALLBACK_PRICE
             
             self.current_price = initial_price
             self.market_simulator.current_price = initial_price
