@@ -410,6 +410,52 @@ Returns current engine state (capital, positions, statistics)
 }
 ```
 
+### GET /api/real-price/<symbol>
+**NEW!** Get current real ticker price from exchanges (Binance, Bybit, Kraken)
+
+**Example:**
+```bash
+GET /api/real-price/BTC-USDT
+```
+
+**Response:**
+```json
+{
+  "symbol": "BTC/USDT",
+  "price": 98500.00,
+  "volume": 12345.67,
+  "exchange": "binance",
+  "timestamp": 1704823537000
+}
+```
+
+**Error Response:**
+```json
+{
+  "error": "Failed to fetch price for BTC/USDT"
+}
+```
+
+### POST /api/config/symbol
+Update trading symbol and optionally fetch real price
+
+**Request:**
+```json
+{
+  "symbol": "BTC/USDT",
+  "use_real_price": true
+}
+```
+
+**Response:**
+```json
+{
+  "status": "updated",
+  "symbol": "BTC/USDT",
+  "price": 98500.00
+}
+```
+
 ### POST /api/execute-step
 Execute a scenario and return flow trace
 
@@ -438,6 +484,27 @@ Execute a scenario and return flow trace
     "capital_change": -1000.0,
     "deployed_change": 1000.0
   }
+}
+```
+
+### POST /api/automated/start
+**UPDATED!** Start automated mode with optional real ticker data
+
+**Request:**
+```json
+{
+  "condition": "real"
+}
+```
+
+Valid conditions: `"mixed"`, `"trending_up"`, `"trending_down"`, `"volatile"`, `"ranging"`, `"real"`
+
+**Response:**
+```json
+{
+  "status": "started",
+  "condition": "real",
+  "symbol": "BTC/USDT"
 }
 ```
 
