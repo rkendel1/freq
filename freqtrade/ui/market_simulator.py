@@ -21,6 +21,11 @@ import numpy as np
 
 from freqtrade.ui.real_ticker_data import RealTickerDataSource
 
+try:
+    from freqtrade.ui.websocket_ticker_data import WebSocketTickerSource, WEBSOCKETS_AVAILABLE
+except ImportError:
+    WEBSOCKETS_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +69,7 @@ class MarketSimulator:
         volatility: float = 0.02,  # 2% typical volatility
         tick_interval_ms: int = 1000,  # 1 second between ticks
         symbol: str = "BTC/USDT",  # Trading pair for real data
+        use_websocket: bool = True,  # Use WebSocket for real-time data if available
     ):
         """
         Initialize market simulator.
@@ -74,6 +80,7 @@ class MarketSimulator:
             volatility: Price volatility (as fraction, e.g., 0.02 = 2%)
             tick_interval_ms: Milliseconds between price ticks
             symbol: Trading pair symbol for real ticker data (e.g., "BTC/USDT")
+            use_websocket: If True, use WebSocket for real-time updates (default: True)
         """
         self.current_price = initial_price
         self.initial_price = initial_price
@@ -82,9 +89,11 @@ class MarketSimulator:
         self.tick_interval_ms = tick_interval_ms
         self.tick_count = 0
         self.symbol = symbol
+        self.use_websocket = use_websocket and WEBSOCKETS_AVAILABLE
         
-        # Real ticker data source (created only if needed)
+        # Real ticker data sources (created only if needed)
         self._real_ticker_source: RealTickerDataSource | None = None
+        self._websocket_source: WebSocketTickerSource | None = None
         
         # Market condition parameters
         self._setup_condition_params()
@@ -93,6 +102,10 @@ class MarketSimulator:
         self.momentum = 0.0
         self.trend_direction = 1 if condition == "trending_up" else -1
         self.range_center = initial_price
+        
+        # Start WebSocket if using real mode with WebSocket enabled
+        if self.condition == "real" and self.use_websocket:
+            self._start_websocket()
         
     def _setup_condition_params(self):
         """Setup parameters based on market condition."""
@@ -136,9 +149,33 @@ class MarketSimulator:
         """
         Generate tick from real exchange data.
         
+        Tries WebSocket first (if enabled), falls back to REST API if needed.
+        
         Returns:
             MarketTick with real price data or simulated fallback
         """
+        # Try WebSocket first if enabled and running
+        if self.use_websocket and self._websocket_source is not None:
+            ws_data = self._websocket_source.get_ticker_data()
+            if ws_data is not None:
+                # Successfully got WebSocket data
+                self.current_price = ws_data.price
+                
+                tick = MarketTick(
+                    timestamp=ws_data.timestamp,
+                    price=round(ws_data.price, 2),
+                    volume=round(ws_data.volume, 2),
+                    condition="real",
+                )
+                
+                logger.debug(
+                    f"Real tick #{self.tick_count} (WebSocket): ${tick.price:,.2f} "
+                    f"from {ws_data.exchange}"
+                )
+                
+                return tick
+        
+        # Fall back to REST API if WebSocket not available
         # Create real ticker source if not exists
         # Use shorter cache duration (2 seconds) for demo mode to get more frequent price updates
         # while still avoiding excessive API calls
@@ -160,7 +197,7 @@ class MarketSimulator:
             )
             
             logger.info(
-                f"Real tick #{self.tick_count}: ${tick.price:,.2f} "
+                f"Real tick #{self.tick_count} (REST): ${tick.price:,.2f} "
                 f"from {ticker_data.exchange}"
             )
             
@@ -263,6 +300,47 @@ class MarketSimulator:
         """Get total price change percentage since start."""
         return ((self.current_price - self.initial_price) / self.initial_price) * 100
     
+    def _start_websocket(self):
+        """Start WebSocket connection for real-time price updates."""
+        if not WEBSOCKETS_AVAILABLE:
+            logger.warning("WebSocket library not available, using REST API fallback")
+            return
+        
+        try:
+            logger.info(f"Starting WebSocket for {self.symbol}...")
+            
+            def on_price_update(ticker_data):
+                """Callback for WebSocket price updates."""
+                self.current_price = ticker_data.price
+                logger.debug(
+                    f"WebSocket price update: {self.symbol} = ${ticker_data.price:,.2f} "
+                    f"from {ticker_data.exchange}"
+                )
+            
+            self._websocket_source = WebSocketTickerSource(
+                symbol=self.symbol,
+                on_price_update=on_price_update,
+                exchange="binance",  # Default to Binance (fastest)
+            )
+            self._websocket_source.start()
+            
+            logger.info(f"WebSocket started for {self.symbol}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to start WebSocket: {e}, using REST API fallback")
+            self._websocket_source = None
+    
+    def _stop_websocket(self):
+        """Stop WebSocket connection."""
+        if self._websocket_source is not None:
+            try:
+                self._websocket_source.stop()
+                logger.info(f"WebSocket stopped for {self.symbol}")
+            except Exception as e:
+                logger.error(f"Error stopping WebSocket: {e}")
+            finally:
+                self._websocket_source = None
+    
     def reset(self, condition: MarketCondition | None = None):
         """
         Reset simulator to initial state.
@@ -270,13 +348,26 @@ class MarketSimulator:
         Args:
             condition: Optional new market condition
         """
+        # Stop WebSocket if running
+        if self._websocket_source is not None:
+            self._stop_websocket()
+        
         self.current_price = self.initial_price
         self.tick_count = 0
         self.momentum = 0.0
         self.range_center = self.initial_price
         
         if condition:
+            old_condition = self.condition
             self.condition = condition
             self._setup_condition_params()
             
+            # Start WebSocket if switching to real mode
+            if condition == "real" and self.use_websocket:
+                self._start_websocket()
+            
         logger.info(f"Market simulator reset: {self.condition} condition at ${self.initial_price:,.2f}")
+    
+    def cleanup(self):
+        """Cleanup resources (stop WebSocket connections)."""
+        self._stop_websocket()
