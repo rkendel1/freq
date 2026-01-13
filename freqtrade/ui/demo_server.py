@@ -168,7 +168,9 @@ class DemoServer:
         """Get or create shared RealTickerDataSource instance."""
         if self._real_ticker_source is None:
             from freqtrade.ui.real_ticker_data import RealTickerDataSource
-            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=30)
+            # Use 2-second cache for demo mode to provide frequent price updates
+            # while avoiding excessive API calls
+            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=2)
         return self._real_ticker_source
     
     def _validate_symbol(self, symbol: str) -> bool:

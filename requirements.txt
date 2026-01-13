@@ -16,6 +16,9 @@ numpy==2.4.0
 # Core utilities
 python-dateutil==2.9.0.post0
 
+# WebSocket support for real-time price updates
+websockets>=13.0
+
 # Optional: QuestDB for time-series metrics logging
 questdb==4.1.0
 
