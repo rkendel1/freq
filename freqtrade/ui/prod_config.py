@@ -78,7 +78,12 @@ def discover_exploit_modules() -> list[str]:
 
 
 def get_ccxt_exchanges() -> list[str]:
-    """Get list of all CCXT-supported exchanges."""
+    """Get list of all CCXT-supported exchanges.
+    
+    Note: Fidelity Crypto (Fidelity Digital Assets) is not currently supported by CCXT.
+    If CCXT adds support in the future, it will automatically appear in this list.
+    Users needing Fidelity-like services can use Coinbase (Fidelity's custody partner).
+    """
     try:
         import ccxt
         return sorted(ccxt.exchanges)
