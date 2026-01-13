@@ -101,7 +101,7 @@ class DemoServer:
         self.automated_exploit = AutomatedExploit({})
         self.market_simulator = MarketSimulator(
             initial_price=self.current_price, 
-            condition="mixed",
+            condition="real",
             symbol=self.current_symbol,
         )
         self.price_history: list[dict[str, Any]] = []  # For charting
