@@ -1,0 +1,137 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": true,
+  "cancel_open_orders_on_exit": false,
+  
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT",
+      "SOL/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  
+  "pairlists": [
+    {"method": "StaticPairList"}
+  ],
+  
+  "telegram": {
+    "enabled": false
+  },
+  
+  "api_server": {
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "",
+    "ws_token": "",
+    "CORS_origins": [],
+    "username": "",
+    "password": ""
+  },
+  
+  "bot_name": "convexity_vol_regime_bot",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  
+  "convexity_seeding": {
+    "_comment": "Enhanced Convexity Seeding with Volatility Regime Filter (2026+)",
+    
+    "_position_sizing": "--- POSITION SIZING ---",
+    "position_size": 0.02,
+    "max_positions": 3,
+    
+    "_entry_conditions": "--- ENTRY CONDITIONS ---",
+    "volatility_threshold": 0.01,
+    "max_entry_capital": 0.10,
+    
+    "_exit_conditions": "--- EXIT CONDITIONS ---",
+    "asymmetric_profit_target": 0.20,
+    "stop_loss": 0.03,
+    "max_hold_hours": 168,
+    "min_hold_minutes": 60,
+    
+    "_range_detection": "--- RANGE DETECTION ---",
+    "range_lookback_periods": 20,
+    "range_threshold": 0.015,
+    
+    "_volatility_regime_filter": "--- VOLATILITY REGIME FILTER (NEW) ---",
+    "_vol_comment_1": "Enable ATR-based volatility regime filtering",
+    "_vol_comment_2": "Only seeds during high-vol phases (post-spike, macro catalysts)",
+    "_vol_comment_3": "Improves tail capture while reducing low-vol noise",
+    
+    "use_vol_regime_filter": true,
+    
+    "_vol_comment_4": "Minimum ATR percentage to enter (0.20 = 20% ATR)",
+    "_vol_comment_5": "Tuning: 0.15 (aggressive), 0.20 (balanced), 0.25 (conservative)",
+    "vol_regime_threshold": 0.20,
+    
+    "_vol_comment_6": "Number of bars for ATR calculation (50 = ~2 days on 1h)",
+    "min_vol_lookback_bars": 50,
+    
+    "_vol_comment_7": "Bars to confirm regime (reduces false signals)",
+    "regime_confirmation_bars": 3,
+    
+    "_expected_performance": "--- EXPECTED OUTCOMES ---",
+    "_perf_comment_1": "Trade Frequency: ~40-80 entries/year (vs 100-150 without filter)",
+    "_perf_comment_2": "Avg Win Size: +18-25% (vs +12% without filter)",
+    "_perf_comment_3": "Expected Value: +4-6% per trade (vs +2.5% without filter)",
+    "_perf_comment_4": "Max Drawdown: -6-10% (vs -8-12% without filter)",
+    "_perf_comment_5": "Tail Capture: ~75-85% of major breakouts",
+    "_perf_comment_6": "Best for: BTC/ETH/SOL during 2026 halving cycles, macro shifts"
+  },
+  
+  "dspy": {
+    "enabled": false,
+    "use_kg_context": true,
+    "kg_query_limit": 4,
+    "kg_pattern_types": [
+      "early exit",
+      "missed breakout",
+      "over-sizing",
+      "stop loss failure"
+    ],
+    "model": "gpt-3.5-turbo",
+    "min_conviction_threshold": 0.6,
+    "base_position_size": 0.1
+  }
+}

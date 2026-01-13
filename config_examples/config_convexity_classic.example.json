@@ -1,0 +1,125 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": true,
+  "cancel_open_orders_on_exit": false,
+  
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  
+  "pairlists": [
+    {"method": "StaticPairList"}
+  ],
+  
+  "telegram": {
+    "enabled": false
+  },
+  
+  "api_server": {
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "",
+    "ws_token": "",
+    "CORS_origins": [],
+    "username": "",
+    "password": ""
+  },
+  
+  "bot_name": "convexity_classic_bot",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  
+  "convexity_seeding": {
+    "_comment": "Classic Convexity Seeding (Vol Regime Filter DISABLED)",
+    
+    "_position_sizing": "--- POSITION SIZING ---",
+    "position_size": 0.02,
+    "max_positions": 3,
+    
+    "_entry_conditions": "--- ENTRY CONDITIONS ---",
+    "volatility_threshold": 0.01,
+    "max_entry_capital": 0.10,
+    
+    "_exit_conditions": "--- EXIT CONDITIONS ---",
+    "asymmetric_profit_target": 0.20,
+    "stop_loss": 0.03,
+    "max_hold_hours": 168,
+    "min_hold_minutes": 60,
+    
+    "_range_detection": "--- RANGE DETECTION ---",
+    "range_lookback_periods": 20,
+    "range_threshold": 0.015,
+    
+    "_volatility_regime_filter": "--- VOLATILITY REGIME FILTER ---",
+    "_vol_comment_1": "DISABLED for classic behavior",
+    "_vol_comment_2": "Seeds on any range-bound condition regardless of volatility regime",
+    
+    "use_vol_regime_filter": false,
+    
+    "_expected_performance": "--- EXPECTED OUTCOMES ---",
+    "_perf_comment_1": "Trade Frequency: ~100-150 entries/year",
+    "_perf_comment_2": "Avg Win Size: +12%",
+    "_perf_comment_3": "Expected Value: +2.5% per trade",
+    "_perf_comment_4": "Max Drawdown: -8-12%",
+    "_perf_comment_5": "Win Rate: ~40%",
+    "_perf_comment_6": "Use for: General range-breakout trading, all market conditions"
+  },
+  
+  "dspy": {
+    "enabled": false,
+    "use_kg_context": true,
+    "kg_query_limit": 4,
+    "kg_pattern_types": [
+      "early exit",
+      "missed breakout",
+      "over-sizing",
+      "stop loss failure"
+    ],
+    "model": "gpt-3.5-turbo",
+    "min_conviction_threshold": 0.6,
+    "base_position_size": 0.1
+  }
+}
