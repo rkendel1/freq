@@ -1,0 +1,125 @@
+{
+  "max_open_trades": 5,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": true,
+  "cancel_open_orders_on_exit": false,
+  
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "SOL/USDT:USDT",
+      "AVAX/USDT:USDT",
+      "MATIC/USDT:USDT",
+      "LINK/USDT:USDT",
+      "UNI/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  
+  "pairlists": [
+    {"method": "StaticPairList"}
+  ],
+  
+  "telegram": {
+    "enabled": false
+  },
+  
+  "api_server": {
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "",
+    "ws_token": "",
+    "CORS_origins": [],
+    "username": "",
+    "password": ""
+  },
+  
+  "bot_name": "liquidity_tail_hunter",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  
+  "liquidity_tail_hunter": {
+    "depth_levels": 15,
+    "depth_ratio_threshold": 0.7,
+    "imbalance_delta_pct": 0.15,
+    "position_size": 0.015,
+    "max_positions": 2,
+    "stop_loss": 0.005,
+    "max_stop_loss": 0.01,
+    "max_trade_duration_min": 10,
+    "min_trade_duration_min": 3,
+    "profit_target": null,
+    "time_based_exit_only": true,
+    "use_flow_confirmation": true,
+    "flow_pressure_threshold": 0.003,
+    "use_dspy_sizing": false,
+    "dspy_min_conviction": 0.6,
+    "max_capital_pct": 0.02
+  },
+  
+  "flow_pressure": {
+    "volume_threshold": 2.0,
+    "price_pressure_threshold": 0.005,
+    "position_size": 0.05,
+    "max_positions": 1,
+    "max_hold_minutes": 60,
+    "profit_target": 0.01,
+    "stop_loss": 0.005,
+    "pressure_normalization_threshold": 0.002
+  },
+  
+  "dspy": {
+    "enabled": false,
+    "use_kg_context": true,
+    "kg_query_limit": 4,
+    "kg_pattern_types": [
+      "liquidity void",
+      "orderbook manipulation",
+      "thin book breakout",
+      "failed pump"
+    ],
+    "model": "gpt-3.5-turbo",
+    "min_conviction_threshold": 0.6,
+    "base_position_size": 0.015
+  },
+  
+  "ml_enabled": false,
+  "ml_model_path": "ml/liquidity_tail_hunter_model.pkl"
+}
