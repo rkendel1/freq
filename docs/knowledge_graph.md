@@ -162,24 +162,56 @@ results = kg.generate_regret_analysis(
 
 ### Integration with Backtesting
 
-The knowledge graph can be integrated into the backtesting workflow:
+**Automatic Integration (Recommended)**
+
+The knowledge graph automatically generates after each backtest when enabled in config:
+
+```json
+{
+  "knowledge_graph": {
+    "enabled": true,
+    "llm": {
+      "model": "llama3.2",
+      "base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "sk-1234"
+    },
+    "output": {
+      "directory": "exports/knowledge_graphs",
+      "format": "html"
+    }
+  }
+}
+```
+
+Simply run your backtest normally:
+
+```bash
+freqtrade backtesting --strategy MyStrategy --config config.json
+```
+
+After the backtest completes, the knowledge graph will be automatically generated and saved to `exports/knowledge_graphs/backtest_YYYYMMDD_HHMMSS_graph.html`.
+
+**Manual Integration**
+
+You can also manually generate knowledge graphs from backtest results:
 
 ```python
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.knowledge_graph import KnowledgeGraphGenerator
+from freqtrade.persistence import Trade
 
 # After backtest completes
 backtesting = Backtesting(config)
 results = backtesting.start()
 
-# Generate knowledge graph from results
-if config.get("knowledge_graph", {}).get("enabled", False):
-    kg = KnowledgeGraphGenerator(config["knowledge_graph"])
-    trades = Trade.get_trades().all()
-    kg_results = kg.generate_from_trades(
-        trades,
-        session_metadata={"type": "backtest"},
-        output_name=f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    )
+# Manually generate knowledge graph
+kg = KnowledgeGraphGenerator(config["knowledge_graph"])
+trades = Trade.get_trades().all()
+kg_results = kg.generate_from_trades(
+    trades,
+    session_metadata={"type": "backtest"},
+    output_name=f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+)
 ```
 
 ## Output

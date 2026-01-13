@@ -181,7 +181,27 @@ python tests/knowledge_graph/test_llm.py
 
 ## Use Cases
 
-### 1. Daily Batch Analysis
+### 1. Automatic Backtest Analysis (NEW!)
+**Automatically generate after each backtest:**
+```json
+{
+  "knowledge_graph": {
+    "enabled": true,
+    "llm": {
+      "model": "llama3.2",
+      "base_url": "http://localhost:11434/v1/chat/completions"
+    }
+  }
+}
+```
+
+Run backtest normally - knowledge graph is auto-generated:
+```bash
+freqtrade backtesting --strategy MyStrategy
+# Knowledge graph automatically created in exports/knowledge_graphs/
+```
+
+### 2. Daily Batch Analysis
 After each trading day:
 ```python
 # Get today's trades
@@ -191,15 +211,15 @@ trades = get_todays_trades()
 kg.generate_from_trades(trades, output_name="daily_2024_01_13")
 ```
 
-### 2. Backtest Analysis
+### 3. Manual Backtest Analysis
 After backtesting:
 ```python
-# In backtesting.py, after backtest completes
-if config.get("knowledge_graph", {}).get("enabled"):
-    kg.generate_from_trades(backtest_trades)
+# Manually trigger generation
+kg = KnowledgeGraphGenerator(config["knowledge_graph"])
+kg.generate_from_trades(backtest_trades)
 ```
 
-### 3. Regret Analysis
+### 4. Regret Analysis
 Compare actual vs hypothetical:
 ```python
 kg.generate_regret_analysis(
