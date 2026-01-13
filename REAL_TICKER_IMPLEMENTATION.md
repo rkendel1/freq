@@ -1,10 +1,10 @@
 # Real Ticker Data Integration - Implementation Summary
 
 ## Problem Statement
-The demo UI was displaying BTC/USDT at a hardcoded price of $5000.00, which is very outdated compared to the real market price (~$90k-100k). This made the demo less useful for realistic testing and demonstrations.
+The demo UI was displaying BTC/USDT at a hardcoded price of $5000.00, which is very outdated compared to the real market price (~$90k-100k). This made the demo less useful for realistic testing and demonstrations. Additionally, the "real" market condition option was implemented in the backend but not exposed in the UI, and the default was set to simulated data.
 
 ## Solution
-Integrated live ticker data from cryptocurrency exchanges (Binance, Bybit, Kraken) with automatic fallback to simulated data when API calls fail.
+Integrated live ticker data from cryptocurrency exchanges (Binance, Bybit, Kraken) with automatic fallback to simulated data when API calls fail. Made "real" (live tick data) the default market condition for deployment to ensure users get realistic pricing by default.
 
 ## Architecture
 
@@ -178,9 +178,19 @@ Potential improvements (not included in this PR):
 
 **None.** This is a fully backward-compatible enhancement:
 - Existing simulated modes work exactly as before
-- New "real" mode is opt-in
-- Default behavior unchanged
+- New "real" mode is now the default (changed from "mixed")
+- All market conditions remain available in the UI dropdown
+- Users can still select simulated modes if preferred
 - No configuration changes required
+
+## Recent Updates (Latest)
+
+### Default to Live Tick Data
+- **UI Change**: Added "📡 Real (Live Tick Data)" option to the market condition dropdown in demo.html
+- **Backend Change**: Changed default market condition from "mixed" to "real" in DemoServer initialization
+- **User Experience**: Live tick data is now the default for deployment, ensuring realistic pricing out of the box
+- **Fallback**: If live data is unavailable (e.g., in sandboxed environments), gracefully falls back to simulated data
+- **Benefits**: Users immediately see current market prices (e.g., BTC at ~$98k instead of simulated ~$50k)
 
 ## Documentation
 
