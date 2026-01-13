@@ -23,8 +23,19 @@ Usage:
 try:
     from freqtrade.knowledge_graph.generator import KnowledgeGraphGenerator
     from freqtrade.knowledge_graph.trade_analyzer import TradeAnalyzer
+    from freqtrade.knowledge_graph.kg_query import (
+        query_recent_regrets,
+        store_regret_pattern,
+        query_regrets_vector_search,
+    )
     
-    __all__ = ['KnowledgeGraphGenerator', 'TradeAnalyzer']
+    __all__ = [
+        'KnowledgeGraphGenerator',
+        'TradeAnalyzer',
+        'query_recent_regrets',
+        'store_regret_pattern',
+        'query_regrets_vector_search',
+    ]
 except ImportError:
     # If optional dependencies are not installed, module is unavailable
     __all__ = []

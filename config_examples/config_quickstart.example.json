@@ -85,5 +85,20 @@
   "force_entry_enable": false,
   "internals": {
     "process_throttle_secs": 5
+  },
+  
+  "dspy": {
+    "enabled": false,
+    "use_kg_context": true,
+    "kg_query_limit": 4,
+    "kg_pattern_types": [
+      "early exit",
+      "missed breakout",
+      "over-sizing",
+      "stop loss failure"
+    ],
+    "model": "gpt-3.5-turbo",
+    "min_conviction_threshold": 0.6,
+    "base_position_size": 0.1
   }
 }
