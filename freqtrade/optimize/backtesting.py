@@ -1825,6 +1825,93 @@ class Backtesting:
                 self.config["user_data_dir"] / "backtest_results", self.run_ids, min_backtest_date
             )
 
+    def _generate_knowledge_graph_if_enabled(self) -> None:
+        """
+        Generate knowledge graph from backtest results if enabled in config.
+        
+        This integrates the knowledge graph module to provide post-mortem analysis
+        and institutional memory from trading sessions.
+        """
+        kg_config = self.config.get("knowledge_graph", {})
+        
+        if not kg_config.get("enabled", False):
+            logger.debug("Knowledge graph generation disabled")
+            return
+        
+        try:
+            from freqtrade.knowledge_graph import KnowledgeGraphGenerator
+        except ImportError:
+            logger.warning(
+                "Knowledge graph dependencies not available. "
+                "Install with: pip install networkx pyvis python-louvain"
+            )
+            return
+        
+        if not self.results or "strategy" not in self.results:
+            logger.warning("No backtest results available for knowledge graph generation")
+            return
+        
+        logger.info("Generating knowledge graph from backtest results...")
+        
+        try:
+            # Initialize knowledge graph generator
+            kg = KnowledgeGraphGenerator(kg_config)
+            
+            # Get trades from database
+            trades = Trade.get_trades().filter(Trade.is_open == False).all()
+            
+            if not trades:
+                logger.warning("No closed trades found for knowledge graph generation")
+                return
+            
+            # Extract metadata from backtest results
+            metadata = self.results.get("metadata", {})
+            session_metadata = {
+                "type": "backtest",
+                "timeframe": self.config.get("timeframe", "unknown"),
+                "start_date": metadata.get("backtest_start", ""),
+                "end_date": metadata.get("backtest_end", ""),
+                "strategy_count": len(self.strategylist),
+            }
+            
+            # Generate timestamp for output naming
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_name = f"backtest_{timestamp}"
+            
+            # Generate knowledge graph
+            results = kg.generate_from_trades(
+                trades,
+                session_metadata=session_metadata,
+                output_name=output_name,
+            )
+            
+            if results.get("success"):
+                logger.info("=" * 60)
+                logger.info("Knowledge Graph Generated Successfully!")
+                logger.info("=" * 60)
+                
+                if results.get("html_path"):
+                    logger.info(f"📊 Visualization: {results['html_path']}")
+                if results.get("json_path"):
+                    logger.info(f"📄 Data: {results['json_path']}")
+                if results.get("narrative_path"):
+                    logger.info(f"📝 Narrative: {results['narrative_path']}")
+                
+                stats = results.get("stats", {})
+                logger.info(
+                    f"📈 Graph Stats: {stats.get('nodes', 0)} nodes, "
+                    f"{stats.get('edges', 0)} edges, "
+                    f"{stats.get('communities', 0)} communities"
+                )
+                logger.info("=" * 60)
+            else:
+                error = results.get("error", "Unknown error")
+                logger.error(f"Knowledge graph generation failed: {error}")
+                
+        except Exception as e:
+            logger.exception(f"Error generating knowledge graph: {e}")
+
     def start(self) -> None:
         """
         Run backtesting end-to-end
@@ -1886,3 +1973,6 @@ class Backtesting:
         if len(self.strategylist) > 0:
             # Show backtest results
             show_backtest_results(self.config, self.results)
+            
+            # Generate knowledge graph if enabled
+            self._generate_knowledge_graph_if_enabled()
