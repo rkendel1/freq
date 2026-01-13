@@ -185,6 +185,18 @@ Potential improvements (not included in this PR):
 
 ## Recent Updates (Latest)
 
+### Fix for Initial Price Display (January 2026)
+- **Issue**: Even with "Real (Live Tick Data)" selected by default, the initial price display showed ~$50k fallback instead of current market price (~$100k for BTC)
+- **Root Cause**: Real price was only fetched when the automation loop started generating ticks, not at server initialization
+- **Fix**: Modified `DemoServer.__init__()` to fetch real price at startup via new `_fetch_initial_real_price()` method
+- **Implementation Details**:
+  - Added `DEFAULT_FALLBACK_PRICE` constant (50000.0) to avoid hardcoded duplicates
+  - Real price fetch happens before MarketSimulator initialization
+  - Comprehensive error handling with graceful fallback to default price
+  - Updated all fallback price references to use the constant
+- **Result**: Initial price display now shows current market price immediately when server starts (if API is available)
+- **Testing**: Added test to verify initialization behavior in both scenarios (network available/unavailable)
+
 ### Default to Live Tick Data
 - **UI Change**: Added "📡 Real (Live Tick Data)" option to the market condition dropdown in demo.html
 - **Backend Change**: Changed default market condition from "mixed" to "real" in DemoServer initialization

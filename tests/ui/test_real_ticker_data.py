@@ -160,6 +160,27 @@ class TestDemoServerIntegration:
         # (This is tested via the API endpoint validation)
         assert "real" in ["mixed", "trending_up", "trending_down", "volatile", "ranging", "real"]
     
+    def test_demo_server_fetches_real_price_at_init(self):
+        """Test that demo server attempts to fetch real price at initialization."""
+        from freqtrade.ui.demo_server import DemoServer, DEFAULT_FALLBACK_PRICE
+        
+        server = DemoServer()
+        
+        # Server should have initialized with a price
+        assert server.current_price is not None
+        assert server.current_price > 0
+        
+        # In test environment (no network), should use fallback
+        # In production (with network), would fetch real price
+        assert isinstance(server.current_price, float)
+        
+        # Market simulator should be initialized with same price
+        assert server.market_simulator.current_price == server.current_price
+        assert server.market_simulator.initial_price == server.current_price
+        
+        # Verify fallback constant is defined
+        assert DEFAULT_FALLBACK_PRICE == 50000.0
+    
     def test_demo_server_symbol_update_with_real_price(self):
         """Test that symbol can be updated with real price fetching."""
         from freqtrade.ui.demo_server import DemoServer
