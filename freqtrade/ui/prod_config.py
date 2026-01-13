@@ -434,6 +434,174 @@ def main():
                     st.code(f"freqtrade.exploits.{module}")
             else:
                 st.warning("⚠️ No modules selected → NullExploitModule (engine will not trade)")
+            
+            # Module-specific configuration sections
+            st.markdown("---")
+            st.subheader("📊 Module Configuration")
+            
+            # FundingSkewArb Configuration
+            if "funding_skew_arb" in selected_modules:
+                with st.expander("⚙️ Funding Skew Arbitrage Configuration", expanded=True):
+                    st.markdown("**Multi-Exchange Funding Rate Arbitrage**")
+                    st.info("💡 Monitor funding rates across exchanges (no accounts needed) and execute on primary exchange")
+                    
+                    if "funding_skew_arb" not in config:
+                        config["funding_skew_arb"] = {}
+                    
+                    fsa_config = config["funding_skew_arb"]
+                    
+                    # Funding Thresholds
+                    st.markdown("##### 📈 Funding Rate Thresholds")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        fsa_config["min_funding_threshold"] = st.number_input(
+                            "Min Funding Threshold (%)",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=float(fsa_config.get("min_funding_threshold", 0.01)),
+                            step=0.005,
+                            format="%.3f",
+                            help="Minimum funding rate (in %) to consider entry. Default: 0.01% (1 bps)"
+                        )
+                        
+                        fsa_config["funding_flip_threshold"] = st.number_input(
+                            "Funding Flip Threshold (%)",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=float(fsa_config.get("funding_flip_threshold", 0.005)),
+                            step=0.005,
+                            format="%.3f",
+                            help="Exit if funding rate flips by this amount. Default: 0.005% (0.5 bps)"
+                        )
+                    
+                    with col2:
+                        fsa_config["skew_delta_threshold"] = st.number_input(
+                            "Cross-Exchange Skew Threshold (%)",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=float(fsa_config.get("skew_delta_threshold", 0.05)),
+                            step=0.01,
+                            format="%.3f",
+                            help="Minimum cross-exchange funding delta to trigger entry. Default: 0.05% (5 bps)"
+                        )
+                    
+                    # Persistence Parameters
+                    st.markdown("##### ⏱️ Persistence Detection")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        fsa_config["skew_lookback_hours"] = st.number_input(
+                            "Lookback Period (hours)",
+                            min_value=1,
+                            max_value=24,
+                            value=int(fsa_config.get("skew_lookback_hours", 4)),
+                            help="Check funding sign persistence over this many hours. Default: 4 hours"
+                        )
+                    
+                    with col2:
+                        fsa_config["min_persistent_samples"] = st.number_input(
+                            "Min Persistent Samples",
+                            min_value=1,
+                            max_value=20,
+                            value=int(fsa_config.get("min_persistent_samples", 3)),
+                            help="Minimum samples showing same funding sign. Default: 3 samples"
+                        )
+                    
+                    # Position Management
+                    st.markdown("##### 💰 Position Management")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        fsa_config["position_size"] = st.slider(
+                            "Position Size (% of capital)",
+                            min_value=0.01,
+                            max_value=1.0,
+                            value=float(fsa_config.get("position_size", 0.1)),
+                            step=0.01,
+                            format="%.2f",
+                            help="Position size as fraction of capital. Default: 0.1 (10%)"
+                        )
+                    
+                    with col2:
+                        fsa_config["max_positions"] = st.number_input(
+                            "Max Concurrent Positions",
+                            min_value=1,
+                            max_value=10,
+                            value=int(fsa_config.get("max_positions", 2)),
+                            help="Maximum number of concurrent funding arb positions. Default: 2"
+                        )
+                    
+                    # Exit Conditions
+                    st.markdown("##### 🚪 Exit Conditions")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        fsa_config["profit_target"] = st.slider(
+                            "Profit Target (%)",
+                            min_value=0.01,
+                            max_value=0.2,
+                            value=float(fsa_config.get("profit_target", 0.03)),
+                            step=0.005,
+                            format="%.3f",
+                            help="Exit at this profit level. Default: 0.03 (3%)"
+                        )
+                    
+                    with col2:
+                        fsa_config["max_hold_hours"] = st.number_input(
+                            "Max Hold Time (hours)",
+                            min_value=1,
+                            max_value=720,
+                            value=int(fsa_config.get("max_hold_hours", 168)),
+                            help="Maximum holding period in hours. Default: 168 (7 days)"
+                        )
+                    
+                    # Multi-Exchange Configuration
+                    st.markdown("##### 🌐 Multi-Exchange Monitoring")
+                    st.info("⚠️ **NO ACCOUNTS REQUIRED** on monitoring exchanges (uses public CCXT APIs)")
+                    
+                    # Common exchanges for funding rate monitoring
+                    available_exchanges = [
+                        "binance", "bybit", "okx", "huobi", "kraken",
+                        "bitget", "gateio", "kucoin", "mexc", "phemex"
+                    ]
+                    
+                    current_exchanges = fsa_config.get("exchanges", ["binance", "bybit", "okx"])
+                    
+                    selected_exchanges = st.multiselect(
+                        "Exchanges to Monitor (Public APIs)",
+                        options=available_exchanges,
+                        default=[e for e in current_exchanges if e in available_exchanges],
+                        help="Select exchanges to poll funding rates from. No API keys needed!"
+                    )
+                    
+                    fsa_config["exchanges"] = selected_exchanges
+                    
+                    # Summary
+                    st.markdown("---")
+                    st.markdown("##### 📋 Configuration Summary")
+                    st.json({
+                        "min_funding_threshold": fsa_config.get("min_funding_threshold"),
+                        "skew_delta_threshold": fsa_config.get("skew_delta_threshold"),
+                        "skew_lookback_hours": fsa_config.get("skew_lookback_hours"),
+                        "min_persistent_samples": fsa_config.get("min_persistent_samples"),
+                        "position_size": fsa_config.get("position_size"),
+                        "max_positions": fsa_config.get("max_positions"),
+                        "profit_target": fsa_config.get("profit_target"),
+                        "max_hold_hours": fsa_config.get("max_hold_hours"),
+                        "funding_flip_threshold": fsa_config.get("funding_flip_threshold"),
+                        "exchanges": fsa_config.get("exchanges"),
+                    })
+            
+            # Placeholder for other module configurations
+            if "convexity_seeding" in selected_modules:
+                st.info("ℹ️ Convexity Seeding configuration already available in config")
+            
+            if "funding_capture" in selected_modules:
+                st.info("ℹ️ Funding Capture configuration already available in config")
+            
+            if "funding_decay" in selected_modules:
+                st.info("ℹ️ Funding Decay configuration already available in config")
     
     # Tab 5: Raw JSON
     with tab5:

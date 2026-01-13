@@ -116,6 +116,9 @@ target/
 !config_examples/config_kraken.example.json
 !config_examples/config_freqai.example.json
 !config_examples/config_quickstart.example.json
+!config_examples/config_funding_skew_arb.example.json
+!config_examples/config_convexity_classic.example.json
+!config_examples/config_convexity_vol_regime.example.json
 
 docker-compose-*.yml
 
