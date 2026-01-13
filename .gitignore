@@ -121,6 +121,8 @@ target/
 !config_examples/config_convexity_vol_regime.example.json
 !config_examples/config_liquidity_tail_hunter.example.json
 !config_examples/config_macro_asymmetry.example.json
+!config_examples/config_stable_borrow.example.json
+!config_examples/config_vol_decay.example.json
 
 docker-compose-*.yml
 
