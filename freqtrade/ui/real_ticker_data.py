@@ -162,8 +162,18 @@ class RealTickerDataSource:
         Returns:
             CoinPaprika ticker ID (e.g., "btc-bitcoin") or None if not supported
         """
+        # Validate symbol format
+        if "/" not in symbol:
+            logger.debug(f"Invalid symbol format: {symbol} (missing '/')")
+            return None
+        
+        parts = symbol.split("/")
+        if len(parts) != 2:
+            logger.debug(f"Invalid symbol format: {symbol} (expected BASE/QUOTE)")
+            return None
+        
         # Extract base currency (e.g., BTC from BTC/USDT)
-        base = symbol.split("/")[0].lower()
+        base = parts[0].lower()
         
         # Map common symbols to CoinPaprika IDs
         # CoinPaprika uses format: {id}-{name}, e.g., btc-bitcoin
@@ -202,14 +212,11 @@ class RealTickerDataSource:
             return None
         
         try:
-            # Get CoinPaprika ticker ID
+            # Get CoinPaprika ticker ID (also validates symbol format)
             ticker_id = self._convert_symbol_to_coinpaprika_id(symbol)
             if not ticker_id:
                 logger.debug(f"Symbol {symbol} not supported by CoinPaprika")
                 return None
-            
-            # Import requests only when needed
-            import requests
             
             # Fetch from CoinPaprika
             url = f"https://api.coinpaprika.com/v1/tickers/{ticker_id}"
@@ -219,7 +226,13 @@ class RealTickerDataSource:
             data = response.json()
             
             # Extract quote currency (USD or USDT)
-            quote = symbol.split("/")[1].upper()
+            # Symbol was already validated in _convert_symbol_to_coinpaprika_id
+            parts = symbol.split("/")
+            if len(parts) != 2:
+                logger.warning(f"Invalid symbol format: {symbol}")
+                return None
+            
+            quote = parts[1].upper()
             quotes = data.get("quotes", {})
             
             # Try to get the matching quote currency
