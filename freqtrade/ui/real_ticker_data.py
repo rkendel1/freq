@@ -182,7 +182,8 @@ class RealTickerDataSource:
         except Exception as e:
             # Log detailed error for debugging, but don't expose full traceback
             error_type = type(e).__name__
-            logger.debug(f"Failed to fetch {symbol} from {exchange_name}: {error_type}: {e}")
+            # Sanitize error message to avoid exposing sensitive information
+            logger.debug(f"Failed to fetch {symbol} from {exchange_name}: {error_type}")
             return None
     
     def fetch_ticker(

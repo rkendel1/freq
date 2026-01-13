@@ -25,7 +25,14 @@ from freqtrade.ui.real_ticker_data import RealTickerDataSource
 logger = logging.getLogger(__name__)
 
 
-MarketCondition = Literal["trending_up", "trending_down", "volatile", "ranging", "mixed", "real"]
+MarketCondition = Literal[
+    "trending_up",      # Upward trending market
+    "trending_down",    # Downward trending market
+    "volatile",         # High volatility, choppy price movement
+    "ranging",          # Range-bound, mean-reverting market
+    "mixed",            # Mixed conditions with periodic changes
+    "real"              # Real-time data from exchanges (with simulation fallback)
+]
 
 
 @dataclass

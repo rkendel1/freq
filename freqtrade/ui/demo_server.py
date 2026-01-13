@@ -118,6 +118,32 @@ class DemoServer:
         
         # Exploit Parameter Manager for all exploits
         self.exploit_manager = ExploitParameterManager({})
+        
+        # Shared RealTickerDataSource instance for caching (lazy initialization)
+        self._real_ticker_source = None
+    
+    def _get_real_ticker_source(self):
+        """Get or create shared RealTickerDataSource instance."""
+        if self._real_ticker_source is None:
+            from freqtrade.ui.real_ticker_data import RealTickerDataSource
+            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=30)
+        return self._real_ticker_source
+    
+    def _validate_symbol(self, symbol: str) -> bool:
+        """
+        Validate trading pair symbol format.
+        
+        Args:
+            symbol: Trading pair (e.g., "BTC/USDT")
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        import re
+        # Valid format: BASE/QUOTE where BASE and QUOTE are 2-10 alphanumeric characters
+        # Examples: BTC/USDT, ETH/USD, SOL/BUSD
+        pattern = r'^[A-Z0-9]{2,10}/[A-Z0-9]{2,10}$'
+        return bool(re.match(pattern, symbol.upper()))
 
     def setup_routes(self):
         """Setup Flask routes."""
@@ -198,17 +224,22 @@ class DemoServer:
         def config_symbol():
             """Update the trading symbol and price."""
             data = request.json or {}
-            symbol = data.get("symbol", "BTC/USDT")
+            symbol = data.get("symbol", "BTC/USDT").upper()
             initial_price = data.get("initial_price", None)
             use_real_price = data.get("use_real_price", False)
+            
+            # Validate symbol format
+            if not self._validate_symbol(symbol):
+                return jsonify({
+                    "error": "Invalid symbol format. Expected format: BASE/QUOTE (e.g., BTC/USDT)"
+                }), 400
             
             self.current_symbol = symbol
             
             # Fetch real price if requested
             if use_real_price and initial_price is None:
-                from freqtrade.ui.real_ticker_data import RealTickerDataSource
-                real_ticker = RealTickerDataSource()
-                ticker_data = real_ticker.fetch_ticker(symbol)
+                real_ticker_source = self._get_real_ticker_source()
+                ticker_data = real_ticker_source.fetch_ticker(symbol)
                 if ticker_data:
                     initial_price = ticker_data.price
                     logger.info(f"Fetched real price for {symbol}: ${initial_price:,.2f}")
@@ -245,14 +276,20 @@ class DemoServer:
         @self.app.route("/api/real-price/<symbol>")
         def get_real_price(symbol: str):
             """Get current real price for a symbol from exchanges."""
-            from freqtrade.ui.real_ticker_data import RealTickerDataSource
-            
             # Convert URL format to trading pair format if needed
             if "-" in symbol:
                 symbol = symbol.replace("-", "/")
             
-            real_ticker = RealTickerDataSource()
-            ticker_data = real_ticker.fetch_ticker(symbol)
+            # Validate symbol format
+            symbol = symbol.upper()
+            if not self._validate_symbol(symbol):
+                return jsonify({
+                    "error": "Invalid symbol format. Expected format: BASE/QUOTE (e.g., BTC/USDT)"
+                }), 400
+            
+            # Use shared instance for caching
+            real_ticker_source = self._get_real_ticker_source()
+            ticker_data = real_ticker_source.fetch_ticker(symbol)
             
             if ticker_data:
                 return jsonify({
