@@ -5,8 +5,8 @@
 If you're seeing this error when deploying to Render:
 
 ```
-==&gt; No open ports detected, continuing to scan...
-==&gt; Docs on specifying a port: https://render.com/docs/web-services#port-binding
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
 ```
 
 And you see output from `start.sh` with "MYCELIUM - Unified Startup" in the logs, **YOUR SERVICE IS MISCONFIGURED**.
@@ -68,13 +68,13 @@ After recreating the service, check the deployment logs:
 
 ### ❌ Incorrect Logs (Python mode):
 ```
-==&gt; Checking Python installation...
+==> Checking Python installation...
 ✓ Python 3.13.4 detected
 ✓ Running in virtual environment: /opt/render/project/src/.venv
 ==========================================================
   MYCELIUM - Unified Startup
 ==========================================================
-==&gt; No open ports detected, continuing to scan...
+==> No open ports detected, continuing to scan...
 ```
 
 ## Why This Happens

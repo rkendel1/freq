@@ -3,8 +3,8 @@
 ## Issue
 Deployment to Render was failing with error:
 ```
-==&gt; No open ports detected, continuing to scan...
-==&gt; Docs on specifying a port: https://render.com/docs/web-services#port-binding
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
 ```
 
 The logs showed `start.sh` running with "MYCELIUM - Unified Startup" instead of the Docker entrypoint.
@@ -73,10 +73,10 @@ After recreating the service, check deployment logs:
 
 ### ❌ Incorrect (Python mode):
 ```
-==&gt; Checking Python installation...
+==> Checking Python installation...
 ✓ Python 3.13.4 detected
 ✓ Running in virtual environment: /opt/render/project/src/.venv
-==&gt; No open ports detected, continuing to scan...
+==> No open ports detected, continuing to scan...
 ```
 
 ## Changes Made to Repository
