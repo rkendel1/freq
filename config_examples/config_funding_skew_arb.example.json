@@ -1,0 +1,132 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": true,
+  "initial_capital": 10000.0,
+  
+  "_comment_exploit_modules": "Active ExploitModules - funding_skew_arb for multi-exchange funding arbitrage",
+  "exploit_modules": ["funding_skew_arb"],
+  
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  
+  "risk_limits": {
+    "max_position_size": 0.2,
+    "max_total_exposure": 0.8,
+    "max_open_positions": 3,
+    "max_loss_per_trade": 0.1,
+    "max_daily_loss": 0.2,
+    "position_cooldown": 0
+  },
+  
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  
+  "bot_name": "funding_skew_arb_bot",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  
+  "funding_skew_arb": {
+    "_comment_overview": "--- FUNDING SKEW ARBITRAGE CONFIGURATION ---",
+    "_description": "Exploits persistent funding rate skews across CEXes for time-decay asymmetry",
+    "_strategy": "Earn yield on longs in +funding regimes, avoid bleed on shorts in -funding",
+    
+    "_funding_thresholds": "--- FUNDING RATE THRESHOLDS ---",
+    "min_funding_threshold": 0.01,
+    "_min_funding_comment": "Minimum 0.01% (1 bps) funding rate to consider entry",
+    
+    "skew_delta_threshold": 0.05,
+    "_skew_delta_comment": "Minimum 0.05% (5 bps) cross-exchange delta to trigger skew signal",
+    
+    "_persistence_params": "--- PERSISTENCE DETECTION ---",
+    "skew_lookback_hours": 4,
+    "_lookback_comment": "Check funding rate sign persistence over 4 hours",
+    
+    "min_persistent_samples": 3,
+    "_samples_comment": "Require at least 3 samples showing same funding sign",
+    
+    "_position_management": "--- POSITION SIZING ---",
+    "position_size": 0.1,
+    "_position_size_comment": "10% of capital per position",
+    
+    "max_positions": 2,
+    "_max_positions_comment": "Maximum 2 concurrent funding arbitrage positions",
+    
+    "_exit_conditions": "--- EXIT CONDITIONS ---",
+    "profit_target": 0.03,
+    "_profit_target_comment": "Exit at 3% profit (conservative for funding plays)",
+    
+    "max_hold_hours": 168,
+    "_max_hold_comment": "Maximum 7 days (168 hours) holding period",
+    
+    "funding_flip_threshold": 0.005,
+    "_flip_threshold_comment": "Exit if funding rate flips by 0.5% (50 bps)",
+    
+    "_exchange_config": "--- MULTI-EXCHANGE MONITORING ---",
+    "exchanges": ["binance", "bybit", "okx"],
+    "_exchanges_comment": "Poll funding rates from these exchanges (via CCXT PUBLIC APIs)",
+    "_no_accounts_needed": "⚠️ IMPORTANT: NO ACCOUNTS REQUIRED on monitoring exchanges!",
+    "_how_it_works": "Uses public CCXT endpoints - only need account on primary exchange (config.exchange.name)",
+    "_example_1": "Monitor: Binance, Bybit, OKX (public data, no API keys)",
+    "_example_2": "Execute trades: Binance only (API key required)",
+    "_benefit": "Get cross-exchange insights without managing multiple accounts",
+    
+    "_risk_notes": "--- RISK CONSIDERATIONS ---",
+    "_risk_1": "Funding flip risk: mitigated by trailing exit on rate changes",
+    "_risk_2": "Cross-exchange basis risk: monitored but not hedged in this version",
+    "_risk_3": "Market volatility: positions can incur directional losses",
+    
+    "_expected_performance": "--- EXPECTED OUTCOMES ---",
+    "_perf_1": "Net carry vs baseline holding: +2-5% annualized from funding",
+    "_perf_2": "Win rate: ~60-70% (depends on funding regime persistence)",
+    "_perf_3": "Best conditions: Persistent directional macro moves (USD weakness, BTC rallies)",
+    "_perf_4": "Avg hold time: 2-5 days per position",
+    "_perf_5": "Funding accrual: ~0.01-0.05% per 8-hour period",
+    
+    "_usage_notes": "--- USAGE & TESTING ---",
+    "_note_1": "Backtest with 2025-2026 funding history to measure net carry",
+    "_note_2": "Start with paper trading on BTC/USDT perps",
+    "_note_3": "Monitor funding rate trends across exchanges",
+    "_note_4": "Works best in trending markets with persistent funding skews"
+  },
+  
+  "_integration_notes": "--- CAPITAL ROUTER INTEGRATION ---",
+  "_note_convexity": "When combined with Convexity Seeding, funding yield flows to Convexity Buffer",
+  "_note_router": "Use router.py to allocate yield-like PnL to different strategies"
+}
