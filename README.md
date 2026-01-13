@@ -583,6 +583,12 @@ Then use `docker compose restart` to pick up changes.
 
 **Deploy the entire Docker environment to the cloud with persistent storage and automatic scaling.**
 
+### ⚠️ IMPORTANT: Seeing "No Open Ports" Error?
+
+If deployment fails with "No open ports detected" error, your service is misconfigured as Python instead of Docker.
+
+**Quick Fix**: See **[RENDER_FIX.md](./RENDER_FIX.md)** for step-by-step instructions to fix this immediately.
+
 ### Quick Deploy to Render
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
@@ -596,6 +602,7 @@ Then use `docker compose restart` to pick up changes.
    - Click "New" → "Blueprint"
    - Connect your GitHub repo
    - Render auto-detects `render.yaml`
+   - **⚠️ CRITICAL**: This creates the service as Docker (not Python)
 
 3. **Configure & Deploy**:
    - Set `STREAMLIT_PASSWORD` for security
@@ -605,6 +612,8 @@ Then use `docker compose restart` to pick up changes.
 4. **Access Your App**:
    - Find your URL: `https://your-app.onrender.com`
    - All dashboards accessible through this URL
+
+**Note**: If you create the service manually instead of using Blueprint, you MUST select "Docker" as the environment type, not "Python".
 
 ### What You Get on Render
 

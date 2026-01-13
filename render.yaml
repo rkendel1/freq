@@ -1,13 +1,18 @@
 # Render Blueprint for Freqtrade Execution Engine
 # https://render.com/docs/blueprint-spec
+#
+# ⚠️ CRITICAL: This MUST run as a Docker service
+# If you see "No open ports detected" error, the service is misconfigured as Python
+# See RENDER_FIX.md for instructions to fix this
 
 services:
   # Main application service - Docker container with all services
+  # IMPORTANT: env must be "docker" - do NOT change to python/node/etc
   - type: web
     name: freqtrade-app
-    env: docker
-    dockerfilePath: ./Dockerfile.dev
-    dockerContext: .
+    env: docker                        # REQUIRED: Must be "docker"
+    dockerfilePath: ./Dockerfile.dev   # Path to Dockerfile
+    dockerContext: .                   # Build context (repository root)
     
     # Auto-deploy from main branch
     branch: main
@@ -70,6 +75,8 @@ services:
     region: oregon
     
     # Build settings
+    # This is the CMD that runs inside the Docker container
+    # Do NOT change this - it starts supervisord which manages all services
     dockerCommand: supervisord -c /etc/supervisor/supervisord.conf
     
     # Auto-deploy on push

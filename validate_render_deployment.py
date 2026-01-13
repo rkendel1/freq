@@ -167,6 +167,12 @@ def main():
     print("=" * 60)
     print()
     
+    print("🚨 IMPORTANT: Service MUST be configured as Docker")
+    print("   If you see 'No open ports detected' error:")
+    print("   → Your service is misconfigured as Python instead of Docker")
+    print("   → See RENDER_FIX.md for step-by-step fix instructions")
+    print()
+    
     results = []
     
     # Check required files
@@ -176,6 +182,7 @@ def main():
     results.append(check_file_exists('docker/entrypoint.sh', 'Entrypoint script'))
     results.append(check_file_exists('docker/supervisord.conf', 'Supervisord config'))
     results.append(check_file_exists('RENDER_DEPLOYMENT.md', 'Deployment documentation'))
+    results.append(check_file_exists('RENDER_FIX.md', 'Render troubleshooting guide'))
     results.append(check_file_exists('.renderignore', 'Render ignore file'))
     print()
     
@@ -192,6 +199,14 @@ def main():
     if all(results):
         print("✓ All validation checks passed!")
         print("✓ Ready for Render deployment")
+        print()
+        print("📋 Deployment Checklist:")
+        print("   1. Use 'New' → 'Blueprint' in Render Dashboard")
+        print("   2. Connect GitHub repository")
+        print("   3. Verify service is created as 'Docker' environment")
+        print("   4. DO NOT create as Python service")
+        print("   5. Set STREAMLIT_PASSWORD in environment variables")
+        print()
         return 0
     else:
         failed = results.count(False)
