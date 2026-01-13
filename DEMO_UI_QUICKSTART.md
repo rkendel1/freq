@@ -1,6 +1,57 @@
 # Demo UI - Quick Reference
 
-## 🎯 NEW: Category Presets & Time-Based Demos
+## 🎯 NEW: Real Ticker Data Integration
+
+The demo now supports **REAL ticker data** from cryptocurrency exchanges!
+
+### What's New:
+- **Real-time prices** from Binance, Bybit, and Kraken
+- **Automatic fallback** to simulated data if exchanges are unavailable
+- **30-second caching** to respect API rate limits
+- **Multi-exchange redundancy** for reliability
+
+### Using Real Ticker Data:
+
+1. **Automated Mode with Real Prices:**
+   ```javascript
+   // In the UI, select Market condition: "Real (Live Data)"
+   // Or via API:
+   POST /api/automated/start
+   {
+     "condition": "real"
+   }
+   ```
+
+2. **Fetch Current Real Price:**
+   ```javascript
+   GET /api/real-price/BTC-USDT
+   // Returns: {"price": 98500.00, "exchange": "binance", ...}
+   ```
+
+3. **Initialize with Real Price:**
+   ```javascript
+   POST /api/config/symbol
+   {
+     "symbol": "BTC/USDT",
+     "use_real_price": true
+   }
+   ```
+
+### Benefits:
+- ✅ **More realistic testing** with actual market prices
+- ✅ **Better demos** showing current market conditions
+- ✅ **24/7 availability** (crypto markets never close)
+- ✅ **Zero configuration** needed - works out of the box
+
+### Supported Trading Pairs:
+- BTC/USDT, ETH/USDT, SOL/USDT, and more
+- Any pair available on Binance, Bybit, or Kraken
+
+**Note:** If network is restricted or exchanges are down, the system automatically falls back to simulated data seamlessly.
+
+---
+
+## 🎯 Category Presets & Time-Based Demos
 
 The demo now includes powerful new features:
 - **Category Presets**: Conservative, Moderate, and Aggressive risk profiles

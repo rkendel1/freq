@@ -75,7 +75,7 @@ class DemoServer:
         # Initial state
         self.initial_capital = 10000.0
         self.current_symbol = "BTC/USDT"
-        self.current_price = 50000.0
+        self.current_price = 50000.0  # Default fallback, will be updated with real price
         
         self.engine_state = create_initial_state(self.initial_capital)
         self.risk_limits = RiskLimits(
@@ -99,7 +99,11 @@ class DemoServer:
         # Automated mode
         self.automated_mode = False
         self.automated_exploit = AutomatedExploit({})
-        self.market_simulator = MarketSimulator(initial_price=self.current_price, condition="mixed")
+        self.market_simulator = MarketSimulator(
+            initial_price=self.current_price, 
+            condition="mixed",
+            symbol=self.current_symbol,
+        )
         self.price_history: list[dict[str, Any]] = []  # For charting
         
         # Time tracking for time-based demos
@@ -114,6 +118,32 @@ class DemoServer:
         
         # Exploit Parameter Manager for all exploits
         self.exploit_manager = ExploitParameterManager({})
+        
+        # Shared RealTickerDataSource instance for caching (lazy initialization)
+        self._real_ticker_source = None
+    
+    def _get_real_ticker_source(self):
+        """Get or create shared RealTickerDataSource instance."""
+        if self._real_ticker_source is None:
+            from freqtrade.ui.real_ticker_data import RealTickerDataSource
+            self._real_ticker_source = RealTickerDataSource(cache_duration_seconds=30)
+        return self._real_ticker_source
+    
+    def _validate_symbol(self, symbol: str) -> bool:
+        """
+        Validate trading pair symbol format.
+        
+        Args:
+            symbol: Trading pair (e.g., "BTC/USDT")
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        import re
+        # Valid format: BASE/QUOTE where BASE and QUOTE are 2-10 alphanumeric characters
+        # Examples: BTC/USDT, ETH/USD, SOL/BUSD
+        pattern = r'^[A-Z0-9]{2,10}/[A-Z0-9]{2,10}$'
+        return bool(re.match(pattern, symbol.upper()))
 
     def setup_routes(self):
         """Setup Flask routes."""
@@ -194,15 +224,38 @@ class DemoServer:
         def config_symbol():
             """Update the trading symbol and price."""
             data = request.json or {}
-            symbol = data.get("symbol", "BTC/USDT")
-            initial_price = data.get("initial_price", 50000.0)
+            symbol = data.get("symbol", "BTC/USDT").upper()
+            initial_price = data.get("initial_price", None)
+            use_real_price = data.get("use_real_price", False)
+            
+            # Validate symbol format
+            if not self._validate_symbol(symbol):
+                return jsonify({
+                    "error": "Invalid symbol format. Expected format: BASE/QUOTE (e.g., BTC/USDT)"
+                }), 400
             
             self.current_symbol = symbol
+            
+            # Fetch real price if requested
+            if use_real_price and initial_price is None:
+                real_ticker_source = self._get_real_ticker_source()
+                ticker_data = real_ticker_source.fetch_ticker(symbol)
+                if ticker_data:
+                    initial_price = ticker_data.price
+                    logger.info(f"Fetched real price for {symbol}: ${initial_price:,.2f}")
+                else:
+                    # Fallback to default if real price fetch fails
+                    initial_price = 50000.0
+                    logger.warning(f"Failed to fetch real price for {symbol}, using default ${initial_price}")
+            elif initial_price is None:
+                initial_price = 50000.0
+            
             self.current_price = initial_price
             self.market_simulator.current_price = initial_price
             self.market_simulator.initial_price = initial_price
+            self.market_simulator.symbol = symbol
             
-            logger.info(f"Symbol updated to {symbol} at ${initial_price}")
+            logger.info(f"Symbol updated to {symbol} at ${initial_price:,.2f}")
             return jsonify({"status": "updated", "symbol": symbol, "price": initial_price})
         
         @self.app.route("/api/config/capital", methods=["POST"])
@@ -219,6 +272,35 @@ class DemoServer:
             
             logger.info(f"Capital updated to ${capital}")
             return jsonify({"status": "updated", "capital": capital})
+        
+        @self.app.route("/api/real-price/<symbol>")
+        def get_real_price(symbol: str):
+            """Get current real price for a symbol from exchanges."""
+            # Convert URL format to trading pair format if needed
+            if "-" in symbol:
+                symbol = symbol.replace("-", "/")
+            
+            # Validate symbol format
+            symbol = symbol.upper()
+            if not self._validate_symbol(symbol):
+                return jsonify({
+                    "error": "Invalid symbol format. Expected format: BASE/QUOTE (e.g., BTC/USDT)"
+                }), 400
+            
+            # Use shared instance for caching
+            real_ticker_source = self._get_real_ticker_source()
+            ticker_data = real_ticker_source.fetch_ticker(symbol)
+            
+            if ticker_data:
+                return jsonify({
+                    "symbol": ticker_data.symbol,
+                    "price": ticker_data.price,
+                    "volume": ticker_data.volume,
+                    "exchange": ticker_data.exchange,
+                    "timestamp": ticker_data.timestamp,
+                })
+            else:
+                return jsonify({"error": f"Failed to fetch price for {symbol}"}), 404
 
         @self.app.route("/api/automated/start", methods=["POST"])
         def start_automated():
@@ -227,13 +309,14 @@ class DemoServer:
             condition = data.get("condition", "mixed")
             
             # Validate market condition
-            valid_conditions = ["mixed", "trending_up", "trending_down", "volatile", "ranging"]
+            valid_conditions = ["mixed", "trending_up", "trending_down", "volatile", "ranging", "real"]
             if condition not in valid_conditions:
                 return jsonify({"error": f"Invalid condition. Must be one of: {valid_conditions}"}), 400
             
             # Reset and configure
             self.automated_mode = True
             self.market_simulator.reset(condition=condition)
+            self.market_simulator.symbol = self.current_symbol  # Ensure symbol is set
             self.automated_exploit.clear_simulated_positions()
             self.price_history = []
             
@@ -241,8 +324,8 @@ class DemoServer:
             self.simulation_start_time = datetime.now(timezone.utc)
             self.simulation_ticks = 0
             
-            logger.info(f"Automated mode started with {condition} market condition")
-            return jsonify({"status": "started", "condition": condition})
+            logger.info(f"Automated mode started with {condition} market condition for {self.current_symbol}")
+            return jsonify({"status": "started", "condition": condition, "symbol": self.current_symbol})
 
         @self.app.route("/api/automated/stop", methods=["POST"])
         def stop_automated():
