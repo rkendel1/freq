@@ -25,15 +25,27 @@ class TestRealTickerDataSource:
         """Test that symbols are correctly converted to CoinPaprika IDs."""
         source = RealTickerDataSource()
         
-        # Test common symbols
-        assert source._convert_symbol_to_coinpaprika_id("BTC/USDT") == "btc-bitcoin"
-        assert source._convert_symbol_to_coinpaprika_id("ETH/USD") == "eth-ethereum"
-        assert source._convert_symbol_to_coinpaprika_id("SOL/USDT") == "sol-solana"
-        assert source._convert_symbol_to_coinpaprika_id("DOGE/USDT") == "doge-dogecoin"
-        assert source._convert_symbol_to_coinpaprika_id("BNB/USDT") == "bnb-binance-coin"
+        # Test common symbols using public API
+        assert source.get_coinpaprika_id("BTC/USDT") == "btc-bitcoin"
+        assert source.get_coinpaprika_id("ETH/USD") == "eth-ethereum"
+        assert source.get_coinpaprika_id("SOL/USDT") == "sol-solana"
+        assert source.get_coinpaprika_id("DOGE/USDT") == "doge-dogecoin"
+        assert source.get_coinpaprika_id("BNB/USDT") == "bnb-binance-coin"
         
         # Test unsupported symbol
-        assert source._convert_symbol_to_coinpaprika_id("UNKNOWN/USDT") is None
+        assert source.get_coinpaprika_id("UNKNOWN/USDT") is None
+    
+    def test_is_symbol_supported_by_coinpaprika(self):
+        """Test checking if symbols are supported by CoinPaprika."""
+        source = RealTickerDataSource()
+        
+        # Supported symbols
+        assert source.is_symbol_supported_by_coinpaprika("BTC/USDT") is True
+        assert source.is_symbol_supported_by_coinpaprika("ETH/USD") is True
+        assert source.is_symbol_supported_by_coinpaprika("SOL/USDT") is True
+        
+        # Unsupported symbol
+        assert source.is_symbol_supported_by_coinpaprika("UNKNOWN/USDT") is False
     
     def test_symbol_conversion_for_kraken(self):
         """Test that BTC symbol is converted to XBT for Kraken."""

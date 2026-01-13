@@ -92,7 +92,7 @@ if price:
 # Example 4a: CoinPaprika-specific features
 # =========================================
 
-# Check supported symbols
+# Check supported symbols using public API
 supported_symbols = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
     "DOGE/USDT", "ADA/USDT", "MATIC/USDT", "DOT/USDT"
@@ -102,7 +102,7 @@ ticker_source = RealTickerDataSource()
 
 print("\nCoinPaprika Supported Symbols:")
 for symbol in supported_symbols:
-    cp_id = ticker_source._convert_symbol_to_coinpaprika_id(symbol)
+    cp_id = ticker_source.get_coinpaprika_id(symbol)  # Using public method
     if cp_id:
         print(f"  {symbol:12} → {cp_id}")
 

@@ -381,6 +381,42 @@ class RealTickerDataSource:
         ticker_data = self.fetch_ticker(symbol)
         return ticker_data.price if ticker_data else None
     
+    def is_symbol_supported_by_coinpaprika(self, symbol: str) -> bool:
+        """
+        Check if a symbol is supported by CoinPaprika.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., "BTC/USDT")
+            
+        Returns:
+            True if symbol is supported by CoinPaprika, False otherwise
+        """
+        return self._convert_symbol_to_coinpaprika_id(symbol) is not None
+    
+    def get_coinpaprika_id(self, symbol: str) -> str | None:
+        """
+        Get the CoinPaprika ticker ID for a trading symbol.
+        
+        This is a public method for checking symbol support and getting
+        the CoinPaprika ticker ID without making an API call.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., "BTC/USDT")
+            
+        Returns:
+            CoinPaprika ticker ID (e.g., "btc-bitcoin") or None if not supported
+            
+        Example:
+            >>> source = RealTickerDataSource()
+            >>> source.get_coinpaprika_id("BTC/USDT")
+            'btc-bitcoin'
+            >>> source.get_coinpaprika_id("ETH/USD")
+            'eth-ethereum'
+            >>> source.get_coinpaprika_id("UNKNOWN/USDT")
+            None
+        """
+        return self._convert_symbol_to_coinpaprika_id(symbol)
+    
     def clear_cache(self):
         """Clear all cached ticker data."""
         self._cache.clear()
