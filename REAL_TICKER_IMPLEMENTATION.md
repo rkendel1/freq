@@ -4,17 +4,25 @@
 The demo UI was displaying BTC/USDT at a hardcoded price of $5000.00, which is very outdated compared to the real market price (~$90k-100k). This made the demo less useful for realistic testing and demonstrations. Additionally, the "real" market condition option was implemented in the backend but not exposed in the UI, and the default was set to simulated data.
 
 ## Solution
-Integrated live ticker data from cryptocurrency exchanges (Binance, Bybit, Kraken) with automatic fallback to simulated data when API calls fail. Made "real" (live tick data) the default market condition for deployment to ensure users get realistic pricing by default.
+Integrated live ticker data from cryptocurrency exchanges with automatic fallback to simulated data when API calls fail. Made "real" (live tick data) the default market condition for deployment to ensure users get realistic pricing by default.
+
+Data sources (in priority order):
+1. **CoinPaprika** - Free public API, no API key required
+2. **Binance** - via CCXT (fallback)
+3. **Bybit** - via CCXT (fallback)
+4. **Kraken** - via CCXT (fallback)
 
 ## Architecture
 
 ### Components
 
 1. **RealTickerDataSource** (`freqtrade/ui/real_ticker_data.py`)
-   - Fetches real-time price data from multiple exchanges via CCXT
+   - Fetches real-time price data from CoinPaprika (primary) and CCXT exchanges (fallback)
+   - **Primary:** CoinPaprika free API - no authentication needed
+   - **Fallback:** Binance → Bybit → Kraken via CCXT
    - Implements 30-second caching to respect API rate limits
-   - Automatic failover: Binance → Bybit → Kraken → None
    - Handles symbol format conversion (e.g., BTC→XBT for Kraken)
+   - Maps trading symbols to CoinPaprika ticker IDs (e.g., BTC/USDT → btc-bitcoin)
    - Sanitized error logging for security
 
 2. **MarketSimulator Updates** (`freqtrade/ui/market_simulator.py`)
@@ -111,30 +119,45 @@ Created comprehensive test suite (`tests/ui/test_real_ticker_data.py`):
 
 ## Supported Trading Pairs
 
+### CoinPaprika (Primary Source)
+Supports 15+ major cryptocurrencies:
+- BTC (Bitcoin), ETH (Ethereum), SOL (Solana)
+- BNB (Binance Coin), DOGE (Dogecoin), XRP (Ripple)
+- ADA (Cardano), MATIC (Polygon), DOT (Polkadot)
+- LTC (Litecoin), AVAX (Avalanche), LINK (Chainlink)
+- ATOM (Cosmos), UNI (Uniswap), USDT (Tether)
+
+Quote currencies: USD, USDT (treated as USD equivalent)
+
+### CCXT Exchanges (Fallback)
 Any pair available on Binance, Bybit, or Kraken:
 - BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT
 - BTC/USD, ETH/USD
 - And hundreds more...
 
 Special handling:
+- CoinPaprika: Symbol → Ticker ID mapping (e.g., BTC/USDT → btc-bitcoin)
 - Kraken: BTC → XBT conversion
 - Other exchanges: No conversion needed
 
 ## Fallback Behavior
 
-The implementation gracefully handles various failure scenarios:
+The implementation gracefully handles various failure scenarios with multi-level fallback:
 
-1. **Network Unavailable**: Falls back to simulated data
-2. **All Exchanges Down**: Falls back to simulated data
-3. **Invalid Symbol**: Returns validation error
-4. **Rate Limit Exceeded**: Uses cached data (30s cache)
+1. **CoinPaprika Unavailable**: Falls back to Binance (CCXT)
+2. **Binance Unavailable**: Falls back to Bybit (CCXT)
+3. **Bybit Unavailable**: Falls back to Kraken (CCXT)
+4. **All Sources Down**: Falls back to simulated data
+5. **Invalid Symbol**: Returns validation error
+6. **Rate Limit Exceeded**: Uses cached data (30s cache)
 
 This ensures the demo always works, even in restricted environments.
 
 ## Performance
 
 - **Cache Hit**: Instant response (< 1ms)
-- **Cache Miss**: 1-3 seconds per exchange (tries 3 exchanges)
+- **Cache Miss (CoinPaprika)**: 0.5-2 seconds (free API, no auth required)
+- **Cache Miss (CCXT)**: 1-3 seconds per exchange (tries up to 3 exchanges)
 - **Cache Duration**: 30 seconds
 - **Memory**: Minimal (only stores recent ticker data)
 
@@ -144,9 +167,12 @@ This ensures the demo always works, even in restricted environments.
 - May not have internet access to exchanges
 - Falls back to simulated data automatically
 - No configuration needed
+- No API keys required (CoinPaprika is free)
 
 ### Production
-- Should have unrestricted access to crypto exchanges
+- Should have unrestricted access to crypto APIs
+- CoinPaprika used as primary source (free, fast)
+- CCXT exchanges provide redundancy
 - Real ticker data will be fetched successfully
 - 30-second cache reduces API calls
 
@@ -173,6 +199,64 @@ Potential improvements (not included in this PR):
    - API call metrics
    - Success/failure rates per exchange
    - Cache hit ratio statistics
+
+## CoinPaprika Integration (January 2026)
+
+### Overview
+Added CoinPaprika as the **primary data source** for real-time ticker data:
+- **Free API** - No API key or authentication required
+- **Fast response** - Typically 0.5-2 seconds
+- **Reliable** - Dedicated cryptocurrency data provider
+- **Simple** - Direct HTTP requests, no CCXT dependency
+
+### Why CoinPaprika?
+1. **No API Key Required**: Works immediately without configuration
+2. **Simpler Implementation**: Direct HTTP calls vs CCXT setup
+3. **Crypto-Focused**: Specialized in cryptocurrency data
+4. **Free Tier**: Generous rate limits for demo purposes
+5. **Good Coverage**: 15+ major cryptocurrencies supported
+
+### Supported Cryptocurrencies
+The following base currencies are mapped to CoinPaprika ticker IDs:
+```python
+BTC  → btc-bitcoin      ETH  → eth-ethereum     SOL  → sol-solana
+BNB  → bnb-binance-coin DOGE → doge-dogecoin    XRP  → xrp-xrp
+ADA  → ada-cardano      MATIC→ matic-polygon    DOT  → dot-polkadot
+LTC  → ltc-litecoin     AVAX → avax-avalanche   LINK → link-chainlink
+ATOM → atom-cosmos      UNI  → uni-uniswap      USDT → usdt-tether
+```
+
+### Example API Call
+```bash
+# CoinPaprika endpoint
+curl "https://api.coinpaprika.com/v1/tickers/btc-bitcoin"
+
+# Response excerpt
+{
+  "id": "btc-bitcoin",
+  "symbol": "BTC",
+  "quotes": {
+    "USD": {
+      "price": 107077.69,
+      "volume_24h": 25730234756
+    }
+  }
+}
+```
+
+### Implementation Details
+- New method: `_fetch_from_coinpaprika(symbol)` 
+- New method: `_convert_symbol_to_coinpaprika_id(symbol)`
+- Quote currency handling: USDT pairs use USD prices (nearly identical)
+- Graceful degradation: Returns `None` on failure, triggering CCXT fallback
+- Error handling: Network errors logged at DEBUG level, don't expose internals
+
+### Testing
+Added comprehensive tests:
+- ✅ Symbol to CoinPaprika ID conversion
+- ✅ CoinPaprika tried first in fetch order
+- ✅ Fallback to CCXT when CoinPaprika fails
+- ✅ Graceful error handling
 
 ## Breaking Changes
 

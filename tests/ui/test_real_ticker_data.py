@@ -21,6 +21,32 @@ class TestRealTickerDataSource:
         assert source.timeout_ms == 5000
         assert len(source._cache) == 0
     
+    def test_symbol_to_coinpaprika_id_conversion(self):
+        """Test that symbols are correctly converted to CoinPaprika IDs."""
+        source = RealTickerDataSource()
+        
+        # Test common symbols using public API
+        assert source.get_coinpaprika_id("BTC/USDT") == "btc-bitcoin"
+        assert source.get_coinpaprika_id("ETH/USD") == "eth-ethereum"
+        assert source.get_coinpaprika_id("SOL/USDT") == "sol-solana"
+        assert source.get_coinpaprika_id("DOGE/USDT") == "doge-dogecoin"
+        assert source.get_coinpaprika_id("BNB/USDT") == "bnb-binance-coin"
+        
+        # Test unsupported symbol
+        assert source.get_coinpaprika_id("UNKNOWN/USDT") is None
+    
+    def test_is_symbol_supported_by_coinpaprika(self):
+        """Test checking if symbols are supported by CoinPaprika."""
+        source = RealTickerDataSource()
+        
+        # Supported symbols
+        assert source.is_symbol_supported_by_coinpaprika("BTC/USDT") is True
+        assert source.is_symbol_supported_by_coinpaprika("ETH/USD") is True
+        assert source.is_symbol_supported_by_coinpaprika("SOL/USDT") is True
+        
+        # Unsupported symbol
+        assert source.is_symbol_supported_by_coinpaprika("UNKNOWN/USDT") is False
+    
     def test_symbol_conversion_for_kraken(self):
         """Test that BTC symbol is converted to XBT for Kraken."""
         source = RealTickerDataSource()
@@ -83,6 +109,70 @@ class TestRealTickerDataSource:
         assert result is not None
         assert result.price == 98500.00
         assert result.exchange == "test_exchange"
+    
+    def test_coinpaprika_tried_first(self):
+        """Test that CoinPaprika is tried before CCXT exchanges."""
+        from unittest.mock import patch, MagicMock
+        from freqtrade.ui.real_ticker_data import TickerData
+        import time
+        
+        source = RealTickerDataSource(cache_duration_seconds=1)
+        
+        # Mock the CoinPaprika fetch to succeed
+        mock_ticker = TickerData(
+            symbol="BTC/USDT",
+            price=98765.00,
+            volume=50000.0,
+            timestamp=int(time.time() * 1000),
+            exchange="coinpaprika",
+        )
+        
+        with patch.object(source, '_fetch_from_coinpaprika', return_value=mock_ticker) as mock_cp:
+            with patch.object(source, '_fetch_from_exchange') as mock_exchange:
+                result = source.fetch_ticker("BTC/USDT")
+                
+                # CoinPaprika should be called
+                mock_cp.assert_called_once_with("BTC/USDT")
+                
+                # CCXT exchanges should NOT be called since CoinPaprika succeeded
+                mock_exchange.assert_not_called()
+                
+                # Result should be from CoinPaprika
+                assert result is not None
+                assert result.exchange == "coinpaprika"
+                assert result.price == 98765.00
+    
+    def test_fallback_to_ccxt_when_coinpaprika_fails(self):
+        """Test that CCXT exchanges are used when CoinPaprika fails."""
+        from unittest.mock import patch, MagicMock
+        from freqtrade.ui.real_ticker_data import TickerData
+        import time
+        
+        source = RealTickerDataSource(cache_duration_seconds=1)
+        
+        # Mock CoinPaprika to fail
+        binance_ticker = TickerData(
+            symbol="BTC/USDT",
+            price=98888.00,
+            volume=60000.0,
+            timestamp=int(time.time() * 1000),
+            exchange="binance",
+        )
+        
+        with patch.object(source, '_fetch_from_coinpaprika', return_value=None) as mock_cp:
+            with patch.object(source, '_fetch_from_exchange', return_value=binance_ticker) as mock_exchange:
+                result = source.fetch_ticker("BTC/USDT")
+                
+                # CoinPaprika should be tried first
+                mock_cp.assert_called_once_with("BTC/USDT")
+                
+                # CCXT exchanges should be called after CoinPaprika fails
+                mock_exchange.assert_called()
+                
+                # Result should be from Binance (first CCXT fallback)
+                assert result is not None
+                assert result.exchange == "binance"
+                assert result.price == 98888.00
 
 
 class TestMarketSimulatorRealMode:

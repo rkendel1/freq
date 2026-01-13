@@ -2,6 +2,13 @@
 Real Ticker Data - Usage Examples
 
 This file demonstrates how to use the real ticker data feature in the demo UI.
+
+Data Sources (in priority order):
+1. CoinPaprika (free API, no key required)
+2. Binance (CCXT fallback)
+3. Bybit (CCXT fallback)
+4. Kraken (CCXT fallback)
+5. Simulated data (if all fail)
 """
 
 # Example 1: Fetch current real price for a symbol
@@ -11,12 +18,12 @@ import requests
 
 # Start demo server first: python -m freqtrade.ui.demo_server
 
-# Fetch BTC/USDT price
+# Fetch BTC/USDT price (will try CoinPaprika first)
 response = requests.get("http://127.0.0.1:5000/api/real-price/BTC-USDT")
 if response.ok:
     data = response.json()
     print(f"BTC/USDT Price: ${data['price']:,.2f}")
-    print(f"Exchange: {data['exchange']}")
+    print(f"Exchange: {data['exchange']}")  # e.g., "coinpaprika" or "binance"
     print(f"Volume: {data['volume']:,.0f}")
 else:
     print(f"Error: {response.json()['error']}")
@@ -68,7 +75,7 @@ from freqtrade.ui.real_ticker_data import RealTickerDataSource
 # Create ticker data source
 ticker_source = RealTickerDataSource(cache_duration_seconds=30)
 
-# Fetch BTC/USDT
+# Fetch BTC/USDT (tries CoinPaprika first, then CCXT exchanges)
 ticker = ticker_source.fetch_ticker("BTC/USDT")
 if ticker:
     print(f"BTC/USDT: ${ticker.price:,.2f} from {ticker.exchange}")
@@ -80,6 +87,56 @@ else:
 price = ticker_source.get_current_price("ETH/USDT")
 if price:
     print(f"ETH/USDT: ${price:,.2f}")
+
+
+# Example 4a: CoinPaprika-specific features
+# =========================================
+
+# Check supported symbols using public API
+supported_symbols = [
+    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
+    "DOGE/USDT", "ADA/USDT", "MATIC/USDT", "DOT/USDT"
+]
+
+ticker_source = RealTickerDataSource()
+
+print("\nCoinPaprika Supported Symbols:")
+for symbol in supported_symbols:
+    cp_id = ticker_source.get_coinpaprika_id(symbol)  # Using public method
+    if cp_id:
+        print(f"  {symbol:12} → {cp_id}")
+
+
+# Example 4b: Direct CoinPaprika API usage
+# ========================================
+
+import requests
+
+# Fetch directly from CoinPaprika API
+response = requests.get("https://api.coinpaprika.com/v1/tickers/btc-bitcoin")
+if response.ok:
+    data = response.json()
+    price = data["quotes"]["USD"]["price"]
+    volume = data["quotes"]["USD"]["volume_24h"]
+    print(f"\nDirect CoinPaprika fetch:")
+    print(f"  BTC Price: ${price:,.2f}")
+    print(f"  24h Volume: ${volume:,.0f}")
+
+
+# Example 4c: Prefer specific exchange
+# ====================================
+
+ticker_source = RealTickerDataSource()
+
+# Prefer CoinPaprika (default, but showing explicit preference)
+ticker = ticker_source.fetch_ticker("BTC/USDT", prefer_exchange="coinpaprika")
+if ticker:
+    print(f"\nPreferred source: {ticker.exchange}")
+
+# Prefer Binance (skip CoinPaprika)
+ticker = ticker_source.fetch_ticker("BTC/USDT", prefer_exchange="binance")
+if ticker:
+    print(f"Preferred source: {ticker.exchange}")
 
 
 # Example 5: Using MarketSimulator with real data
@@ -131,17 +188,25 @@ for i in range(3):
 # Example 7: Using different trading pairs
 # ========================================
 
-# Supported pairs (any pair available on Binance, Bybit, or Kraken)
-pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
+# CoinPaprika supported pairs (15+ major cryptocurrencies)
+coinpaprika_pairs = [
+    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
+    "DOGE/USDT", "ADA/USDT", "MATIC/USDT", "DOT/USDT"
+]
+
+# Additional pairs available via CCXT fallback
+all_pairs = coinpaprika_pairs + ["XRP/USDT", "AVAX/USDT", "LINK/USDT"]
 
 ticker_source = RealTickerDataSource()
 
-for pair in pairs:
+print("\nFetching prices for multiple pairs:")
+for pair in all_pairs:
     ticker = ticker_source.fetch_ticker(pair)
     if ticker:
-        print(f"{pair}: ${ticker.price:,.2f} from {ticker.exchange}")
+        source = "🌐 CP" if ticker.exchange == "coinpaprika" else f"📊 {ticker.exchange}"
+        print(f"  {source} | {pair:12} ${ticker.price:,.2f}")
     else:
-        print(f"{pair}: Unable to fetch (may not be available on all exchanges)")
+        print(f"  ❌    | {pair:12} Unable to fetch")
 
 
 # Example 8: Error handling and fallback
@@ -160,3 +225,35 @@ simulator = MarketSimulator(
 tick = simulator.generate_tick()
 print(f"Fallback tick: ${tick.price:,.2f}")
 print(f"Note: Used simulation because invalid symbol couldn't be fetched")
+
+
+# Example 9: Understanding the fallback chain
+# ===========================================
+
+from freqtrade.ui.real_ticker_data import RealTickerDataSource
+import logging
+
+# Enable debug logging to see fallback in action
+logging.basicConfig(level=logging.DEBUG)
+
+ticker_source = RealTickerDataSource()
+
+# This demonstrates the fallback order:
+# 1. Try CoinPaprika (fast, free, no auth)
+# 2. If CoinPaprika fails, try Binance (CCXT)
+# 3. If Binance fails, try Bybit (CCXT)
+# 4. If Bybit fails, try Kraken (CCXT)
+# 5. If all fail, return None (MarketSimulator uses simulated data)
+
+print("\nFallback chain demonstration:")
+print("Attempting to fetch BTC/USDT...")
+print("(Check logs to see which source succeeds)")
+
+ticker = ticker_source.fetch_ticker("BTC/USDT")
+if ticker:
+    print(f"\n✓ Successfully fetched from: {ticker.exchange}")
+    print(f"  Price: ${ticker.price:,.2f}")
+else:
+    print(f"\n✗ All sources failed - will use simulated data")
+    print(f"  This is expected in sandboxed/restricted environments")
+
