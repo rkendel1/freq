@@ -2,6 +2,34 @@
 
 This guide walks you through deploying the Freqtrade Execution Engine to Render.com using the containerized Docker environment.
 
+## ⚠️ CRITICAL: Service MUST Be Configured as Docker
+
+**IMPORTANT**: This application **MUST** run as a Docker service on Render. If Render treats it as a native Python service, deployment will fail with "No open ports detected" error.
+
+### How to Verify Service Type
+
+1. Go to your service in the Render dashboard
+2. Check the service settings
+3. Look for "Environment" setting - it MUST say "Docker"
+4. If it says "Python" or anything else, you need to recreate the service as Docker
+
+### If You See "No Open Ports" Error
+
+This error means Render is treating your service as Python instead of Docker. To fix:
+
+**Option A: Delete and recreate from Blueprint (Recommended)**
+1. Delete the current service
+2. Go to "New" → "Blueprint"
+3. Select the repository and let Render use `render.yaml`
+4. This will automatically create it as a Docker service
+
+**Option B: Create new Docker service manually**
+1. Delete the current service
+2. Create new "Web Service"
+3. **IMPORTANT**: In "Environment" dropdown, select "Docker"
+4. Set Dockerfile path to `./Dockerfile.dev`
+5. Set Docker Command to `supervisord -c /etc/supervisor/supervisord.conf`
+
 ## Prerequisites
 
 - A [Render.com](https://render.com) account (free tier available)
@@ -226,6 +254,46 @@ Logs include:
 - Health check results
 
 ## Troubleshooting
+
+### ⚠️ CRITICAL: "No Open Ports Detected" Error
+
+**Problem**: Deployment fails with error "No open ports detected" and shows startup output from `start.sh`
+
+**Root Cause**: Render is treating your service as a native Python application instead of a Docker service.
+
+**Solutions**:
+
+1. **Verify Service Configuration** (Most Common Fix):
+   - Go to Render Dashboard → Your Service → Settings
+   - Check "Environment" field - it MUST show "Docker"
+   - If it shows "Python", "Node", or anything else, the service is misconfigured
+   
+2. **Fix by Recreating from Blueprint** (Recommended):
+   ```
+   Step 1: Delete the existing misconfigured service
+   Step 2: Go to "New" → "Blueprint" in Render Dashboard
+   Step 3: Connect repository and select render.yaml
+   Step 4: Click "Apply" - Render will create proper Docker service
+   ```
+
+3. **Fix by Manual Service Creation**:
+   ```
+   Step 1: Delete the existing service
+   Step 2: Create "New" → "Web Service"
+   Step 3: In "Environment" dropdown → Select "Docker" (NOT Python!)
+   Step 4: Set Dockerfile Path: ./Dockerfile.dev
+   Step 5: Set Docker Context: . (root)
+   Step 6: Set Docker Command: supervisord -c /etc/supervisor/supervisord.conf
+   Step 7: Add persistent disk at /freqtrade/user_data
+   ```
+
+4. **Verify the Fix**:
+   - After recreating, check the deployment logs
+   - You should see Docker build output, NOT Python dependency installation
+   - You should see "🚀 Freqtrade Docker Development Environment", NOT "MYCELIUM - Unified Startup"
+   - The logs should show supervisord starting, not start.sh
+
+**Note**: The `start.sh` script is for local development only and should never run on Render. If you see it in the logs, your service is misconfigured as Python instead of Docker.
 
 ### Service Won't Start
 
