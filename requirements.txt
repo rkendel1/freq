@@ -8,8 +8,7 @@ uvicorn[standard]==0.34.0
 pydantic>=2.10.0,<3.0.0
 
 # Flask for demo UI server
-flask>=3.1.0
-werkzeug>=3.1.0
+flask==3.1.0
 
 # Minimal scientific computing (only numpy for market simulator)
 numpy==2.4.0
