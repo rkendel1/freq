@@ -107,6 +107,13 @@ Exchange connectors and utilities:
 - Balance management
 - Market data
 
+**All exchanges powered by CCXT:**
+- Supports 111+ cryptocurrency exchanges (CEX and DEX)
+- Universal abstraction layer for all venues
+- Add any exchange supported by CCXT simply by changing config
+- Examples: Binance, Bybit, Hyperliquid, OKX, Kraken, KuCoin, Coinbase, etc.
+- Note: Fidelity Crypto (Fidelity Digital Assets) not currently supported by CCXT
+
 **Kept clean of:**
 - Strategy logic
 - Signal generation
