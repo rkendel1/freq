@@ -158,6 +158,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf["max_open_trades"] = 0
     patched_configuration_load_config_file(mocker, default_conf)
 
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(["trade"]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -277,6 +278,7 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
     default_conf["max_open_trades"] = -1
     patched_configuration_load_config_file(mocker, default_conf)
 
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(["trade"]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -301,6 +303,7 @@ def test_load_config(default_conf, mocker) -> None:
     del default_conf["strategy_path"]
     patched_configuration_load_config_file(mocker, default_conf)
 
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(["trade"]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -311,6 +314,7 @@ def test_load_config(default_conf, mocker) -> None:
 
 def test_load_config_with_params(default_conf, mocker) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
 
     arglist = [
         "trade",
@@ -396,6 +400,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
 def test_load_dry_run(default_conf, mocker, config_value, expected, arglist) -> None:
     default_conf["dry_run"] = config_value
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
 
     configuration = Configuration(Arguments(arglist).get_parsed_arg())
     validated_conf = configuration.load_config()
@@ -413,6 +418,7 @@ def test_load_custom_strategy(default_conf, mocker, tmp_path) -> None:
     )
     patched_configuration_load_config_file(mocker, default_conf)
 
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(["trade"]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -423,6 +429,7 @@ def test_load_custom_strategy(default_conf, mocker, tmp_path) -> None:
 
 def test_show_info(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
 
     arglist = [
         "trade",
@@ -576,6 +583,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
 
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
 
     arglist = [
         "hyperopt",
@@ -604,6 +612,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
 
     # Prevent setting loggers
     mocker.patch("freqtrade.loggers.logging.config.dictConfig", MagicMock)
@@ -621,6 +630,17 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
 def test_set_logfile(default_conf, mocker, tmp_path):
     default_conf["ft_tests_force_logging"] = True
     patched_configuration_load_config_file(mocker, default_conf)
+    
+    original_is_file = Path.is_file
+    def is_file_mock(self):
+        path_str = str(self)
+        # Return True for user_data/config.json to allow Arguments to set the config
+        if "user_data" in path_str and "config.json" in path_str:
+            return True
+        # For all other paths, use the original method
+        return original_is_file(self)
+    
+    mocker.patch.object(Path, "is_file", is_file_mock)
     f = tmp_path / "test_file.log"
     assert not f.is_file()
     arglist = [
@@ -644,6 +664,7 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
     default_conf["force_entry_enable"] = True
     patched_configuration_load_config_file(mocker, default_conf)
 
+    mocker.patch.object(Path, "is_file", MagicMock(return_value=True))
     args = Arguments(["trade"]).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
