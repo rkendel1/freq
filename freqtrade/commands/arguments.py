@@ -335,12 +335,17 @@ class Arguments:
             if cfgfile.is_file():
                 parsed_arg.config = [str(cfgfile)]
             else:
-                # Else use "config.json".
-                cfgfile = Path.cwd() / DEFAULT_CONFIG
-                conf_optional = "command" in parsed_arg and parsed_arg.command in NO_CONF_REQURIED
-                if cfgfile.is_file() or not conf_optional:
-                    # Only inject config if the file exists, or if the config is required
-                    parsed_arg.config = [DEFAULT_CONFIG]
+                # Try loading from "user_data/config.prod.json" (Docker deployment)
+                cfgfile_prod = Path(user_dir) / "config.prod.json"
+                if cfgfile_prod.is_file():
+                    parsed_arg.config = [str(cfgfile_prod)]
+                else:
+                    # Else use "config.json".
+                    cfgfile = Path.cwd() / DEFAULT_CONFIG
+                    conf_optional = "command" in parsed_arg and parsed_arg.command in NO_CONF_REQURIED
+                    if cfgfile.is_file() or not conf_optional:
+                        # Only inject config if the file exists, or if the config is required
+                        parsed_arg.config = [DEFAULT_CONFIG]
 
         return parsed_arg
 
