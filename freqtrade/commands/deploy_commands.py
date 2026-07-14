@@ -104,30 +104,3 @@ def start_new_strategy(args: dict[str, Any]) -> None:
 
     else:
         raise ConfigurationError("`new-strategy` requires --strategy to be set.")
-
-
-def start_install_ui(args: dict[str, Any]) -> None:
-    from freqtrade.commands.deploy_ui import (
-        clean_ui_subdir,
-        download_and_install_ui,
-        get_ui_download_url,
-        read_ui_version,
-    )
-
-    dest_folder = Path(__file__).parents[1] / "rpc/api_server/ui/installed/"
-    # First make sure the assets are removed.
-    dl_url, latest_version = get_ui_download_url(
-        args.get("ui_version"), args.get("ui_prerelease", False)
-    )
-
-    curr_version = read_ui_version(dest_folder)
-    if curr_version == latest_version and not args.get("erase_ui_only"):
-        logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
-        return
-
-    clean_ui_subdir(dest_folder)
-    if args.get("erase_ui_only"):
-        logger.info("Erased UI directory content. Not downloading new version.")
-    else:
-        # Download a new version
-        download_and_install_ui(dest_folder, dl_url, latest_version)

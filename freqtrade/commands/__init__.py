@@ -20,7 +20,6 @@ from freqtrade.commands.data_commands import (
 from freqtrade.commands.db_commands import start_convert_db
 from freqtrade.commands.deploy_commands import (
     start_create_userdir,
-    start_install_ui,
     start_new_strategy,
 )
 from freqtrade.commands.hyperopt_commands import start_hyperopt_list, start_hyperopt_show

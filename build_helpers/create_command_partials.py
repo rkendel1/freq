@@ -52,7 +52,6 @@ def extract_command_partials():
         "show-trades",
         "test-pairlist",
         "convert-db",
-        "install-ui",
         "plot-dataframe",
         "plot-profit",
         "webserver",
