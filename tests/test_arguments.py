@@ -65,7 +65,8 @@ def test_parse_args_none() -> None:
 def test_parse_args_defaults(mocker) -> None:
     mocker.patch.object(Path, "is_file", MagicMock(side_effect=[False, True]))
     args = Arguments(["trade"]).get_parsed_arg()
-    assert args["config"] == ["config.json"]
+    # Now checks config.prod.json if config.json doesn't exist
+    assert args["config"] == ["user_data/config.prod.json"]
     assert args["strategy_path"] is None
     assert args["datadir"] is None
     assert args["verbosity"] is None
@@ -295,8 +296,8 @@ def test_config_notrequired(mocker) -> None:
         "download-data",
     ]
     pargs = Arguments(args).get_parsed_arg()
-    # config is added if it exists
-    assert pargs["config"] == ["config.json"]
+    # config is added if it exists (now checks config.prod.json if config.json doesn't exist)
+    assert pargs["config"] == ["user_data/config.prod.json"]
 
 
 def test_check_int_positive() -> None:
