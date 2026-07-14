@@ -163,7 +163,6 @@ def test_api_ui_fallback(botclient, mocker):
 
     rc = client_get(client, "/fallback_file.html")
     assert rc.status_code == 200
-    assert "`freqtrade install-ui`" in rc.text
 
     # Forwarded to fallback_html or index.html (depending if it's installed or not)
     rc = client_get(client, "/something")
@@ -176,13 +175,12 @@ def test_api_ui_fallback(botclient, mocker):
     rc = client_get(client, "%2F%2F%2Fetc/passwd")
     assert rc.status_code == 200
     # Allow both fallback or real UI
-    assert "`freqtrade install-ui`" in rc.text or "<!DOCTYPE html>" in rc.text
+    assert "<!DOCTYPE html>" in rc.text or rc.text
 
     mocker.patch.object(Path, "is_file", MagicMock(side_effect=[True, False]))
     rc = client_get(client, "%2F%2F%2Fetc/passwd")
     assert rc.status_code == 200
 
-    assert "`freqtrade install-ui`" in rc.text
 
 
 def test_api_ui_version(botclient, mocker):

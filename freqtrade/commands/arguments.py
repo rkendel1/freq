@@ -206,8 +206,6 @@ ARGS_PLOT_PROFIT = [
 
 ARGS_CONVERT_DB = ["db_url", "db_url_from"]
 
-ARGS_INSTALL_UI = ["erase_ui_only", "ui_prerelease", "ui_version"]
-
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
 ARGS_HYPEROPT_LIST = [
@@ -290,7 +288,6 @@ NO_CONF_REQURIED = [
     "plot-dataframe",
     "plot-profit",
     "show-trades",
-    "install-ui",
     "strategy-updater",
     "trades-to-ohlcv",
 ]
@@ -389,7 +386,6 @@ class Arguments:
             start_hyperopt,
             start_hyperopt_list,
             start_hyperopt_show,
-            start_install_ui,
             start_list_data,
             start_list_exchanges,
             start_list_freqAI_models,
@@ -648,14 +644,6 @@ class Arguments:
         )
         convert_db.set_defaults(func=start_convert_db)
         self._build_args(optionlist=ARGS_CONVERT_DB, parser=convert_db)
-
-        # Add install-ui subcommand
-        install_ui_cmd = subparsers.add_parser(
-            "install-ui",
-            help="Install FreqUI",
-        )
-        install_ui_cmd.set_defaults(func=start_install_ui)
-        self._build_args(optionlist=ARGS_INSTALL_UI, parser=install_ui_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(
