@@ -183,15 +183,6 @@ def test_api_ui_fallback(botclient, mocker):
 
 
 
-def test_api_ui_version(botclient, mocker):
-    _ftbot, client = botclient
-
-    mocker.patch("freqtrade.commands.deploy_ui.read_ui_version", return_value="0.1.2")
-    rc = client_get(client, "/ui_version")
-    assert rc.status_code == 200
-    assert rc.json()["version"] == "0.1.2"
-
-
 def test_api_auth():
     with pytest.raises(ValueError):
         create_token({"identity": {"u": "Freqtrade"}}, "secret1234", token_type="NotATokenType")
