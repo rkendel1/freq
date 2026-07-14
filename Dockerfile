@@ -27,9 +27,9 @@ RUN  apt-get update \
   && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
   && apt-get clean
 # Install dependencies
-COPY --chown=ftuser:ftuser requirements.txt requirements-hyperopt.txt /freqtrade/
+COPY --chown=ftuser:ftuser requirements.txt /freqtrade/
 USER ftuser
-RUN  pip install --user --no-cache-dir -r requirements-hyperopt.txt
+RUN  pip install --user --no-cache-dir -r requirements.txt
 
 # Copy dependencies to runtime-image
 FROM base AS runtime-image
