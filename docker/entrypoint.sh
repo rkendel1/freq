@@ -95,6 +95,58 @@ else
     echo "✅ Configuration file already exists: ${CONFIG_FILE}"
 fi
 
+# Validate and fix exchange configuration in existing config file
+# This handles cases where the persistent disk has an old config with empty exchange name
+echo "🔍 Validating exchange configuration..."
+EXCHANGE_NAME_DEFAULT="${EXCHANGE_NAME:-binance}"
+
+# Check if python3 is available for JSON manipulation
+if command -v python3 &> /dev/null; then
+    # Use Python to safely read and update JSON config
+    CURRENT_EXCHANGE=$(python3 -c "
+import json
+import sys
+try:
+    with open('${CONFIG_FILE}', 'r') as f:
+        config = json.load(f)
+    exchange_name = config.get('exchange', {}).get('name', '')
+    print(exchange_name if exchange_name else '')
+except Exception as e:
+    print('', file=sys.stderr)
+    sys.exit(0)
+" 2>/dev/null || echo "")
+    
+    if [ -z "${CURRENT_EXCHANGE}" ]; then
+        echo "⚠️  Exchange name is empty in config. Setting to: ${EXCHANGE_NAME_DEFAULT}"
+        python3 -c "
+import json
+import sys
+try:
+    with open('${CONFIG_FILE}', 'r') as f:
+        config = json.load(f)
+    
+    # Ensure exchange section exists
+    if 'exchange' not in config:
+        config['exchange'] = {}
+    
+    # Set exchange name from environment variable or default
+    config['exchange']['name'] = '${EXCHANGE_NAME_DEFAULT}'
+    
+    with open('${CONFIG_FILE}', 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print('✅ Exchange name updated to: ${EXCHANGE_NAME_DEFAULT}')
+except Exception as e:
+    print(f'❌ Error updating config: {e}', file=sys.stderr)
+    sys.exit(1)
+"
+    else
+        echo "✅ Exchange configured: ${CURRENT_EXCHANGE}"
+    fi
+else
+    echo "⚠️  Python not available for config validation (this shouldn't happen)"
+fi
+
 # Initialize database if it doesn't exist
 DB_FILE="${USER_DATA_DIR}/tradesv3.sqlite"
 if [ ! -f "${DB_FILE}" ]; then
