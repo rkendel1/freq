@@ -342,9 +342,8 @@ class Arguments:
                 else:
                     # Else use "config.json".
                     cfgfile = Path.cwd() / DEFAULT_CONFIG
-                    conf_optional = "command" in parsed_arg and parsed_arg.command in NO_CONF_REQURIED
-                    if cfgfile.is_file() or not conf_optional:
-                        # Only inject config if the file exists, or if the config is required
+                    if cfgfile.is_file():
+                        # Only inject config if the file exists
                         parsed_arg.config = [DEFAULT_CONFIG]
 
         return parsed_arg
