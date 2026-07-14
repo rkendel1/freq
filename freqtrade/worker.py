@@ -9,8 +9,6 @@ from collections.abc import Callable
 from os import getpid
 from typing import Any
 
-import sdnotify
-
 from freqtrade import __version__
 from freqtrade.configuration import Configuration
 from freqtrade.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT, Config
@@ -58,11 +56,17 @@ class Worker:
         self._throttle_secs = internals_config.get("process_throttle_secs", PROCESS_THROTTLE_SECS)
         self._heartbeat_interval = internals_config.get("heartbeat_interval", 60)
 
-        self._sd_notify = (
-            sdnotify.SystemdNotifier()
-            if self._config.get("internals", {}).get("sd_notify", False)
-            else None
-        )
+        self._sd_notify = None
+        if self._config.get("internals", {}).get("sd_notify", False):
+            try:
+                import sdnotify
+                self._sd_notify = sdnotify.SystemdNotifier()
+            except ImportError:
+                logger.warning(
+                    "sd_notify is enabled in config but 'sdnotify' module is not installed. "
+                    "Install it with: pip install sdnotify"
+                )
+
 
     def _notify(self, message: str) -> None:
         """
